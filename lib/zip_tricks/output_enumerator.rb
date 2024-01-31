@@ -23,7 +23,8 @@
 #       end
 #     end
 #
-#     [200, {'Content-Type' => 'binary/octet-stream'}, iterable_zip_body]
+#     chunker = Rack::Chunked::Body.new(iterable_zip_body)
+#     [200, {'Content-Type' => 'application/zip', 'Transfer-Encoding' => 'chunked'}, chunker]
 class ZipTricks::OutputEnumerator
   DEFAULT_WRITE_BUFFER_SIZE = 64 * 1024
   # Creates a new OutputEnumerator.
