@@ -1,3 +1,5 @@
+* Fix Rails buffering the response unexpectedly, which could happen due to either of wrong content encoding, HTTP/1.0 protocol being requested or the Rack::ETag
+
 ## 5.6.0
 
 * Add customisable `unix_permissions` to Streamer and ZipWriter. Beware that customising these permissions can lead to the archive failing to expand with some unarchiving applications, and is especially sensitive for directories.
