@@ -1,4 +1,7 @@
+* Make RackBody future-proof for Rack 3.x by adding a chunked body encoder
 * Fix Rails buffering the response unexpectedly, which could happen due to either of wrong content encoding, HTTP/1.0 protocol being requested or the Rack::ETag
+* Allow objects that only respond to `#write` as streaming destination. The Rails `stream` object in ActionController::Live is like that.
+* Fix uses of `Time.now` in tests for Ruby 3 compatibility
 
 ## 5.6.0
 

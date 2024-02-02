@@ -7,24 +7,6 @@
 # use `next` to take chunks written by the ZipTricks streamer one by one. It can be very
 # convenient when you need to segment your ZIP output into bigger chunks for, say,
 # uploading them to a cloud storage provider such as S3.
-#
-# Another use of the output enumerator is outputting a ZIP archive from Rails or Rack,
-# where an object responding to `each` is required which yields Strings. For instance,
-# you can return a ZIP archive from Rack like so:
-#
-#     iterable_zip_body = ZipTricks::OutputEnumerator.new do | streamer |
-#       streamer.write_deflated_file('big.csv') do |sink|
-#         CSV(sink) do |csv_writer|
-#           csv_writer << Person.column_names
-#           Person.all.find_each do |person|
-#             csv_writer << person.attributes.values
-#           end
-#         end
-#       end
-#     end
-#
-#     chunker = Rack::Chunked::Body.new(iterable_zip_body)
-#     [200, {'Content-Type' => 'application/zip', 'Transfer-Encoding' => 'chunked'}, chunker]
 class ZipTricks::OutputEnumerator
   DEFAULT_WRITE_BUFFER_SIZE = 64 * 1024
   # Creates a new OutputEnumerator.

@@ -14,7 +14,7 @@ module ZipTricks::RailsStreaming
   def zip_tricks_stream(filename: 'download.zip', type: 'application/zip', **zip_streamer_options, &zip_streaming_blk)
     # The output enumerator yields chunks of bytes generated from ZipTricks. Instantiating it
     # first will also validate the Streamer options.
-    chunk_yielder = ZipTricks::OutputEnumerator.new(**zip_streamer_options, &zip_streaming_blk)
+    chunk_yielder = ZipTricks::RackBody.new(**zip_streamer_options, &zip_streaming_blk)
 
     # We want some common headers for file sending. Rails will also set
     # self.sending_file = true for us when we call send_file_headers!
@@ -43,8 +43,7 @@ module ZipTricks::RailsStreaming
       headers["Transfer-Encoding"] = "chunked"
       headers.delete("Content-Length")
 
-      # Assign the chunked body to response_body, Rack will pick it up from there
-      self.response_body = Rack::Chunked::Body.new(chunk_yielder)
+      self.response_body = chunk_yielder.to_chunked
     end
   end
 end
