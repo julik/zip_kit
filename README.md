@@ -75,15 +75,17 @@ since you do not know how large the compressed data segments are going to be.
 
 ## Send a ZIP from a Rack response
 
-To "pull" data from ZipTricks you can create an `OutputEnumerator` object which will yield the binary chunks piece
-by piece, and apply some amount of buffering as well. Since this `OutputEnumerator` responds to `#each` and yields
-Strings it also can (and should!) be used as a Rack response body. Return it to your webserver and you will
-have your ZIP streamed. The block that you give to the `OutputEnumerator` will only start executing once your
-response body starts getting iterated over - when actually sending the response to the client
-(unless you are using a buffering Rack webserver, such as Webrick).
+zip_tricks provides a `RackBody` object which will yield the binary chunks piece
+by piece, and apply some amount of buffering as well. Make sure to also wrap your `RackBody` in a chunker
+by calling `#to_chunked` on it. Return it to your webserver and you will have your ZIP streamed!
+The block that you give to the `RackBody` receive the {ZipTricks::Streamer} object and will only
+start executing once your response body starts getting iterated over - when actually sending
+the response to the client (unless you are using a buffering Rack webserver, such as Webrick).
 
 ```ruby
-body = ZipTricks::Streamer.output_enum do | zip |
+require 'time'
+
+body = ZipTricks::RackBody.new do | zip |
   zip.write_stored_file('mov.mp4') do |sink| # Those MPEG4 files do not compress that well
     File.open('mov.mp4', 'rb'){|source| IO.copy_stream(source, sink) }
   end
@@ -91,7 +93,15 @@ body = ZipTricks::Streamer.output_enum do | zip |
     File.open('novel.txt', 'rb'){|source| IO.copy_stream(source, sink) }
   end
 end
-[200, {}, body]
+
+headers = {
+  "Last-Modified" => Time.now.httpdate, # disables Rack::ETag
+  "Content-Type" => "application/zip",
+  "Transfer-Encoding" => "chunked",
+  "X-Accel-Buffering" => "no" # disables buffering in nginx/GCP
+}
+
+[200, headers, body.to_chunked]
 ```
 
 ## Send a ZIP file of known size, with correct headers
@@ -135,7 +145,6 @@ ZipTricks::Streamer.open(io) do | zip |
 
   # ...and then send the actual file contents bypassing the Streamer interface
   io.sendfile(my_temp_file)
-
 end
 ```
 
@@ -144,7 +153,7 @@ end
 Check out the `examples/` directory at the root of the project. This will give you a good idea
 of various use cases the library supports.
 
-## Computing the CRC32 value of a large file
+### Computing the CRC32 value of a large file
 
 `BlockCRC32` computes the CRC32 checksum of an IO in a streaming fashion.
 It is slightly more convenient for the purpose than using the raw Zlib library functions.
@@ -166,7 +175,7 @@ You can also compute the CRC32 for an entire IO object if it responds to `#eof?`
 crc = ZipTricks::StreamCRC32.from_io(file) # Returns an Integer
 ```
 
-## Reading ZIP files
+### Reading ZIP files
 
 The library contains a reader module, play with it to see what is possible. It is not a complete ZIP reader
 but it was designed for a specific purpose (highly-parallel unpacking of remotely stored ZIP files), and

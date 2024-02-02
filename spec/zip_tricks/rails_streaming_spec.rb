@@ -83,27 +83,6 @@ describe ZipTricks::RailsStreaming do
     expect(headers['Content-Length']).to be_nil # Must be unset!
   end
 
-  def decode_chunked_encoding(io)
-    # Lifted from Net::HTTP mostly
-    StringIO.new.binmode.tap do |dest|
-      begin
-        loop do
-          line = io.readline
-          hexlen = line.slice(/[0-9a-fA-F]+/)
-          len = hexlen.hex
-          break if len == 0 # Terminator (hex 0 followed by \r\n)
-
-          dest.write(io.read(len))
-          io.read(2)   # \r\n
-        end
-      rescue EOFError
-        # nothing
-      ensure
-        dest.rewind
-      end
-    end
-  end
-
   def readback_iterable(iterable)
     StringIO.new.binmode.tap do |out|
       iterable.each { |chunk| out.write(chunk) }
