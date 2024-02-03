@@ -83,7 +83,7 @@ class ZipTricks::RackBody < ZipTricks::OutputEnumerator
 
     # @param body[#each] the enumerable that yields bytes, usually a `RackBody`.
     #   The `body` will be read in full immediately and closed.
-    def initialize(body)
+    def initialize(env, body)
       @tempfile = Tempfile.new(TEMPFILE_NAME_PREFIX)
       @tempfile.binmode
 
@@ -91,6 +91,11 @@ class ZipTricks::RackBody < ZipTricks::OutputEnumerator
       body.close if body.respond_to?(:close)
 
       @tempfile.flush
+      # Rack::TempfileReaper calls close! on tempfiles which get buffered
+      # We wil assume that it works fine with Rack::Sendfile (i.e. the path
+      # to the file getting served gets used before we unlink the tempfile)
+      env['rack.tempfiles'] ||= []
+      env['rack.tempfiles'] << @tempfile
     end
 
     # Returns the size of the contained `Tempfile` so that a correct
@@ -118,18 +123,6 @@ class ZipTricks::RackBody < ZipTricks::OutputEnumerator
         yield chunk
       end
     end
-
-    # Closes the contained `Tempfile`. This will be called by the serving Rack stack.
-    #
-    # @return [void]
-    def close
-      caller.each do |lain|
-        warn lain
-      end
-      # Rack::TempfileReaper uses close! on tempfiles which get buffered
-      # We will do the same. Rack::Sendfile will call close() on us
-      @tempfile.close!
-    end
   end
 
   # Returns a Tempfile which has been generated. This is useful when serving buffered - as
@@ -137,9 +130,10 @@ class ZipTricks::RackBody < ZipTricks::OutputEnumerator
   # does not iterate over the response twice. You may later elect to send that response using
   # the `Rack::File` middleware as well, which would give you `Range:` request support
   #
+  # @param rack_env[Hash] the Rack request env
   # @return [Tempfile] the tempfile containing the ZIP in full
-  def to_tempfile_body
-    TempfileBody.new(self)
+  def to_tempfile_body(rack_env)
+    TempfileBody.new(rack_env, self)
   end
 
   # Returns the output enumerator wrapped in Chunked. The returned object will

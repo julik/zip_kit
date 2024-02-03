@@ -34,7 +34,7 @@ module ZipTricks::RailsStreaming
       logger.warn { "The downstream HTTP proxy/LB insists on HTTP/1.0 protocol, ZIP response will be buffered." } if logger
 
       # Buffer the ZIP into a tempfile so that we do not iterate over the ZIP-generating block twice
-      tempfile_body = chunk_yielder.to_tempfile_body
+      tempfile_body = chunk_yielder.to_tempfile_body(request.env)
 
       # Set the content length so that Rack::ContentLength disengages
       headers["Content-Length"] = tempfile_body.size.to_s

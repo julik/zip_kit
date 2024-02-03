@@ -62,11 +62,14 @@ describe ZipTricks::RackBody do
         writable << random_bytes
       end
     end
-    tf_body = body.to_tempfile_body
+    env = {}
+    tf_body = body.to_tempfile_body(env)
+    expect(env["rack.tempfiles"]).not_to be_empty
 
     expect(tf_body.size).to be > 0
     expect(tf_body.to_path).to be_kind_of(String)
     expect(tf_body.size).to eq(File.size(tf_body.to_path))
+    expect(tf_body.tempfile).to be_binmode
 
     output_from_bare_enumerator = StringIO.new.binmode
     body.each { |bytes| output_from_bare_enumerator << bytes }

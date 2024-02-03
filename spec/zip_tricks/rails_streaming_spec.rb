@@ -26,11 +26,12 @@ describe ZipTricks::RailsStreaming do
 
   class FakeController < ActionController::Base
     # Make sure both Rack middlewares which are known to cause trouble
-    # are used in this controller, so that we can ensure they get bypassed
-    middleware.use Rack::TempfileReaper
+    # are used in this controller, so that we can ensure they get bypassed.
+    # Use them in the same order Rails inserts them.
     middleware.use Rack::Sendfile
     middleware.use Rack::ETag
-    middleware.use Rack::ContentLength
+    middleware.use Rack::ContentLength # This does not get injected by Rails
+    middleware.use Rack::TempfileReaper
 
     include ZipTricks::RailsStreaming
     def stream_zip
@@ -56,7 +57,7 @@ describe ZipTricks::RailsStreaming do
     ref_output_io = FakeZipGenerator.generate_reference
     out = readback_iterable(body)
     expect(out.string).to eq(ref_output_io.string)
-
+    expect { body.close }.not_to raise_error
     expect(status).to eq(200)
     expect(headers['Content-Type']).to eq('application/zip')
     expect(headers['ETag']).to be_nil # if the ETag middleware activates it will generate a weak ETag
@@ -65,10 +66,7 @@ describe ZipTricks::RailsStreaming do
     expect(headers['Transfer-Encoding']).to be_nil
     expect(headers['Content-Length']).to be_kind_of(String)
     expect(body).to respond_to(:to_path) # for Rack::Sendfile
-    expect { body.close }.not_to raise_exception # for closing the file handle, even if Sendfile is used
-
-    tempfile_path = body.to_path
-    expect(File).to be_exist(tempfile_path)
+    # All the other methods have been excercised by reading out the iterable body
   end
 
   it 'uses Transfer-Encoding: chunked with HTTP/1.1 and produces a chunked response' do
