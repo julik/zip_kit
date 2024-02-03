@@ -51,10 +51,11 @@ class ZipTricks::RackBody < ZipTricks::OutputEnumerator
   # but that module is a private constant in the Rails codebase, and is thus
   # considered "private" from the Rails standpoint. It is not that much code to
   # carry, so we copy it into our code.
-  class Chunked
+  class ChunkedBody
     TERM = "\r\n"
     TAIL = "0#{TERM}"
 
+    # @param body[#each] the enumerable that yields bytes, usually a `RackBody`
     def initialize(body)
       @body = body
     end
@@ -77,11 +78,19 @@ class ZipTricks::RackBody < ZipTricks::OutputEnumerator
   # Contains a file handle which can be closed once the response finishes sending.
   # It supports `to_path` so that `Rack::Sendfile` can intercept it
   class TempfileBody
+    TEMPFILE_NAME_PREFIX = "zip-tricks-tf-body-"
     attr_reader :tempfile
 
-    # @param tempfile[File] the file that can be closed and read
-    def initialize(tempfile)
-      @tempfile = tempfile
+    # @param body[#each] the enumerable that yields bytes, usually a `RackBody`.
+    #   The `body` will be read in full immediately and closed.
+    def initialize(body)
+      @tempfile = Tempfile.new(TEMPFILE_NAME_PREFIX)
+      @tempfile.binmode
+
+      body.each { |bytes| @tempfile << bytes }
+      body.close if body.respond_to?(:close)
+
+      @tempfile.flush
     end
 
     # Returns the size of the contained `Tempfile` so that a correct
@@ -114,6 +123,9 @@ class ZipTricks::RackBody < ZipTricks::OutputEnumerator
     #
     # @return [void]
     def close
+      caller.each do |lain|
+        warn lain
+      end
       # Rack::TempfileReaper uses close! on tempfiles which get buffered
       # We will do the same. Rack::Sendfile will call close() on us
       @tempfile.close!
@@ -127,13 +139,7 @@ class ZipTricks::RackBody < ZipTricks::OutputEnumerator
   #
   # @return [Tempfile] the tempfile containing the ZIP in full
   def to_tempfile_body
-    Tempfile.new("zip-tricks-rack-buf").tap do |tf|
-      tf.binmode
-      each { |bytes| tf << bytes }
-      tf.flush
-      tf.rewind
-      TempfileBody.new(tf)
-    end
+    TempfileBody.new(self)
   end
 
   # Returns the output enumerator wrapped in Chunked. The returned object will
@@ -142,6 +148,6 @@ class ZipTricks::RackBody < ZipTricks::OutputEnumerator
   #
   # @return [Chunked]
   def to_chunked
-    Chunked.new(self)
+    ChunkedBody.new(self)
   end
 end

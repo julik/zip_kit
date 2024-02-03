@@ -27,6 +27,8 @@ describe ZipTricks::RailsStreaming do
   class FakeController < ActionController::Base
     # Make sure both Rack middlewares which are known to cause trouble
     # are used in this controller, so that we can ensure they get bypassed
+    middleware.use Rack::TempfileReaper
+    middleware.use Rack::Sendfile
     middleware.use Rack::ETag
     middleware.use Rack::ContentLength
 
