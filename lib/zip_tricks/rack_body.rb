@@ -18,14 +18,31 @@
 #       end
 #     end
 #
+# either as a `Transfer-Encoding: chunked` response (if your webserver supports it),
+
+# which will give you true streaming capability:
+#
+#     chunked_body = iterable_zip_body.to_chunked
 #     headers = {
 #       "Last-Modified" => Time.now.httpdate, # disables Rack::ETag
 #       "Content-Type" => "application/zip",
+#       "Content-Disposition" => "attachment",
 #       "Transfer-Encoding" => "chunked",
 #       "X-Accel-Buffering" => "no" # disables buffering in nginx/GCP
 #     }
+#     [200, headers, chunked_body]
 #
-#     [200, headers, iterable_zip_body.to_chunked]
+# or in a `TempfileBody` object which buffers the ZIP before output. Buffering has
+# benefits if your webserver does not support anything beyound HTTP/1.0:
+#
+#     tf_body = iterable_zip_body.to_tempfile_body
+#     headers = {
+#       "Last-Modified" => Time.now.httpdate, # disables Rack::ETag
+#       "Content-Type" => "application/zip",
+#       "Content-Disposition" => "attachment",
+#       "Content-Length" => tf_body.content_length,
+#     }
+#     [200, headers, tf_body]
 class ZipTricks::RackBody < ZipTricks::OutputEnumerator
   # A body wrapper that emits chunked responses, creating valid
   # Transfer-Encoding::Chunked HTTP response body. This is copied from Rack::Chunked::Body,
@@ -54,6 +71,68 @@ class ZipTricks::RackBody < ZipTricks::OutputEnumerator
       end
       yield TAIL
       yield term
+    end
+  end
+
+  # Contains a file handle which can be closed once the response finishes sending.
+  # It supports `to_path` so that `Rack::Sendfile` can intercept it
+  class TempfileBody
+    attr_reader :tempfile
+
+    # @param tempfile[File] the file that can be closed and read
+    def initialize(tempfile)
+      @tempfile = tempfile
+    end
+
+    # Returns the size of the contained `Tempfile` so that a correct
+    # Content-Length header can be set
+    #
+    # @return [Integer]
+    def size
+      @tempfile.size
+    end
+
+    # Returns the path to the `Tempfile`, so that Rack::Sendfile can send this response
+    # using the downstream webserver
+    #
+    # @return [String]
+    def to_path
+      @tempfile.to_path
+    end
+
+    # Stream the file's contents if `Rack::Sendfile` isn't present.
+    #
+    # @return [void]
+    def each
+      @tempfile.rewind
+      while chunk = @tempfile.read(16384)
+        yield chunk
+      end
+    end
+
+    # Closes the contained `Tempfile`. This will be called by the serving Rack stack.
+    #
+    # @return [void]
+    def close
+      # Rack::TempfileReaper uses close! on tempfiles which get buffered
+      # We will do the same. Rack::Sendfile will call close() on us
+      @tempfile.close!
+    end
+  end
+
+  # Returns a Tempfile which has been generated. This is useful when serving buffered - as
+  # when doing that we can preset the Content-Length of the response, so that Rack::ContentLength
+  # does not iterate over the response twice. You may later elect to send that response using
+  # the `Rack::File` middleware as well, which would give you `Range:` request support
+  #
+  # @return [Tempfile] the tempfile containing the ZIP in full
+  def to_tempfile_body
+    Tempfile.new("zip-tricks-rack-buf").tap do |tf|
+      tf.binmode
+      each { |bytes| tf << bytes }
+      tf.flush
+      tf.rewind
+      TempfileBody.new(tf)
     end
   end
 

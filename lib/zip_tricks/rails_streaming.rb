@@ -32,7 +32,15 @@ module ZipTricks::RailsStreaming
     # the very least print it to the Rails log.
     if request.get_header("HTTP_VERSION") == "HTTP/1.0"
       logger.warn { "The downstream HTTP proxy/LB insists on HTTP/1.0 protocol, ZIP response will be buffered." } if logger
-      self.response_body = chunk_yielder
+
+      # Buffer the ZIP into a tempfile so that we do not iterate over the ZIP-generating block twice
+      tempfile_body = chunk_yielder.to_tempfile_body
+
+      # Set the content length so that Rack::ContentLength disengages
+      headers["Content-Length"] = tempfile_body.size.to_s
+
+      # Assign the tempfile body. Since it supports #to_path it will likely be picked up by Rack::Sendfile
+      self.response_body = tempfile_body
     else
       # Disable buffering for both nginx and Google Load Balancer, see
       # https://cloud.google.com/appengine/docs/flexible/how-requests-are-handled?tab=python#x-accel-buffering

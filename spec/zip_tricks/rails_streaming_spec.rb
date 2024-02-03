@@ -2,17 +2,22 @@ require 'spec_helper'
 require 'action_controller'
 
 describe ZipTricks::RailsStreaming do
-  module FakeZipGenerator
-    def self.call(streamer)
+  class FakeZipGenerator
+    def generate_once(streamer)
+      # Only allow the call to be executed once, to ensure that we run
+      # our ZIP generation block just once. This is to ensure Rack::ContentLength
+      # does not run the generation twice
+      raise "The ZIP has already been generated once" if @did_generate_zip
       streamer.write_deflated_file('hello.txt') do |f|
         f << 'ßHello from Rails'
       end
+      @did_generate_zip = true
     end
 
     def self.generate_reference
       StringIO.new.binmode.tap do |sio|
         ZipTricks::Streamer.open(sio) do |streamer|
-          call(streamer)
+          new.generate_once(streamer)
         end
         sio.rewind
       end
@@ -27,8 +32,9 @@ describe ZipTricks::RailsStreaming do
 
     include ZipTricks::RailsStreaming
     def stream_zip
+      generator = FakeZipGenerator.new
       zip_tricks_stream(auto_rename_duplicate_filenames: true) do |z|
-        FakeZipGenerator.call(z)
+        generator.generate_once(z)
       end
     end
   end
@@ -55,7 +61,12 @@ describe ZipTricks::RailsStreaming do
     expect(headers['Last-Modified']).to be_kind_of(String)
     expect(headers['X-Accel-Buffering']).to be_nil # Response gets buffered
     expect(headers['Transfer-Encoding']).to be_nil
-    # ... and Content-Length may or may not be present
+    expect(headers['Content-Length']).to be_kind_of(String)
+    expect(body).to respond_to(:to_path) # for Rack::Sendfile
+    expect { body.close }.not_to raise_exception # for closing the file handle, even if Sendfile is used
+
+    tempfile_path = body.to_path
+    expect(File).to be_exist(tempfile_path)
   end
 
   it 'uses Transfer-Encoding: chunked with HTTP/1.1 and produces a chunked response' do
@@ -81,6 +92,7 @@ describe ZipTricks::RailsStreaming do
     expect(headers['X-Accel-Buffering']).to eq('no')
     expect(headers['Transfer-Encoding']).to eq('chunked')
     expect(headers['Content-Length']).to be_nil # Must be unset!
+    expect(body).not_to respond_to(:to_path) # for Rack::Sendfile
   end
 
   def readback_iterable(iterable)
