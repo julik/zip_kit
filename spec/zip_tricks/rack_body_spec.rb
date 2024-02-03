@@ -54,4 +54,26 @@ describe ZipTricks::RackBody do
 
     expect(io2_decoded.string).to eq(io2_decoded.string)
   end
+
+  it 'outputs a body containing a Tempfile for accelerated serving' do
+    random_bytes = Random.new(RSpec.configuration.seed).bytes(10)
+    body = described_class.new do |zip|
+      zip.write_stored_file("test.bin") do |writable|
+        writable << random_bytes
+      end
+    end
+    env = {}
+    tf_body = body.to_tempfile_body(env)
+    expect(env["rack.tempfiles"]).not_to be_empty
+
+    expect(tf_body.size).to be > 0
+    expect(tf_body.to_path).to be_kind_of(String)
+    expect(tf_body.size).to eq(File.size(tf_body.to_path))
+    expect(tf_body.tempfile).to be_binmode
+
+    output_from_bare_enumerator = StringIO.new.binmode
+    body.each { |bytes| output_from_bare_enumerator << bytes }
+
+    expect(tf_body.size).to eq(output_from_bare_enumerator.size)
+  end
 end
