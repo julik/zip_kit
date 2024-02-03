@@ -85,17 +85,18 @@ class ZipTricks::RackBody < ZipTricks::OutputEnumerator
     #   The `body` will be read in full immediately and closed.
     def initialize(env, body)
       @tempfile = Tempfile.new(TEMPFILE_NAME_PREFIX)
+      # Rack::TempfileReaper calls close! on tempfiles which get buffered
+      # We wil assume that it works fine with Rack::Sendfile (i.e. the path
+      # to the file getting served gets used before we unlink the tempfile)
+      env['rack.tempfiles'] ||= []
+      env['rack.tempfiles'] << @tempfile
+
       @tempfile.binmode
 
       body.each { |bytes| @tempfile << bytes }
       body.close if body.respond_to?(:close)
 
       @tempfile.flush
-      # Rack::TempfileReaper calls close! on tempfiles which get buffered
-      # We wil assume that it works fine with Rack::Sendfile (i.e. the path
-      # to the file getting served gets used before we unlink the tempfile)
-      env['rack.tempfiles'] ||= []
-      env['rack.tempfiles'] << @tempfile
     end
 
     # Returns the size of the contained `Tempfile` so that a correct
