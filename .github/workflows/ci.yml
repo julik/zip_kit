@@ -84,6 +84,10 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-gems-${{ matrix.ruby }}-
             ${{ runner.os }}-gems-
+      - name: Bundle Install
+        if: steps.cache-gems.outputs.cache-hit != 'true'
+        run: bundle install
+        bundle exec appraisal install
       - name: Appraisal Install
         if: steps.cache-gems.outputs.cache-hit != 'true'
         run: bundle exec appraisal install
