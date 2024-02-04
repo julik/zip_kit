@@ -84,9 +84,9 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-gems-${{ matrix.ruby }}-
             ${{ runner.os }}-gems-
-      - name: Bundle Install
+      - name: Appraisal Install
         if: steps.cache-gems.outputs.cache-hit != 'true'
-        run: bundle install --jobs 4 --retry 3
-      - name: "RSpec with Appraisal"
+        run: bundle exec appraisal install
+      - name: "Appraisal RSpec"
         continue-on-error: ${{ matrix.experimental }}
         run: bundle exec appraisal spec

@@ -106,7 +106,7 @@ PLATFORMS
 DEPENDENCIES
   actionpack (~> 5.2)
   allocation_stats (~> 0.1.5)
-  appraisal
+  appraisal (~> 2.5)
   benchmark-ips
   bundler
   coderay
@@ -122,4 +122,4 @@ DEPENDENCIES
   zip_tricks!
 
 BUNDLED WITH
-   2.1.4
+   2.2.25
