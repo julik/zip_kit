@@ -15,8 +15,8 @@ If you are already familiar with the [Ruby Programming Language](https://www.rub
 If you are interested in contributing code and would like to learn more about the technologies that we use, check out the (non-exhaustive) list below. You can also get in touch with us via an issue or email to get additional information.
 
  - [ruby](https://ruby-doc.org)
- - [rubyzip](https://github.com/rubyzip/rubyzip)
- - [rspec](http://rspec.info/) (for testing)
+ - [rubyzip](https://github.com/rubyzip/rubyzip) as we like to test "our implementation against theirs"
+ - [rspec](http://rspec.info/) and [appraisal]() https://github.com/thoughtbot/appraisal) for testing
  - [zip files](https://en.wikipedia.org/wiki/Zip_(file_format))
 
 # How do I make a contribution?
@@ -142,6 +142,8 @@ project:
    ```bash
    git push origin <topic-branch-name>
    ```
+
+   Make sure to run `bundle exec appraisal rspec` to make sure your changes are compatible with all the Rails versions we support.
 
 7. [Open a Pull Request](https://help.github.com/articles/using-pull-requests/)
     with a clear title and description.

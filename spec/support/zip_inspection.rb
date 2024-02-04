@@ -1,5 +1,7 @@
 module ZipInspection
   def inspect_zip_with_external_tool(path_to_zip)
+    return unless ENV['INSPECT_TEST_ZIPS']
+
     zipinfo_path = 'zipinfo'
     $zip_inspection_buf ||= StringIO.new
     $zip_inspection_buf.puts "\n"
