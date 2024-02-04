@@ -10,7 +10,5 @@ YARD::Rake::YardocTask.new(:doc) do |t|
 end
 
 RSpec::Core::RakeTask.new(:spec)
-
 RuboCop::RakeTask.new(:rubocop)
-
 task default: [:spec, :rubocop]
