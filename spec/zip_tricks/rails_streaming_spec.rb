@@ -8,7 +8,7 @@ describe ZipTricks::RailsStreaming do
       # our ZIP generation block just once. This is to ensure Rack::ContentLength
       # does not run the generation twice
       raise "The ZIP has already been generated once" if @did_generate_zip
-      streamer.write_deflated_file('hello.txt') do |f|
+      streamer.write_file('hello.txt') do |f|
         f << 'ßHello from Rails'
       end
       @did_generate_zip = true
