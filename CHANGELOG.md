@@ -1,3 +1,5 @@
+* Allow heuristic compression. Use `Streamer#write_file` to let zip_tricks pick the right compression method for you. If a file will benefit from
+  compression, it is going to be written deflated. If it will not - it will be written stored. Evaluation is based on the first 128KB of the file contents.
 * Make RackBody future-proof for Rack 3.x by adding a chunked body encoder
 * Fix Rails buffering the response unexpectedly, which could happen due to either of wrong content encoding, HTTP/1.0 protocol being requested or the Rack::ETag
 * Allow objects that only respond to `#write` as streaming destination. The Rails `stream` object in ActionController::Live is like that.

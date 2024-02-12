@@ -47,7 +47,7 @@ class ZipTricks::Streamer::Heuristic
       @streamer.write_deflated_file(@filename, **@write_file_options)
     else
       @streamer.write_stored_file(@filename, **@write_file_options)
-              end
+    end
     # Copy the buffered uncompressed data into the newly initialized writable
     @buf.rewind
     IO.copy_stream(@buf, @winner)
