@@ -8,7 +8,7 @@
 # which yields Strings. You can return a ZIP archive from Rack like so:
 #
 #     iterable_zip_body = ZipTricks::RackBody.new do | streamer |
-#       streamer.write_deflated_file('big.csv') do |sink|
+#       streamer.write_file('big.csv') do |sink|
 #         CSV(sink) do |csv_writer|
 #           csv_writer << Person.column_names
 #           Person.all.find_each do |person|

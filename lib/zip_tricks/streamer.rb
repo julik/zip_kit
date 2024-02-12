@@ -257,6 +257,55 @@ class ZipTricks::Streamer
     @out.tell
   end
 
+  # Opens the stream for a file stored in the archive, and yields a writer
+  # for that file to the block.
+  # The writer will buffer a small amount of data and see whether compression is
+  # effective for the data being output. If compression turns out to work well -
+  # for instance, if the output is mostly text - it is going to create a deflated
+  # file inside the zip. If the compression benefits are negligible, it will
+  # create a stored file inside the zip. It will delegate either to `write_deflated_file`
+  # or to `write_stored_file`.
+  #
+  # Using a block, the write will be terminated with a data descriptor outright.
+  #
+  #     zip.write_file("foo.txt") do |sink|
+  #       IO.copy_stream(source_file, sink)
+  #     end
+  #
+  # If deferred writes are desired (for example - to integrate with an API that
+  # does not support blocks, or to work with non-blocking environments) the method
+  # has to be called without a block. In that case it returns the sink instead,
+  # permitting to write to it in a deferred fashion. When `close` is called on
+  # the sink, any remanining compression output will be flushed and the data
+  # descriptor is going to be written.
+  #
+  # Note that even though it does not have to happen within the same call stack,
+  # call sequencing still must be observed. It is therefore not possible to do
+  # this:
+  #
+  #     writer_for_file1 = zip.write_file("somefile.jpg")
+  #     writer_for_file2 = zip.write_file("another.tif")
+  #     writer_for_file1 << data
+  #     writer_for_file2 << data
+  #
+  # because it is likely to result in an invalid ZIP file structure later on.
+  # So using this facility in async scenarios is certainly possible, but care
+  # and attention is recommended.
+  #
+  # @param filename[String] the name of the file in the archive
+  # @param modification_time [Time] the modification time of the file in the archive
+  # @param unix_permissions[Fixnum?] which UNIX permissions to set, normally the default should be used
+  # @yield [#<<, #write] an object that the file contents must be written to that will be automatically closed
+  # @return [#<<, #write, #close] an object that the file contents must be written to, has to be closed manually
+  def write_file(filename, modification_time: Time.now.utc, unix_permissions: nil)
+    writable = ZipTricks::Streamer::Heuristic.new(self, filename, modification_time: modification_time, unix_permissions: unix_permissions)
+    if block_given?
+      yield(writable)
+      writable.close
+    end
+    writable
+  end
+
   # Opens the stream for a stored file in the archive, and yields a writer
   # for that file to the block.
   # Once the write completes, a data descriptor will be written with the

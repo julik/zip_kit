@@ -550,4 +550,56 @@ describe ZipTricks::Streamer do
       zip.add_empty_directory(dirname: 'empty', modification_time: Time.new(2018, 1, 1))
     end
   end
+
+  it 'supports automatic mode selection using a heuristic' do
+    zip_file = Tempfile.new
+    rng = Random.new(42)
+    repeating_string = "many many delicious, compressible words"
+    n_writes = 24000
+    high_entropy_write_size = 999
+    ZipTricks::Streamer.open(zip_file) do |zip|
+      zip.write_file("this will be stored.bin") do |io|
+        n_writes.times do
+          io << rng.bytes(high_entropy_write_size)
+        end
+      end
+
+      zip.write_file("this will be deflated.bin") do |io|
+        n_writes.times do
+          io << repeating_string
+        end
+      end
+
+      zip.write_file("empty.bin") do |io|
+        # Do nothing
+      end
+
+      zip.write_file("tiny.bin") do |io|
+        io << "a"
+      end
+    end
+
+    zip_file.flush
+    file_contents = {}
+    compression_methods = {}
+    Zip::File.open(zip_file.path) do |zipfile|
+      # Handle entries one by one
+      zipfile.each do |entry|
+        file_contents[entry.name] = entry.get_input_stream.read
+        compression_methods[entry.name] = entry.compression_method
+      end
+    end
+
+    expect(file_contents["this will be stored.bin"].bytesize).to eq(n_writes * high_entropy_write_size)
+    expect(compression_methods["this will be stored.bin"]).to eq(0)
+
+    expect(file_contents["this will be deflated.bin"].bytesize).to eq(n_writes * repeating_string.bytesize)
+    expect(compression_methods["this will be deflated.bin"]).to eq(8)
+
+    expect(file_contents["empty.bin"].bytesize).to eq(0)
+    expect(compression_methods["empty.bin"]).to eq(0)
+
+    expect(file_contents["tiny.bin"]).to eq("a")
+    expect(compression_methods["empty.bin"]).to eq(0)
+  end
 end
