@@ -550,4 +550,38 @@ describe ZipTricks::Streamer do
       zip.add_empty_directory(dirname: 'empty', modification_time: Time.new(2018, 1, 1))
     end
   end
+
+  it 'supports automatic mode selection using a heuristic' do
+    zip_file = Tempfile.new
+    rng = Random.new(42)
+    repeating_string = "many many delicious, compressible words"
+    n_writes = 24000
+    high_entropy_write_size = 999
+    ZipTricks::Streamer.open(zip_file) do |zip|
+      zip.write_file("this will be stored.bin") do |io|
+        n_writes.times do
+          io << rng.bytes(high_entropy_write_size)
+        end
+      end
+
+      zip.write_file("this will be deflated.bin") do |io|
+        n_writes.times do
+          io << repeating_string
+        end
+      end
+    end
+
+    zip_file.flush
+    per_filename = {}
+    Zip::File.open(zip_file.path) do |zipfile|
+      # Handle entries one by one
+      zipfile.each do |entry|
+        # The entry name gets returned with a binary encoding, we have to force it back.
+        per_filename[entry.name] = entry.get_input_stream.read
+      end
+    end
+
+    expect(per_filename["this will be stored.bin"].bytesize).to eq(n_writes * high_entropy_write_size)
+    expect(per_filename["this will be deflated.bin"].bytesize).to eq(n_writes * repeating_string.bytesize)
+  end
 end

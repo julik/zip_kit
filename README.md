@@ -33,7 +33,7 @@ class ZipsController < ActionController::Base
 
   def download
     zip_tricks_stream do |zip|
-      zip.write_deflated_file('report1.csv') do |sink|
+      zip.write_file('report1.csv') do |sink|
         CSV(sink) do |csv_write|
           csv_write << Person.column_names
           Person.all.find_each do |person|
@@ -41,13 +41,16 @@ class ZipsController < ActionController::Base
           end
         end
       end
-      zip.write_deflated_file('report2.csv') do |sink|
+      zip.write_file('report2.csv') do |sink|
         ...
       end
     end
   end
 end
 ```
+
+The `write_file` method will use some heuristics to determine whether your output file would benefit
+from compression, and pick the appropriate storage mode for the file accordingly.
 
 If you want some more conveniences you can also use [zipline](https://github.com/fringd/zipline) which
 will automatically process and stream attachments (Carrierwave, Shrine, ActiveStorage) and remote objects
@@ -62,10 +65,10 @@ intervals. Deflate compression will work best for things like text files.
 ```ruby
 out = my_tempfile # can also be a socket
 ZipTricks::Streamer.open(out) do |zip|
-  zip.write_stored_file('mov.mp4.txt') do |sink|
+  zip.write_file('mov.mp4.txt') do |sink|
     File.open('mov.mp4', 'rb'){|source| IO.copy_stream(source, sink) }
   end
-  zip.write_deflated_file('long-novel.txt') do |sink|
+  zip.write_file('long-novel.txt') do |sink|
     File.open('novel.txt', 'rb'){|source| IO.copy_stream(source, sink) }
   end
 end
@@ -86,10 +89,10 @@ the response to the client (unless you are using a buffering Rack webserver, suc
 require 'time'
 
 body = ZipTricks::RackBody.new do | zip |
-  zip.write_stored_file('mov.mp4') do |sink| # Those MPEG4 files do not compress that well
+  zip.write_file('mov.mp4') do |sink|
     File.open('mov.mp4', 'rb'){|source| IO.copy_stream(source, sink) }
   end
-  zip.write_deflated_file('long-novel.txt') do |sink|
+  zip.write_file('long-novel.txt') do |sink|
     File.open('novel.txt', 'rb'){|source| IO.copy_stream(source, sink) }
   end
 end
