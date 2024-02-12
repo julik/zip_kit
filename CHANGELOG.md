@@ -1,3 +1,4 @@
+* Allow the last file to be suppressed in the central directory via Streamer#rollback!
 * Allow heuristic compression. Use `Streamer#write_file` to let zip_tricks pick the right compression method for you. If a file will benefit from
   compression, it is going to be written deflated. If it will not - it will be written stored. Evaluation is based on the first 128KB of the file contents.
 * Make RackBody future-proof for Rack 3.x by adding a chunked body encoder
