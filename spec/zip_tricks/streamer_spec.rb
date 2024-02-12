@@ -551,6 +551,7 @@ describe ZipTricks::Streamer do
     end
   end
 
+<<<<<<< HEAD
   it 'supports automatic mode selection using a heuristic' do
     zip_file = Tempfile.new
     rng = Random.new(42)
@@ -601,5 +602,50 @@ describe ZipTricks::Streamer do
 
     expect(file_contents["tiny.bin"]).to eq("a")
     expect(compression_methods["empty.bin"]).to eq(0)
+  end
+
+  it 'rolls back entries where writes have failed' do
+    zip_file = Tempfile.new('zipp')
+    described_class.open(zip_file) do |zip|
+      begin
+        zip.write_deflated_file('deflated.txt', modification_time: Time.new(2018, 1, 1)) do |sink|
+          sink << "this is attempt 1"
+          raise "Oops"
+        end
+      rescue => e
+        expect(e.to_s).to match(/Oops/)
+      end
+
+      zip.write_deflated_file('deflated.txt', modification_time: Time.new(2018, 1, 1)) do |sink|
+        sink << "this is attempt 2"
+      end
+
+      begin
+        zip.write_stored_file('stored.txt', modification_time: Time.new(2018, 1, 1)) do |sink|
+          sink << "this is attempt 1"
+          raise "Oops"
+        end
+      rescue => e
+        expect(e.to_s).to match(/Oops/)
+      end
+
+      zip.write_stored_file('stored.txt', modification_time: Time.new(2018, 1, 1)) do |sink|
+        sink << "this is attempt 2"
+      end
+    end
+    zip_file.flush
+
+    per_filename = {}
+    Zip::File.open(zip_file.path) do |zipfile|
+      # Handle entries one by one
+      zipfile.each do |entry|
+        # The entry name gets returned with a binary encoding, we have to force it back.
+        per_filename[entry.name] = entry.get_input_stream.read
+      end
+    end
+
+    expect(per_filename.size).to eq(2)
+    expect(per_filename["deflated.txt"]).to eq("this is attempt 2")
+    expect(per_filename["stored.txt"]).to eq("this is attempt 2")
   end
 end

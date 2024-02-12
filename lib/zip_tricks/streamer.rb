@@ -83,6 +83,7 @@ class ZipTricks::Streamer
   require_relative 'streamer/writable'
   require_relative 'streamer/stored_writer'
   require_relative 'streamer/entry'
+  require_relative 'streamer/filler'
 
   STORED = 0
   DEFLATED = 8
@@ -337,10 +338,16 @@ class ZipTricks::Streamer
   # So using this facility in async scenarios is certainly possible, but care
   # and attention is recommended.
   #
+  # If an exception is raised inside the block that is passed to the method, a `rollback!` call
+  # will be performed automatically and the entry just written will be omitted from the ZIP
+  # central directory. This can be useful if you want to rescue the exception and reattempt
+  # adding the ZIP file. Note that you will need to call `write_deflated_file` again to start a
+  # new file - you can't keep writing to the one that failed.
+  #
   # @param filename[String] the name of the file in the archive
   # @param modification_time [Time] the modification time of the file in the archive
   # @param unix_permissions[Fixnum?] which UNIX permissions to set, normally the default should be used
-  # @yield [#<<, #write] an object that the file contents must be written to that will be automatically closed
+  # @yield sink[#<<, #write] an object that the file contents must be written to that will be automatically closed
   # @return [#<<, #write, #close] an object that the file contents must be written to, has to be closed manually
   def write_stored_file(filename, modification_time: Time.now.utc, unix_permissions: nil)
     add_stored_entry(filename: filename,
@@ -350,9 +357,15 @@ class ZipTricks::Streamer
                      size: 0,
                      unix_permissions: unix_permissions)
 
-    writable = Writable.new(self, StoredWriter.new(@out))
+    writable = Writable.new(self,  StoredWriter.new(@out))
     if block_given?
-      yield(writable)
+      begin
+        yield(writable)
+      rescue
+        writable.close
+        rollback!
+        raise
+      end
       writable.close
     end
     writable
@@ -391,10 +404,17 @@ class ZipTricks::Streamer
   # So using this facility in async scenarios is certainly possible, but care
   # and attention is recommended.
   #
+  # If an exception is raised inside the block that is passed to the method, a `rollback!` call
+  # will be performed automatically and the entry just written will be omitted from the ZIP
+  # central directory. This can be useful if you want to rescue the exception and reattempt
+  # adding the ZIP file. Note that you will need to call `write_deflated_file` again to start a
+  # new file - you can't keep writing to the one that failed.
+  #
   # @param filename[String] the name of the file in the archive
   # @param modification_time [Time] the modification time of the file in the archive
   # @param unix_permissions[Fixnum?] which UNIX permissions to set, normally the default should be used
-  # @yield [#<<, #write] an object that the file contents must be written to
+  # @yield sink[#<<, #write] an object that the file contents must be written to
+  # @return [#<<, #write, #close] an object that the file contents must be written to, has to be closed manually
   def write_deflated_file(filename, modification_time: Time.now.utc, unix_permissions: nil)
     add_deflated_entry(filename: filename,
                        modification_time: modification_time,
@@ -406,7 +426,13 @@ class ZipTricks::Streamer
 
     writable = Writable.new(self, DeflatedWriter.new(@out))
     if block_given?
-      yield(writable)
+      begin
+        yield(writable)
+      rescue
+        writable.close
+        rollback!
+        raise
+      end
       writable.close
     end
     writable
@@ -427,6 +453,9 @@ class ZipTricks::Streamer
 
     # Write out the central directory entries, one for each file
     @files.each do |entry|
+      # Skip fillers which are standing in for broken/incomplete files
+      next if entry.filler?
+
       @writer.write_central_directory_file_header(io: @out,
                                                   local_file_header_location: entry.local_header_offset,
                                                   gp_flags: entry.gp_flags,
@@ -488,6 +517,38 @@ class ZipTricks::Streamer
                                   compressed_size: last_entry.compressed_size,
                                   uncompressed_size: last_entry.uncompressed_size)
     last_entry.bytes_used_for_data_descriptor = @out.tell - offset_before_data_descriptor
+
+    @out.tell
+  end
+
+  # Removes the buffered local entry for the last file written. This can be used when rescuing from exceptions
+  # when you want to skip the file that failed writing into the ZIP from getting written out into the
+  # ZIP central directory. This is useful when, for example, you encounter errors retrieving the file
+  # that you want to place inside the ZIP from a remote storage location and some network exception
+  # gets raised. `write_deflated_file` and `write_stored_file` will rollback for you automatically.
+  # Of course it is not possible to remove the failed entry from the ZIP file entirely, as the data
+  # is likely already on the wire. However, excluding the entry from the central directory of the ZIP
+  # file will allow better-behaved ZIP unarchivers to extract the entries which did store correctly,
+  # provided they read the ZIP from the central directory and not straight-ahead.
+  #
+  # @example
+  #     zip.add_stored_entry(filename: "data.bin", size: 4.megabytes, crc32: the_crc)
+  #     while chunk = remote.read(65*2048)
+  #       zip << chunk
+  #     rescue Timeout::Error
+  #       zip.rollback!
+  #       # and proceed to the next file
+  #     end
+  # @return [Integer] position in the output stream / ZIP archive
+  def rollback!
+    removed_entry = @files.pop
+    return @out.tell unless removed_entry
+
+    @path_set.clear
+    @files.each do |e|
+      @path_set.add_directory_or_file_path(e.filename) unless e.filler?
+    end
+    @files << Filler.new(@out.tell - removed_entry.local_header_offset)
 
     @out.tell
   end

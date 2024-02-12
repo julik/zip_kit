@@ -137,6 +137,17 @@ ERR
     @known_directories.clear
   end
 
+  # Adds the directory or file path to the path set
+  #
+  # @return [void]
+  def add_directory_or_file_path(path_in_archive)
+    if path_in_archive.end_with?('/')
+      add_directory_path(path_in_archive)
+    else
+      add_file_path(path_in_archive)
+    end
+  end
+
   private
 
   def non_empty_path_components(path)
