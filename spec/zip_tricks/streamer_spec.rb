@@ -551,7 +551,6 @@ describe ZipTricks::Streamer do
     end
   end
 
-<<<<<<< HEAD
   it 'supports automatic mode selection using a heuristic' do
     zip_file = Tempfile.new
     rng = Random.new(42)
