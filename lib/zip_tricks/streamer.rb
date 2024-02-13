@@ -298,13 +298,9 @@ class ZipTricks::Streamer
   # @param unix_permissions[Fixnum?] which UNIX permissions to set, normally the default should be used
   # @yield [#<<, #write] an object that the file contents must be written to that will be automatically closed
   # @return [#<<, #write, #close] an object that the file contents must be written to, has to be closed manually
-  def write_file(filename, modification_time: Time.now.utc, unix_permissions: nil)
+  def write_file(filename, modification_time: Time.now.utc, unix_permissions: nil, &blk)
     writable = ZipTricks::Streamer::Heuristic.new(self, filename, modification_time: modification_time, unix_permissions: unix_permissions)
-    if block_given?
-      yield(writable)
-      writable.close
-    end
-    writable
+    yield_or_return_writable(writable, &blk)
   end
 
   # Opens the stream for a stored file in the archive, and yields a writer
@@ -349,7 +345,7 @@ class ZipTricks::Streamer
   # @param unix_permissions[Fixnum?] which UNIX permissions to set, normally the default should be used
   # @yield sink[#<<, #write] an object that the file contents must be written to that will be automatically closed
   # @return [#<<, #write, #close] an object that the file contents must be written to, has to be closed manually
-  def write_stored_file(filename, modification_time: Time.now.utc, unix_permissions: nil)
+  def write_stored_file(filename, modification_time: Time.now.utc, unix_permissions: nil, &blk)
     add_stored_entry(filename: filename,
                      modification_time: modification_time,
                      use_data_descriptor: true,
@@ -358,17 +354,7 @@ class ZipTricks::Streamer
                      unix_permissions: unix_permissions)
 
     writable = Writable.new(self,  StoredWriter.new(@out))
-    if block_given?
-      begin
-        yield(writable)
-      rescue
-        writable.close
-        rollback!
-        raise
-      end
-      writable.close
-    end
-    writable
+    yield_or_return_writable(writable, &blk)
   end
 
   # Opens the stream for a deflated file in the archive, and yields a writer
@@ -415,7 +401,7 @@ class ZipTricks::Streamer
   # @param unix_permissions[Fixnum?] which UNIX permissions to set, normally the default should be used
   # @yield sink[#<<, #write] an object that the file contents must be written to
   # @return [#<<, #write, #close] an object that the file contents must be written to, has to be closed manually
-  def write_deflated_file(filename, modification_time: Time.now.utc, unix_permissions: nil)
+  def write_deflated_file(filename, modification_time: Time.now.utc, unix_permissions: nil, &blk)
     add_deflated_entry(filename: filename,
                        modification_time: modification_time,
                        use_data_descriptor: true,
@@ -425,17 +411,7 @@ class ZipTricks::Streamer
                        unix_permissions: unix_permissions)
 
     writable = Writable.new(self, DeflatedWriter.new(@out))
-    if block_given?
-      begin
-        yield(writable)
-      rescue
-        writable.close
-        rollback!
-        raise
-      end
-      writable.close
-    end
-    writable
+    yield_or_return_writable(writable, &blk)
   end
 
   # Closes the archive. Writes the central directory, and switches the writer into
@@ -554,6 +530,21 @@ class ZipTricks::Streamer
   end
 
   private
+
+  def yield_or_return_writable(writable, &blk)
+    if block_given?
+      begin
+        yield(writable)
+        writable.close
+      rescue
+        writable.close
+        rollback!
+        raise
+      end
+    end
+
+    writable
+  end
 
   def verify_offsets!
     # We need to check whether the offsets noted for the entries actually make sense

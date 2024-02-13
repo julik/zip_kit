@@ -564,11 +564,11 @@ describe ZipTricks::Streamer do
         end
       end
 
-      zip.write_file("this will be deflated.bin") do |io|
-        n_writes.times do
-          io << repeating_string
-        end
+      w = zip.write_file("this will be deflated.bin")
+      n_writes.times do
+        w << repeating_string
       end
+      w.close
 
       zip.write_file("empty.bin") do |io|
         # Do nothing
