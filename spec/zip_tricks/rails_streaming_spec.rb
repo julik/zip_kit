@@ -62,6 +62,7 @@ describe ZipTricks::RailsStreaming do
     expect(headers['Content-Type']).to eq('application/zip')
     expect(headers['ETag']).to be_nil # if the ETag middleware activates it will generate a weak ETag
     expect(headers['Last-Modified']).to be_kind_of(String)
+    expect(headers['Cache-Control']).to eq("private, no-transform")
     expect(headers['X-Accel-Buffering']).to be_nil # Response gets buffered
     expect(headers['Transfer-Encoding']).to be_nil
     expect(headers['Content-Length']).to be_kind_of(String)
@@ -89,6 +90,8 @@ describe ZipTricks::RailsStreaming do
     expect(headers['Content-Type']).to eq('application/zip')
     expect(headers['ETag']).to be_nil # if the ETag middleware activates it will generate a weak ETag
     expect(headers['Last-Modified']).to be_kind_of(String)
+    expect(headers['Cache-Control']).to eq("private, no-transform")
+
     expect(headers['X-Accel-Buffering']).to eq('no')
     expect(headers['Transfer-Encoding']).to eq('chunked')
     expect(headers['Content-Length']).to be_nil # Must be unset!

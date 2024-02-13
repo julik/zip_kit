@@ -24,7 +24,11 @@ module ZipTricks::RailsStreaming
     # https://github.com/rack/rack/issues/1619#issuecomment-606315714
     # Set this even when not streaming for consistency. The fact that there would be
     # a weak ETag generated would mean that the middleware buffers, so we have tests for that.
-    headers["Last-Modified"] = Time.now.httpdate
+    response.headers["Last-Modified"] = Time.now.httpdate
+
+    # Make sure Rack::Deflater does not touch our response body either, see
+    # https://github.com/felixbuenemann/xlsxtream/issues/14#issuecomment-529569548
+    response.headers["Cache-Control"] = "no-transform"
 
     # Check for the proxy configuration first. This is the first common misconfiguration which destroys streaming -
     # since HTTP 1.0 does not support chunked responses we need to revert to buffering. The issue though is that
@@ -37,7 +41,7 @@ module ZipTricks::RailsStreaming
       tempfile_body = chunk_yielder.to_tempfile_body(request.env)
 
       # Set the content length so that Rack::ContentLength disengages
-      headers["Content-Length"] = tempfile_body.size.to_s
+      response.headers["Content-Length"] = tempfile_body.size.to_s
 
       # Assign the tempfile body. Since it supports #to_path it will likely be picked up by Rack::Sendfile
       self.response_body = tempfile_body
@@ -48,8 +52,8 @@ module ZipTricks::RailsStreaming
 
       # Make sure Rack::ContentLength does not try to compute a content length,
       # and remove the one already set
-      headers["Transfer-Encoding"] = "chunked"
-      headers.delete("Content-Length")
+      response.headers["Transfer-Encoding"] = "chunked"
+      response.headers.delete("Content-Length")
 
       self.response_body = chunk_yielder.to_chunked
     end
