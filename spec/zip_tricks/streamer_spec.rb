@@ -566,7 +566,8 @@ describe ZipTricks::Streamer do
 
       w = zip.write_file("this will be deflated.bin")
       n_writes.times do
-        w << repeating_string
+        write_result = w.write(repeating_string)
+        expect(write_result).to eq(repeating_string.bytesize)
       end
       w.close
 

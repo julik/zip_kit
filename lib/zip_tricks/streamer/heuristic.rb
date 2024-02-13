@@ -4,7 +4,10 @@
 # a sizable compression gain for this data, it will create a deflated
 # file inside the ZIP archive. If the file doesn't compress well, it
 # will use the "stored" mode for the entry. About 128KB of the
-# file will be buffered to pick the appropriate storage mode.
+# file will be buffered to pick the appropriate storage mode. The
+# Heuristic will call either `write_stored_file` or `write_deflated_file`
+# on the Streamer passed into it once it knows which compression
+# method should be applied
 class ZipTricks::Streamer::Heuristic
   BYTES_WRITTEN_THRESHOLD = 128 * 1024
   MINIMUM_VIABLE_COMPRESSION = 0.75
@@ -30,6 +33,11 @@ class ZipTricks::Streamer::Heuristic
       decide if @buf.size > BYTES_WRITTEN_THRESHOLD
     end
     self
+  end
+
+  def write(bytes)
+    self << bytes
+    bytes.bytesize
   end
 
   def close
