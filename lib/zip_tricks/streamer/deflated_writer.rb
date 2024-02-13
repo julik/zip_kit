@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-# Sends writes to the given `io` compressed using a {Zlib::Deflate}. Also
+# Sends writes to the given `io` compressed using a `Zlib::Deflate`. Also
 # registers data passing through it in a CRC32 checksum calculator. Is made to be completely
 # interchangeable with the StoredWriter in terms of interface.
 class ZipTricks::Streamer::DeflatedWriter
