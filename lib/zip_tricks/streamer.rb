@@ -20,14 +20,16 @@ require 'set'
 #
 # You can use the Streamer with data descriptors (the CRC32 and the sizes will be
 # written after the file data). This allows non-rewinding on-the-fly compression.
+# The streamer will pick the optimum compression method ("stored" or "deflated")
+# depending on the nature of the byte stream you send into it (by using a small buffer).
 # If you are compressing large files, the Deflater object that the Streamer controls
 # will be regularly flushed to prevent memory inflation.
 #
 #     ZipTricks::Streamer.open(file_socket_or_string) do |zip|
-#       zip.write_stored_file('mov.mp4') do |sink|
+#       zip.write_file('mov.mp4') do |sink|
 #         File.open('mov.mp4', 'rb'){|source| IO.copy_stream(source, sink) }
 #       end
-#       zip.write_deflated_file('long-novel.txt') do |sink|
+#       zip.write_file('long-novel.txt') do |sink|
 #         File.open('novel.txt', 'rb'){|source| IO.copy_stream(source, sink) }
 #       end
 #     end
@@ -62,10 +64,11 @@ require 'set'
 # If you are unable to use the block versions of `write_deflated_file` and `write_stored_file`
 # there is an option to use a separate writer object. It gets returned from `write_deflated_file`
 # and `write_stored_file` if you do not provide them with a block, and will accept data writes.
+# Do note that you _must_ call `#close` on that object yourself:
 #
 #     ZipTricks::Streamer.open(socket) do | zip |
 #       w = zip.write_stored_file('mov.mp4')
-#       w << data
+#       IO.copy_stream(source_io, w)
 #       w.close
 #     end
 #
@@ -101,7 +104,7 @@ class ZipTricks::Streamer
   # directory of the archive to the output.
   #
   # @param stream [IO] the destination IO for the ZIP (should respond to `tell` and `<<`)
-  # @param kwargs_for_new [Hash] keyword arguments for {Streamer.new}
+  # @param kwargs_for_new [Hash] keyword arguments for #initialize
   # @yield [Streamer] the streamer that can be written to
   def self.open(stream, **kwargs_for_new)
     archive = new(stream, **kwargs_for_new)
@@ -109,7 +112,7 @@ class ZipTricks::Streamer
     archive.close
   end
 
-  # Creates a new Streamer that writes to a buffer. The buffer can be read from using `each`,
+  # Creates a new Streamer wrapped in a yielding enumerator. The enumerator can be read from using `each`,
   # and the creation of the ZIP is in lockstep with the caller calling `each` on the returned
   # output enumerator object. This can be used when the calling program wants to stream the
   # output of the ZIP archive and throttle that output, or split it into chunks, or use it
@@ -120,7 +123,7 @@ class ZipTricks::Streamer
   #     # The block given to {output_enum} won't be executed immediately - rather it
   #     # will only start to execute when the caller starts to read from the output
   #     # by calling `each`
-  #     body = ZipTricks::Streamer.output_enum(writer: CustomWriter) do |zip|
+  #     body = ::ZipTricks::Streamer.output_enum(writer: CustomWriter) do |zip|
   #       streamer.add_stored_entry(filename: 'large.tif', size: 1289894, crc32: 198210)
   #       streamer << large_file.read(1024*1024) until large_file.eof?
   #       ...
@@ -296,7 +299,11 @@ class ZipTricks::Streamer
   # @param filename[String] the name of the file in the archive
   # @param modification_time [Time] the modification time of the file in the archive
   # @param unix_permissions[Fixnum?] which UNIX permissions to set, normally the default should be used
-  # @yield [#<<, #write] an object that the file contents must be written to that will be automatically closed
+  # @yield
+  #    sink[#<<, #write]
+  #    an object that the file contents must be written to.
+  #    Do not call `#close` on it - Streamer will do it for you. Write in chunks to achieve proper streaming
+  #    output (using `IO.copy_stream` is a good approach).
   # @return [#<<, #write, #close] an object that the file contents must be written to, has to be closed manually
   def write_file(filename, modification_time: Time.now.utc, unix_permissions: nil, &blk)
     writable = ZipTricks::Streamer::Heuristic.new(self, filename, modification_time: modification_time, unix_permissions: unix_permissions)
@@ -343,7 +350,11 @@ class ZipTricks::Streamer
   # @param filename[String] the name of the file in the archive
   # @param modification_time [Time] the modification time of the file in the archive
   # @param unix_permissions[Fixnum?] which UNIX permissions to set, normally the default should be used
-  # @yield sink[#<<, #write] an object that the file contents must be written to that will be automatically closed
+  # @yield
+  #    sink[#<<, #write]
+  #    an object that the file contents must be written to.
+  #    Do not call `#close` on it - Streamer will do it for you. Write in chunks to achieve proper streaming
+  #    output (using `IO.copy_stream` is a good approach).
   # @return [#<<, #write, #close] an object that the file contents must be written to, has to be closed manually
   def write_stored_file(filename, modification_time: Time.now.utc, unix_permissions: nil, &blk)
     add_stored_entry(filename: filename,
@@ -399,7 +410,11 @@ class ZipTricks::Streamer
   # @param filename[String] the name of the file in the archive
   # @param modification_time [Time] the modification time of the file in the archive
   # @param unix_permissions[Fixnum?] which UNIX permissions to set, normally the default should be used
-  # @yield sink[#<<, #write] an object that the file contents must be written to
+  # @yield
+  #    sink[#<<, #write]
+  #    an object that the file contents must be written to.
+  #    Do not call `#close` on it - Streamer will do it for you. Write in chunks to achieve proper streaming
+  #    output (using `IO.copy_stream` is a good approach).
   # @return [#<<, #write, #close] an object that the file contents must be written to, has to be closed manually
   def write_deflated_file(filename, modification_time: Time.now.utc, unix_permissions: nil, &blk)
     add_deflated_entry(filename: filename,
