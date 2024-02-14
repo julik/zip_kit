@@ -87,6 +87,9 @@ class ZipTricks::Streamer
   require_relative 'streamer/stored_writer'
   require_relative 'streamer/entry'
   require_relative 'streamer/filler'
+  require_relative 'write_shovel'
+
+  include ZipTricks::WriteShovel
 
   STORED = 0
   DEFLATED = 8
@@ -165,17 +168,6 @@ class ZipTricks::Streamer
   def <<(binary_data)
     @out << binary_data
     self
-  end
-
-  # Writes a part of a zip entry body (actual binary data of the entry) into the output stream,
-  # and returns the number of bytes written. Is implemented to make Streamer usable with
-  # `IO.copy_stream(from, to)`.
-  #
-  # @param binary_data [String] a String in binary encoding
-  # @return [Integer] the number of bytes written
-  def write(binary_data)
-    @out << binary_data
-    binary_data.bytesize
   end
 
   # Advances the internal IO pointer to keep the offsets of the ZIP file in

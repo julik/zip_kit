@@ -6,6 +6,8 @@
 #
 #    IO.copy_stream(File.open('source.bin', 'rb), writable)
 class ZipTricks::Streamer::Writable
+  include ZipTricks::WriteShovel
+
   # Initializes a new Writable with the object it delegates the writes to.
   # Normally you would not need to use this method directly
   def initialize(streamer, writer)
@@ -22,15 +24,6 @@ class ZipTricks::Streamer::Writable
     raise 'Trying to write to a closed Writable' if @closed
     @writer << d
     self
-  end
-
-  # Writes the given data to the output stream
-  #
-  # @param d[String] the binary string to write (part of the uncompressed file)
-  # @return [Fixnum] the number of bytes written
-  def write(d)
-    self << d
-    d.bytesize
   end
 
   # Flushes the writer and recovers the CRC32/size values. It then calls

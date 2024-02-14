@@ -4,6 +4,8 @@
 # through it in a CRC32 checksum calculator. Is made to be completely
 # interchangeable with the DeflatedWriter in terms of interface.
 class ZipTricks::Streamer::StoredWriter
+  include ZipTricks::WriteShovel
+
   # The amount of bytes we will buffer before computing the intermediate
   # CRC32 checksums. Benchmarks show that the optimum is 64KB (see
   # `bench/buffered_crc32_bench.rb), if that is exceeded Zlib is going
