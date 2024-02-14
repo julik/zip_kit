@@ -82,12 +82,12 @@ require 'set'
 #
 # Calling {Streamer#close} **will not** call `#close` on the underlying IO object.
 class ZipTricks::Streamer
-  require_relative 'streamer/deflated_writer'
-  require_relative 'streamer/writable'
-  require_relative 'streamer/stored_writer'
-  require_relative 'streamer/entry'
-  require_relative 'streamer/filler'
-  require_relative 'write_shovel'
+  autoload :DeflatedWriter, File.dirname(__FILE__) + '/streamer/deflated_writer.rb'
+  autoload :Writable, File.dirname(__FILE__) + '/streamer/writable.rb'
+  autoload :StoredWriter, File.dirname(__FILE__) + '/streamer/stored_writer.rb'
+  autoload :Entry, File.dirname(__FILE__) + '/streamer/entry.rb'
+  autoload :Filler, File.dirname(__FILE__) + '/streamer/filler.rb'
+  autoload :Heuristic, File.dirname(__FILE__) + '/streamer/heuristic.rb'
 
   include ZipTricks::WriteShovel
 
@@ -538,7 +538,7 @@ class ZipTricks::Streamer
 
   private
 
-  def yield_or_return_writable(writable, &blk)
+  def yield_or_return_writable(writable, &_block_to_pass_writable_to)
     if block_given?
       begin
         yield(writable)

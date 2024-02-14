@@ -2,6 +2,8 @@
 
 # A simple stateful class for keeping track of a CRC32 value through multiple writes
 class ZipTricks::StreamCRC32
+  include ZipTricks::WriteShovel
+
   STRINGS_HAVE_CAPACITY_SUPPORT = begin
     String.new('', capacity: 1)
     true
