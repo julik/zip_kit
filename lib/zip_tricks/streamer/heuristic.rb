@@ -9,6 +9,8 @@
 # on the Streamer passed into it once it knows which compression
 # method should be applied
 class ZipTricks::Streamer::Heuristic
+  include ZipTricks::WriteShovel
+
   BYTES_WRITTEN_THRESHOLD = 128 * 1024
   MINIMUM_VIABLE_COMPRESSION = 0.75
 

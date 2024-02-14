@@ -3,6 +3,8 @@
 # A tiny wrapper over any object that supports :<<.
 # Adds :tell and :advance_position_by.
 class ZipTricks::WriteAndTell
+  include ZipTricks::WriteShovel
+
   def initialize(io)
     @io = io
     @pos = 0
