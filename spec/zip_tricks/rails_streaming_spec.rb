@@ -30,6 +30,7 @@ describe ZipTricks::RailsStreaming do
     # Use them in the same order Rails inserts them.
     middleware.use Rack::Sendfile
     middleware.use Rack::ETag
+    middleware.use Rack::Deflater
     middleware.use Rack::ContentLength # This does not get injected by Rails
     middleware.use Rack::TempfileReaper
 
@@ -59,10 +60,8 @@ describe ZipTricks::RailsStreaming do
     expect(out.string).to eq(ref_output_io.string)
     expect { body.close }.not_to raise_error
     expect(status).to eq(200)
-    expect(headers['Content-Type']).to eq('application/zip')
-    expect(headers['ETag']).to be_nil # if the ETag middleware activates it will generate a weak ETag
-    expect(headers['Last-Modified']).to be_kind_of(String)
-    expect(headers['Cache-Control']).to eq("private, no-transform")
+    expect_correct_headers!(headers)
+
     expect(headers['X-Accel-Buffering']).to be_nil # Response gets buffered
     expect(headers['Transfer-Encoding']).to be_nil
     expect(headers['Content-Length']).to be_kind_of(String)
@@ -87,10 +86,7 @@ describe ZipTricks::RailsStreaming do
     expect(out.string).to eq(ref_output_io.string)
 
     expect(status).to eq(200)
-    expect(headers['Content-Type']).to eq('application/zip')
-    expect(headers['ETag']).to be_nil # if the ETag middleware activates it will generate a weak ETag
-    expect(headers['Last-Modified']).to be_kind_of(String)
-    expect(headers['Cache-Control']).to eq("private, no-transform")
+    expect_correct_headers!(headers)
 
     expect(headers['X-Accel-Buffering']).to eq('no')
     expect(headers['Transfer-Encoding']).to eq('chunked')
@@ -103,5 +99,13 @@ describe ZipTricks::RailsStreaming do
       iterable.each { |chunk| out.write(chunk) }
       out.rewind
     end
+  end
+
+  def expect_correct_headers!(headers)
+    expect(headers['Content-Type']).to eq('application/zip')
+    expect(headers['ETag']).to be_nil # if the ETag middleware activates it will generate a weak ETag
+    expect(headers['Last-Modified']).to be_kind_of(String)
+    expect(headers['Content-Encoding']).to eq("identity")
+    expect(headers['Cache-Control']).to eq("private")
   end
 end

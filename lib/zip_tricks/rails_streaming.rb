@@ -28,7 +28,7 @@ module ZipTricks::RailsStreaming
 
     # Make sure Rack::Deflater does not touch our response body either, see
     # https://github.com/felixbuenemann/xlsxtream/issues/14#issuecomment-529569548
-    response.headers["Cache-Control"] = "no-transform"
+    response.headers["Content-Encoding"] = "identity"
 
     # Check for the proxy configuration first. This is the first common misconfiguration which destroys streaming -
     # since HTTP 1.0 does not support chunked responses we need to revert to buffering. The issue though is that
