@@ -25,7 +25,7 @@ to [32 bit sizes.](https://github.com/jruby/jruby/issues/3817)
 ## Diving in: send some large CSV reports from Rails
 
 The easiest is to include the `ZipTricks::RailsStreaming` module into your
-controller.
+controller. You will then have a `zip_tricks_stream` method available which accepts a block:
 
 ```ruby
 class ZipsController < ActionController::Base
@@ -55,6 +55,11 @@ from compression, and pick the appropriate storage mode for the file accordingly
 If you want some more conveniences you can also use [zipline](https://github.com/fringd/zipline) which
 will automatically process and stream attachments (Carrierwave, Shrine, ActiveStorage) and remote objects
 via HTTP.
+
+`RailsStreaming` will *not* use [ActionController::Live](https://api.rubyonrails.org/classes/ActionController/Live.html)
+and the ZIP output will run in the same thread as your main request. Your testing flows (be it minitest or
+RSpec) should work normally with controller actions returning ZIPs.
+
 
 ## Create a ZIP file without size estimation, compress on-the-fly during writes
 
