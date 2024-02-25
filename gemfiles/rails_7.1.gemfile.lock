@@ -118,7 +118,7 @@ PLATFORMS
   ruby
 
 DEPENDENCIES
-  actionpack (~> 7.1)
+  actionpack (~> 7.1, < 8)
   allocation_stats (~> 0.1.5)
   appraisal (~> 2.5)
   benchmark-ips
