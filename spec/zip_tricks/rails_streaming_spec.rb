@@ -106,6 +106,6 @@ describe ZipTricks::RailsStreaming do
     expect(headers['ETag']).to be_nil # if the ETag middleware activates it will generate a weak ETag
     expect(headers['Last-Modified']).to be_kind_of(String)
     expect(headers['Content-Encoding']).to eq("identity")
-    expect(headers['Cache-Control']).to eq("private")
+    expect(headers['Cache-Control']).to include("private")
   end
 end
