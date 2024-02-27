@@ -52,6 +52,23 @@ end
 The `write_file` method will use some heuristics to determine whether your output file would benefit
 from compression, and pick the appropriate storage mode for the file accordingly.
 
+Any writing code that uses either `<<` or `write` methods can write into a `sink`. For example, you can do streaming
+output with [builder](https://github.com/jimweirich/builder#project-builder)
+
+```ruby
+zip.write_file('report1.csv') do |sink|
+  builder = Builder::XmlMarkup.new(target: sink, indent: 2)
+  builder.people do
+    Person.all.find_each do |person|
+      builder.person(name: person.name)
+    end
+  end
+end
+```
+
+and this output will be compressed and output into the ZIP file on the fly. zip_tricks composes with any
+Ruby code that streams its output into a destination.
+
 If you want some more conveniences you can also use [zipline](https://github.com/fringd/zipline) which
 will automatically process and stream attachments (Carrierwave, Shrine, ActiveStorage) and remote objects
 via HTTP.
