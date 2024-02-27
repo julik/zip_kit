@@ -1,7 +1,11 @@
 # frozen_string_literal: true
 
 # A tiny wrapper over any object that supports :<<.
-# Adds :tell and :advance_position_by.
+# Adds :tell and :advance_position_by. This is needed for write destinations
+# which do not respond to `#pos` or `#tell`. A lot of ZIP archive format parts
+# include "offsets in archive" - a byte offset from the start of file. Keeping
+# track of this value is what this object will do. It also allows "advancing"
+# this value if data gets written using a bypass (such as `IO#sendfile`)
 class ZipTricks::WriteAndTell
   include ZipTricks::WriteShovel
 
