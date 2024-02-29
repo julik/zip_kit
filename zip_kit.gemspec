@@ -36,7 +36,6 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency "standard", "1.28.5" # Very specific version of standard for 2.6 with _known_ settings
   spec.add_development_dependency "magic_frozen_string_literal"
   spec.add_development_dependency "puma"
-  spec.add_development_dependency "appraisal", "~> 2.5"
   spec.add_development_dependency "actionpack", "~> 5" # For testing RailsStreaming against an actual Rails controller
   spec.add_development_dependency "nokogiri", "~> 1", ">= 1.13" # Rails 5 does by mistake use an older Nokogiri otherwise
 end
