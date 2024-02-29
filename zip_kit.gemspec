@@ -10,18 +10,9 @@ Gem::Specification.new do |spec|
 
   spec.summary        = 'Stream out ZIP files from Ruby'
   spec.description    = 'Stream out ZIP files from Ruby'
-  spec.homepage       = 'https://github.com/wetransfer/zip_kit'
+  spec.homepage       = 'https://github.com/julik/zip_kit'
 
-  # Prevent pushing this gem to RubyGems.org.
-  # To allow pushes either set the 'allowed_push_host'
-  # To allow pushing to a single host or delete this section to allow pushing to any host.
-  if spec.respond_to?(:metadata)
-    spec.metadata['allowed_push_host'] = 'https://rubygems.org'
-  else
-    raise 'RubyGems 2.0 or newer is required to protect against ' \
-      'public gem pushes.'
-  end
-
+  spec.metadata['allowed_push_host'] = 'https://rubygems.org'
   spec.files = `git ls-files -z`.split("\x0").reject do |f|
     f.match(%r{^(test|spec|features|gemfiles)/})
   end
