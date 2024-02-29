@@ -1,6 +1,6 @@
 # Implementation details
 
-The ZipTricks streaming implementation is designed around the following requirements:
+The ZipKit streaming implementation is designed around the following requirements:
 
 * Only ahead-writes (no IO seek or rewind)
 * Automatic switching to Zip64 as the files get written (no IO seeks), but not requiring Zip64 support if the archive can do without

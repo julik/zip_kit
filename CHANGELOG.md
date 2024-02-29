@@ -1,11 +1,17 @@
+## 6.0
+
+* Rebirth as zip_kit
+* Adopt MIT license. The changes from 5.x get grandfathered in. The base for the fork is the 4.x version which was still MIT-licensed.
 * Respond to `#write` in all objects that respond to `#<<`, because they should be usable with `IO.copy_stream`
 * Allow the last file to be suppressed in the central directory via Streamer#rollback!
-* Allow heuristic compression. Use `Streamer#write_file` to let zip_tricks pick the right compression method for you. If a file will benefit from
+* Allow heuristic compression. Use `Streamer#write_file` to let zip_kit pick the right compression method for you. If a file will benefit from
   compression, it is going to be written deflated. If it will not - it will be written stored. Evaluation is based on the first 128KB of the file contents.
 * Make RackBody future-proof for Rack 3.x by adding a chunked body encoder
 * Fix Rails buffering the response unexpectedly, which could happen due to either of wrong content encoding, HTTP/1.0 protocol being requested or the Rack::ETag
 * Allow objects that only respond to `#write` as streaming destination. The Rails `stream` object in ActionController::Live is like that.
 * Fix uses of `Time.now` in tests for Ruby 3 compatibility
+
+# zip_tricks version history
 
 ## 5.6.0
 
@@ -129,7 +135,7 @@
 ## 4.4.2
 
 * Add 2.4 to Travis rubies
-* Fix a severe performance degradation in Streamer with large file counts (https://github.com/WeTransfer/zip_tricks/pull/14)
+* Fix a severe performance degradation in Streamer with large file counts (https://github.com/WeTransfer/zip_kit/pull/14)
 
 ## 4.4.1
 
@@ -141,7 +147,7 @@
 
 ## 4.3.0
 
-* Add a native Rails streaming module for easier integration of ZipTricks into Rails controllers
+* Add a native Rails streaming module for easier integration of ZipKit into Rails controllers
 
 ## 4.2.4
 
@@ -219,7 +225,7 @@
 
 ## 2.4.3  (Internal rel)
 
-* Extract [very_tiny_state_machine](https://rubygems.org/gems/very_tiny_state_machine) gem from ZipTricks
+* Extract [very_tiny_state_machine](https://rubygems.org/gems/very_tiny_state_machine) gem from ZipKit
 
 ## 2.4.1  (Internal rel)
 
@@ -238,7 +244,7 @@
 * Fix bytes_written return from deflate_in_blocks
 * Raise on invalid Streamer IO arguments
 * Set the EFS flag for UTF-8 filenames
-* Add a RackBody object for plugging ZipTricks into Rack
+* Add a RackBody object for plugging ZipKit into Rack
 * Add an offset wrapper for IOs given to Streamer, to support size estimation
 * Ensure the given compression level is supported
 

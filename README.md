@@ -1,9 +1,6 @@
-# zip_tricks
+# zip_kit
 
-[![CI](https://github.com/WeTransfer/zip_tricks/actions/workflows/ci.yml/badge.svg)](https://github.com/WeTransfer/zip_tricks/actions/workflows/ci.yml)
-[![Gem Version](https://badge.fury.io/rb/zip_tricks.svg)](https://badge.fury.io/rb/zip_tricks)
-
-Allows streaming, non-rewinding ZIP file output from Ruby.
+Allows streaming, non-rewinding ZIP file output from Ruby. `zip_kit` is a successor and continuation of [zip_tricks](https://github.com/WeTransfer/zip_tricks)
 
 Initially written and as a spiritual successor to [zipline](https://github.com/fringd/zipline)
 and now proudly powering it under the hood.
@@ -12,7 +9,7 @@ Allows you to write a ZIP archive out to a File, Socket, String or Array without
 point. Usable for creating very large ZIP archives for immediate sending out to clients, or for writing
 large ZIP archives without memory inflation.
 
-zip_tricks currently handles all our zipping needs (millions of ZIP files generated per day), so we are
+zip_kit currently handles all our zipping needs (millions of ZIP files generated per day), so we are
 pretty confident it is widely compatible with a large number of unarchiving end-user applications.
 
 ## Requirements
@@ -24,15 +21,15 @@ to [32 bit sizes.](https://github.com/jruby/jruby/issues/3817)
 
 ## Diving in: send some large CSV reports from Rails
 
-The easiest is to include the `ZipTricks::RailsStreaming` module into your
-controller. You will then have a `zip_tricks_stream` method available which accepts a block:
+The easiest is to include the `ZipKit::RailsStreaming` module into your
+controller. You will then have a `zip_kit_stream` method available which accepts a block:
 
 ```ruby
 class ZipsController < ActionController::Base
-  include ZipTricks::RailsStreaming
+  include ZipKit::RailsStreaming
 
   def download
-    zip_tricks_stream do |zip|
+    zip_kit_stream do |zip|
       zip.write_file('report1.csv') do |sink|
         CSV(sink) do |csv_write|
           csv_write << Person.column_names
@@ -66,7 +63,7 @@ zip.write_file('report1.csv') do |sink|
 end
 ```
 
-and this output will be compressed and output into the ZIP file on the fly. zip_tricks composes with any
+and this output will be compressed and output into the ZIP file on the fly. zip_kit composes with any
 Ruby code that streams its output into a destination.
 
 If you want some more conveniences you can also use [zipline](https://github.com/fringd/zipline) which
@@ -86,7 +83,7 @@ intervals. Deflate compression will work best for things like text files.
 
 ```ruby
 out = my_tempfile # can also be a socket
-ZipTricks::Streamer.open(out) do |zip|
+ZipKit::Streamer.open(out) do |zip|
   zip.write_file('mov.mp4.txt') do |sink|
     File.open('mov.mp4', 'rb'){|source| IO.copy_stream(source, sink) }
   end
@@ -100,17 +97,17 @@ since you do not know how large the compressed data segments are going to be.
 
 ## Send a ZIP from a Rack response
 
-zip_tricks provides a `RackBody` object which will yield the binary chunks piece
+zip_kit provides a `RackBody` object which will yield the binary chunks piece
 by piece, and apply some amount of buffering as well. Make sure to also wrap your `RackBody` in a chunker
 by calling `#to_chunked` on it. Return it to your webserver and you will have your ZIP streamed!
-The block that you give to the `RackBody` receive the {ZipTricks::Streamer} object and will only
+The block that you give to the `RackBody` receive the {ZipKit::Streamer} object and will only
 start executing once your response body starts getting iterated over - when actually sending
 the response to the client (unless you are using a buffering Rack webserver, such as Webrick).
 
 ```ruby
 require 'time'
 
-body = ZipTricks::RackBody.new do | zip |
+body = ZipKit::RackBody.new do | zip |
   zip.write_file('mov.mp4') do |sink|
     File.open('mov.mp4', 'rb'){|source| IO.copy_stream(source, sink) }
   end
@@ -135,13 +132,13 @@ Use the `SizeEstimator` to compute the correct size of the resulting archive.
 
 ```ruby
 # Precompute the Content-Length ahead of time
-bytesize = ZipTricks::SizeEstimator.estimate do |z|
+bytesize = ZipKit::SizeEstimator.estimate do |z|
  z.add_stored_entry(filename: 'myfile1.bin', size: 9090821)
  z.add_stored_entry(filename: 'myfile2.bin', size: 458678)
 end
 
 # Prepare the response body. The block will only be called when the response starts to be written.
-zip_body = ZipTricks::RackBody.new do | zip |
+zip_body = ZipKit::RackBody.new do | zip |
   zip.add_stored_entry(filename: "myfile1.bin", size: 9090821, crc32: 12485)
   zip << read_file('myfile1.bin')
   zip.add_stored_entry(filename: "myfile2.bin", size: 458678, crc32: 89568)
@@ -160,7 +157,7 @@ to that socket using some accelerated writing technique, and only use the Stream
 
 ```ruby
 # io has to be an object that supports #<< or #write()
-ZipTricks::Streamer.open(io) do | zip |
+ZipKit::Streamer.open(io) do | zip |
   # raw_file is written "as is" (STORED mode).
   # Write the local file header first..
   zip.add_stored_entry(filename: "first-file.bin", size: raw_file.size, crc32: raw_file_crc32)
@@ -184,7 +181,7 @@ of various use cases the library supports.
 It is slightly more convenient for the purpose than using the raw Zlib library functions.
 
 ```ruby
-crc = ZipTricks::StreamCRC32.new
+crc = ZipKit::StreamCRC32.new
 crc << next_chunk_of_data
 ...
 
@@ -197,7 +194,7 @@ crc.append(precomputed_crc32, size_of_the_blob_computed_from)
 You can also compute the CRC32 for an entire IO object if it responds to `#eof?`:
 
 ```ruby
-crc = ZipTricks::StreamCRC32.from_io(file) # Returns an Integer
+crc = ZipKit::StreamCRC32.from_io(file) # Returns an Integer
 ```
 
 ### Reading ZIP files
@@ -207,7 +204,7 @@ but it was designed for a specific purpose (highly-parallel unpacking of remotel
 as such it performs it's function quite well. Please beware of the security implications of using ZIP readers
 that have not been formally verified (ours hasn't been).
 
-## Contributing to zip_tricks
+## Contributing to zip_kit
 
 * Check out the latest `main` to make sure the feature hasn't been implemented or the bug hasn't been fixed yet.
 * Check out the issue tracker to make sure someone already hasn't requested it and/or contributed it.
@@ -219,4 +216,4 @@ that have not been formally verified (ours hasn't been).
 
 ## Copyright
 
-Copyright (c) 2019 WeTransfer. See LICENSE.txt for further details.
+Copyright (c) 2024 Julik Tarkhanov. See LICENSE.txt for further details.

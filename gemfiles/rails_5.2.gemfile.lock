@@ -1,7 +1,7 @@
 PATH
   remote: ..
   specs:
-    zip_tricks (5.6.0)
+    zip_kit (5.6.0)
 
 GEM
   remote: https://rubygems.org/
@@ -117,7 +117,7 @@ DEPENDENCIES
   rubyzip (~> 1)
   wetransfer_style (= 0.6.0)
   yard (~> 0.9)
-  zip_tricks!
+  zip_kit!
 
 BUNDLED WITH
    2.1.4

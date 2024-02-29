@@ -3,7 +3,7 @@ Bundler.setup
 
 require 'benchmark'
 require 'benchmark/ips'
-require_relative '../lib/zip_tricks'
+require_relative '../lib/zip_kit'
 
 n_bytes = 5 * 1024 * 1024
 r = Random.new
@@ -30,7 +30,7 @@ Benchmark.ips do |x|
   x.config(time: 5, warmup: 2)
   buffer_sizes.each do |buf_size|
     x.report "Single-byte <<-writes of #{n_bytes} using a #{buf_size} byte buffer" do
-      crc = ZipTricks::WriteBuffer.new(ZipTricks::StreamCRC32.new, buf_size)
+      crc = ZipKit::WriteBuffer.new(ZipKit::StreamCRC32.new, buf_size)
       bytes.each { |b| crc << b }
       crc.to_i
     end

@@ -1,9 +1,9 @@
 # frozen_string_literal: true
 
-require_relative '../lib/zip_tricks'
+require_relative '../lib/zip_kit'
 
 # Using deferred writes (when you want to "pull" from a Streamer)
-# is also possible with ZipTricks.
+# is also possible with ZipKit.
 #
 # The OutputEnumerator class instead of Streamer is very useful for this
 # particular purpose. It does not start the archiving immediately,
@@ -11,7 +11,7 @@ require_relative '../lib/zip_tricks'
 #
 # Let's make a OutputEnumerator that writes a few files with random content. Note that when you create
 # that body it does not immediately write the ZIP:
-iterable = ZipTricks::Streamer.output_enum do |zip|
+iterable = ZipKit::Streamer.output_enum do |zip|
   (1..5).each do |i|
     zip.write_stored_file('random_%d04d.bin' % i) do |sink|
       warn "Starting on file #{i}...\n"

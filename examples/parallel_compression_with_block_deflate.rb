@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require_relative '../lib/zip_tricks'
+require_relative '../lib/zip_kit'
 require 'tempfile'
 
 # This shows how to perform compression in parallel (a-la pigz, but in a less
@@ -29,13 +29,13 @@ threads = (0..12).map do
     source_tempfile.rewind
 
     # Compute the CRC32 of the source file
-    part_crc = ZipTricks::StreamCRC32.from_io(source_tempfile)
+    part_crc = ZipKit::StreamCRC32.from_io(source_tempfile)
     source_tempfile.rewind
 
     # Create a compressed part
     compressed_tempfile = Tempfile.new('tc')
     compressed_tempfile.binmode
-    ZipTricks::BlockDeflate.deflate_in_blocks(source_tempfile,
+    ZipKit::BlockDeflate.deflate_in_blocks(source_tempfile,
                                               compressed_tempfile)
 
     source_tempfile.close!
@@ -51,14 +51,14 @@ compressed_tempfiles_and_crc_of_parts = threads.map(&:join).map(&:value)
 # Now we need to compute the CRC32 of the _entire_ file, and it has to be
 # the CRC32 of the _source_ file (uncompressed), not of the compressed variant.
 # Handily we know
-entire_file_crc = ZipTricks::StreamCRC32.new
+entire_file_crc = ZipKit::StreamCRC32.new
 compressed_tempfiles_and_crc_of_parts.each do |_, source_part_crc, source_part_size|
   entire_file_crc.append(source_part_crc, source_part_size)
 end
 
 # We need to append the the terminator bytes to the end of the last part.
 last_compressed_part = compressed_tempfiles_and_crc_of_parts[-1][0]
-ZipTricks::BlockDeflate.write_terminator(last_compressed_part)
+ZipKit::BlockDeflate.write_terminator(last_compressed_part)
 
 # and we need to know how big the deflated segment of the ZIP is going to be, in total.
 # To figure that out we just sum the sizes of the files
@@ -68,11 +68,11 @@ size_of_uncompressed_file = compressed_tempfiles_and_crc_of_parts.map { |e| e[2]
 
 # And now we can create a ZIP with our compressed file in it's entirety.
 # We use a File as a destination here, but you can also use a socket or a
-# non-rewindable IO. ZipTricks never needs to rewind your output, since it is
+# non-rewindable IO. ZipKit never needs to rewind your output, since it is
 # made for streaming.
 output = File.open('zip_created_in_parallel.zip', 'wb')
 
-ZipTricks::Streamer.open(output) do |zip|
+ZipKit::Streamer.open(output) do |zip|
   zip.add_deflated_entry('parallel.bin',
                          size_of_uncompressed_file,
                          entire_file_crc.to_i,

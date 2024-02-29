@@ -1,4 +1,4 @@
 source 'https://rubygems.org'
 
-# Specify your gem's dependencies in zip_tricks.gemspec
+# Specify your gem's dependencies in zip_kit.gemspec
 gemspec

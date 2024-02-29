@@ -1,4 +1,4 @@
-# Contributing to zip_tricks
+# Contributing to zip_kit
 
 Please take a moment to review this document in order to make the contribution
 process easy and effective for everyone involved.
@@ -27,7 +27,7 @@ The issue tracker is the preferred channel for [bug reports](#bug-reports),
 [feature requests](#feature-requests) and [submitting pull
 requests](#pull-requests), but please respect the following restrictions:
 
-* Please **do not** derail or troll issues. Keep the discussion on topic and respect the opinions of others. Adhere to the principles set out in the [Code of Conduct](https://github.com/WeTransfer/zip_tricks/blob/main/CODE_OF_CONDUCT.md).
+* Please **do not** derail or troll issues. Keep the discussion on topic and respect the opinions of others. Adhere to the principles set out in the [Code of Conduct](https://github.com/WeTransfer/zip_kit/blob/main/CODE_OF_CONDUCT.md).
 
 ## Bug reports
 
@@ -96,7 +96,7 @@ accurate comments, etc.) and any other requirements (such as test coverage).
 The project uses Rubocop which can be run using `bundle exec rubocop`. The test
 suite can be run with `bundle exec rspec`. You are also encouraged to use the
 script in the `testing` directory to create test files that you can then verify
-with various zip/unzip utilities. Further instructions are [here](https://github.com/WeTransfer/zip_tricks/blob/main/testing/README_TESTING.md).  
+with various zip/unzip utilities. Further instructions are [here](https://github.com/WeTransfer/zip_kit/blob/main/testing/README_TESTING.md).  
 
 Follow this process if you'd like your work considered for inclusion in the
 project:
@@ -106,11 +106,11 @@ project:
 
    ```bash
    # Clone your fork of the repo into the current directory
-   git clone git@github.com:WeTransfer/zip_tricks.git
+   git clone git@github.com:WeTransfer/zip_kit.git
    # Navigate to the newly cloned directory
-   cd zip_tricks
+   cd zip_kit
    # Assign the original repo to a remote called "upstream"
-   git remote add upstream git@github.com:WeTransfer/zip_tricks.git
+   git remote add upstream git@github.com:WeTransfer/zip_kit.git
    ```
 
 2. If you cloned a while ago, get the latest changes from upstream:
@@ -150,4 +150,4 @@ project:
 
 **IMPORTANT**: By submitting a patch, you agree to allow the project owner to
 license your work under the same license as that used by the project, which you
-can see by clicking [here](https://github.com/WeTransfer/zip_tricks/blob/main/LICENSE.txt). 
+can see by clicking [here](https://github.com/WeTransfer/zip_kit/blob/main/LICENSE.txt). 

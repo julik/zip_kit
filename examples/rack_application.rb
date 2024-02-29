@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require_relative '../lib/zip_tricks'
+require_relative '../lib/zip_kit'
 
 # An example of how you can create a Rack endpoint for your ZIP downloads.
 # NEVER run this in production - it is a huge security risk.
@@ -21,7 +21,7 @@ class ZipDownload
     # Compute the CRC32 upfront. We do not use local footers for post-computing
     # the CRC32, so you _do_ have to precompute it beforehand. Ideally, you
     # would do that before storing the files you will be sending out later on.
-    crc32 = ZipTricks::StreamCRC32.from_io(f)
+    crc32 = ZipKit::StreamCRC32.from_io(f)
     f.rewind
 
     # Compute the size of the download, so that a
@@ -30,13 +30,13 @@ class ZipDownload
     # the user that the download stalled or was aborted in-flight.
     # Note that using the size estimator here does _not_ read or compress
     # your original file, so it is very fast.
-    size = ZipTricks::SizeEstimator.estimate do |ar|
+    size = ZipKit::SizeEstimator.estimate do |ar|
       ar.add_stored_entry(filename, f.size)
     end
 
     # Create a suitable Rack response body, that will support each(),
     # close() and all the other methods. We can then return it up the stack.
-    zip_response_body = ZipTricks::Streamer.output_enum do |zip|
+    zip_response_body = ZipKit::Streamer.output_enum do |zip|
       begin
         # We are adding only one file to the ZIP here, but you could do that
         # with an arbitrary number of files of course.
