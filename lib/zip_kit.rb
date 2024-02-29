@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 
-# Require all the sub-components except myself
 module ZipKit
   autoload :RackBody, File.dirname(__FILE__) + "/zip_kit/rack_body.rb"
   autoload :RailsStreaming, File.dirname(__FILE__) + "/zip_kit/rails_streaming.rb"
