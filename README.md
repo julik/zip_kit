@@ -15,9 +15,7 @@ of unarchiving end-user applications and is well tested.
 
 ## Requirements
 
-Ruby 2.1+ syntax support (keyword arguments with defaults) and a working zlib (all available to jRuby as well).
-jRuby might experience problems when using the reader methods due to the argument of `IO#seek` being limited
-to [32 bit sizes.](https://github.com/jruby/jruby/issues/3817)
+Ruby 2.6+ syntax support is required, as well as a a working zlib (all available to jRuby as well).
 
 ## Diving in: send some large CSV reports from Rails
 

@@ -1,8 +1,8 @@
-require 'allocation_stats' if RUBY_ENGINE == 'ruby'
+require "allocation_stats" if RUBY_ENGINE == "ruby"
 
 RSpec::Matchers.define :allocate_under do |expected|
   match do |actual|
-    unless RUBY_ENGINE == 'ruby'
+    unless RUBY_ENGINE == "ruby"
       skip "allocation tracing not supported on #{RUBY_ENGINE}"
     end
     @trace = actual.is_a?(Proc) ? AllocationStats.trace(&actual) : actual

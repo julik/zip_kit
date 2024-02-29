@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require 'stringio'
+require "stringio"
 
 # A very barebones ZIP file reader. Is made for maximum interoperability, but at the same
 # time we attempt to keep it somewhat concise.
@@ -63,20 +63,20 @@ require 'stringio'
 # it involves a much larger number of reads (1 read from the IO per entry in the ZIP).
 
 class ZipKit::FileReader
-  require_relative 'file_reader/stored_reader'
-  require_relative 'file_reader/inflating_reader'
+  require_relative "file_reader/stored_reader"
+  require_relative "file_reader/inflating_reader"
 
   ReadError = Class.new(StandardError)
   UnsupportedFeature = Class.new(StandardError)
   InvalidStructure = Class.new(ReadError)
   LocalHeaderPending = Class.new(StandardError) do
     def message
-      'The compressed data offset is not available (local header has not been read)'
+      "The compressed data offset is not available (local header has not been read)"
     end
   end
   MissingEOCD = Class.new(StandardError) do
     def message
-      'Could not find the EOCD signature in the buffer - maybe a malformed ZIP file'
+      "Could not find the EOCD signature in the buffer - maybe a malformed ZIP file"
     end
   end
 
@@ -146,8 +146,8 @@ class ZipKit::FileReader
       when 0
         StoredReader.new(from_io, compressed_size)
       else
-        raise UnsupportedFeature, 'Unsupported storage mode for reading - %<storage_mode>d' %
-                                  {storage_mode: storage_mode}
+        raise UnsupportedFeature, "Unsupported storage mode for reading - %<storage_mode>d" %
+          {storage_mode: storage_mode}
       end
     end
 
@@ -209,7 +209,7 @@ class ZipKit::FileReader
       end
 
     log do
-      'Located the central directory start at %<location>d' %
+      "Located the central directory start at %<location>d" %
         {location: cdir_location}
     end
     seek(io, cdir_location)
@@ -230,18 +230,18 @@ class ZipKit::FileReader
     central_directory_str = io.read # and not read_n(io, cdir_size), see above
     central_directory_io = StringIO.new(central_directory_str)
     log do
-      'Read %<byte_size>d bytes with central directory + EOCD record and locator' %
+      "Read %<byte_size>d bytes with central directory + EOCD record and locator" %
         {byte_size: central_directory_str.bytesize}
     end
 
-    entries = (0...num_files).map do |entry_n|
+    entries = (0...num_files).map { |entry_n|
       offset_location = cdir_location + central_directory_io.tell
       log do
-        'Reading the central directory entry %<entry_n>d starting at offset %<offset>d' %
+        "Reading the central directory entry %<entry_n>d starting at offset %<offset>d" %
           {entry_n: entry_n, offset: offset_location}
       end
       read_cdir_entry(central_directory_io)
-    end
+    }
 
     read_local_headers(entries, io) if read_local_headers
 
@@ -275,7 +275,7 @@ class ZipKit::FileReader
       entries << entry
       next_local_header_offset = entry.compressed_data_offset + entry.compressed_size
       log do
-        'Recovered a local file file header at offset %<cur_offset>d, seeking to the next at %<header_offset>d' %
+        "Recovered a local file file header at offset %<cur_offset>d, seeking to the next at %<header_offset>d" %
           {cur_offset: cur_offset, header_offset: next_local_header_offset}
       end
       seek(io, next_local_header_offset) # Seek to the next entry, and raise if seek is impossible
@@ -283,7 +283,7 @@ class ZipKit::FileReader
     entries
   rescue ReadError, RangeError # RangeError is raised if offset exceeds int32/int64 range
     log do
-      'Got a read/seek error after reaching %<cur_offset>d, no more entries can be recovered' %
+      "Got a read/seek error after reaching %<cur_offset>d, no more entries can be recovered" %
         {cur_offset: cur_offset}
     end
     entries
@@ -330,12 +330,12 @@ class ZipKit::FileReader
     extra_table = parse_out_extra_fields(extra_fields_str)
 
     # ...of which we really only need the Zip64 extra
-    if zip64_extra_contents = extra_table[1]
+    if (zip64_extra_contents = extra_table[1])
       # If the Zip64 extra is present, we let it override all
       # the values fetched from the conventional header
       zip64_extra = StringIO.new(zip64_extra_contents)
       log do
-        'Will read Zip64 extra data from local header field for %<filename>s, %<size>d bytes' %
+        "Will read Zip64 extra data from local header field for %<filename>s, %<size>d bytes" %
           {filename: e.filename, size: zip64_extra.size}
       end
       # Now here be dragons. The APPNOTE specifies that
@@ -399,11 +399,11 @@ class ZipKit::FileReader
   def read_local_headers(entries, io)
     entries.each_with_index do |entry, i|
       log do
-        'Reading the local header for entry %<index>d at offset %<offset>d' %
+        "Reading the local header for entry %<index>d at offset %<offset>d" %
           {index: i, offset: entry.local_file_header_offset}
       end
       off = get_compressed_data_offset(io: io,
-                                       local_file_header_offset: entry.local_file_header_offset)
+        local_file_header_offset: entry.local_file_header_offset)
       entry.compressed_data_offset = off
     end
   end
@@ -424,7 +424,7 @@ class ZipKit::FileReader
     io.seek(absolute_pos, IO::SEEK_SET)
     unless absolute_pos == io.tell
       raise ReadError,
-            "Expected to seek to #{absolute_pos} but only \
+        "Expected to seek to #{absolute_pos} but only \
              got to #{io.tell}"
     end
     nil
@@ -433,8 +433,8 @@ class ZipKit::FileReader
   def assert_signature(io, signature_magic_number)
     readback = read_4b(io)
     if readback != signature_magic_number
-      expected = '0x0' + signature_magic_number.to_s(16)
-      actual = '0x0' + readback.to_s(16)
+      expected = "0x0" + signature_magic_number.to_s(16)
+      actual = "0x0" + readback.to_s(16)
       raise InvalidStructure, "Expected signature #{expected}, but read #{actual}"
     end
   end
@@ -509,7 +509,7 @@ class ZipKit::FileReader
         # the values fetched from the conventional header
         zip64_extra = StringIO.new(zip64_extra_contents)
         log do
-          'Will read Zip64 extra data for %<filename>s, %<size>d bytes' %
+          "Will read Zip64 extra data for %<filename>s, %<size>d bytes" %
             {filename: e.filename, size: zip64_extra.size}
         end
         # Now here be dragons. The APPNOTE specifies that
@@ -546,7 +546,7 @@ class ZipKit::FileReader
 
     eocd_offset = implied_position_of_eocd_record + eocd_idx_in_buf
     log do
-      'Found EOCD signature at offset %<offset>d' % {offset: eocd_offset}
+      "Found EOCD signature at offset %<offset>d" % {offset: eocd_offset}
     end
 
     eocd_offset
@@ -555,7 +555,7 @@ class ZipKit::FileReader
   def all_indices_of_substr_in_str(of_substring, in_string)
     last_i = 0
     found_at_indices = []
-    while last_i = in_string.index(of_substring, last_i)
+    while (last_i = in_string.index(of_substring, last_i))
       found_at_indices << last_i
       last_i += of_substring.bytesize
     end
@@ -571,8 +571,8 @@ class ZipKit::FileReader
   # ending at the end of string satisfies that given pattern.
   def locate_eocd_signature(in_str)
     eocd_signature = 0x06054b50
-    eocd_signature_str = [eocd_signature].pack('V')
-    unpack_pattern = 'VvvvvVVv'
+    eocd_signature_str = [eocd_signature].pack("V")
+    unpack_pattern = "VvvvvVVv"
     minimum_record_size = 22
     str_size = in_str.bytesize
     indices = all_indices_of_substr_in_str(eocd_signature_str, in_str)
@@ -603,7 +603,7 @@ class ZipKit::FileReader
     zip64_eocd_loc_offset -= 4 # Total number of disks
 
     log do
-      'Will look for the Zip64 EOCD locator signature at offset %<offset>d' %
+      "Will look for the Zip64 EOCD locator signature at offset %<offset>d" %
         {offset: zip64_eocd_loc_offset}
     end
 
@@ -614,11 +614,11 @@ class ZipKit::FileReader
     assert_signature(file_io, 0x07064b50)
 
     log do
-      'Found Zip64 EOCD locator at offset %<offset>d' % {offset: zip64_eocd_loc_offset}
+      "Found Zip64 EOCD locator at offset %<offset>d" % {offset: zip64_eocd_loc_offset}
     end
 
     disk_num = read_4b(file_io) # number of the disk
-    raise UnsupportedFeature, 'The archive spans multiple disks' if disk_num != 0
+    raise UnsupportedFeature, "The archive spans multiple disks" if disk_num != 0
     read_8b(file_io)
   rescue ReadError
     nil
@@ -638,65 +638,65 @@ class ZipKit::FileReader
 
     disk_n = read_4b(zip64_eocdr) # number of this disk
     disk_n_with_eocdr = read_4b(zip64_eocdr) # number of the disk with the EOCDR
-    raise UnsupportedFeature, 'The archive spans multiple disks' if disk_n != disk_n_with_eocdr
+    raise UnsupportedFeature, "The archive spans multiple disks" if disk_n != disk_n_with_eocdr
 
     num_files_this_disk = read_8b(zip64_eocdr) # number of files on this disk
-    num_files_total     = read_8b(zip64_eocdr) # files total in the central directory
+    num_files_total = read_8b(zip64_eocdr) # files total in the central directory
 
-    raise UnsupportedFeature, 'The archive spans multiple disks' if num_files_this_disk != num_files_total
+    raise UnsupportedFeature, "The archive spans multiple disks" if num_files_this_disk != num_files_total
 
     log do
-      'Zip64 EOCD record states there are %<amount>d files in the archive' %
+      "Zip64 EOCD record states there are %<amount>d files in the archive" %
         {amount: num_files_total}
     end
 
-    central_dir_size    = read_8b(zip64_eocdr) # Size of the central directory
-    central_dir_offset  = read_8b(zip64_eocdr) # Where the central directory starts
+    central_dir_size = read_8b(zip64_eocdr) # Size of the central directory
+    central_dir_offset = read_8b(zip64_eocdr) # Where the central directory starts
 
     [num_files_total, central_dir_offset, central_dir_size]
   end
 
-  C_UINT4 = 'V'
-  C_UINT2 = 'v'
-  C_UINT8 = 'Q<'
+  C_UINT4 = "V"
+  C_UINT2 = "v"
+  C_UINT8 = "Q<"
 
   # To prevent too many tiny reads, read the maximum possible size of end of
   # central directory record upfront (all the fixed fields + at most 0xFFFF
   # bytes of the archive comment)
   MAX_END_OF_CENTRAL_DIRECTORY_RECORD_SIZE = 4 + # Offset of the start of central directory
-                                             4 + # Size of the central directory
-                                             2 + # Number of files in the cdir
-                                             4 + # End-of-central-directory signature
-                                             2 + # Number of this disk
-                                             2 + # Number of disk with the start of cdir
-                                             2 + # Number of files in the cdir of this disk
-                                             2 + # The comment size
-                                             0xFFFF # Maximum comment size
+    4 + # Size of the central directory
+    2 + # Number of files in the cdir
+    4 + # End-of-central-directory signature
+    2 + # Number of this disk
+    2 + # Number of disk with the start of cdir
+    2 + # Number of files in the cdir of this disk
+    2 + # The comment size
+    0xFFFF # Maximum comment size
 
   # To prevent too many tiny reads, read the maximum possible size of the local file header upfront.
   # The maximum size is all the usual items, plus the maximum size
   # of the filename (0xFFFF bytes) and the maximum size of the extras (0xFFFF bytes)
   MAX_LOCAL_HEADER_SIZE = 4 + # signature
-                          2 + # Version needed to extract
-                          2 + # gp flags
-                          2 + # storage mode
-                          2 + # dos time
-                          2 + # dos date
-                          4 + # CRC32
-                          4 + # Comp size
-                          4 + # Uncomp size
-                          2 + # Filename size
-                          2 + # Extra fields size
-                          0xFFFF + # Maximum filename size
-                          0xFFFF   # Maximum extra fields size
+    2 + # Version needed to extract
+    2 + # gp flags
+    2 + # storage mode
+    2 + # dos time
+    2 + # dos date
+    4 + # CRC32
+    4 + # Comp size
+    4 + # Uncomp size
+    2 + # Filename size
+    2 + # Extra fields size
+    0xFFFF + # Maximum filename size
+    0xFFFF # Maximum extra fields size
 
   SIZE_OF_USABLE_EOCD_RECORD = 4 + # Signature
-                               2 + # Number of this disk
-                               2 + # Number of the disk with the EOCD record
-                               2 + # Number of entries in the central directory of this disk
-                               2 + # Number of entries in the central directory total
-                               4 + # Size of the central directory
-                               4   # Start of the central directory offset
+    2 + # Number of this disk
+    2 + # Number of the disk with the EOCD record
+    2 + # Number of entries in the central directory of this disk
+    2 + # Number of entries in the central directory total
+    4 + # Size of the central directory
+    4 # Start of the central directory offset
 
   def num_files_and_central_directory_offset(file_io, eocd_offset)
     seek(file_io, eocd_offset)
@@ -709,14 +709,14 @@ class ZipKit::FileReader
     skip_ahead_2(io) # number_of_this_disk
     skip_ahead_2(io) # number of the disk with the EOCD record
     skip_ahead_2(io) # number of entries in the central directory of this disk
-    num_files = read_2b(io)   # number of entries in the central directory total
-    cdir_size = read_4b(io)   # size of the central directory
+    num_files = read_2b(io) # number of entries in the central directory total
+    cdir_size = read_4b(io) # size of the central directory
     cdir_offset = read_4b(io) # start of central directorty offset
     [num_files, cdir_offset, cdir_size]
   end
 
   private_constant :C_UINT4, :C_UINT2, :C_UINT8, :MAX_END_OF_CENTRAL_DIRECTORY_RECORD_SIZE,
-                   :MAX_LOCAL_HEADER_SIZE, :SIZE_OF_USABLE_EOCD_RECORD
+    :MAX_LOCAL_HEADER_SIZE, :SIZE_OF_USABLE_EOCD_RECORD
 
   # Is provided as a stub to be overridden in a subclass if you need it. Will report
   # during various stages of reading. The log message is contained in the return value

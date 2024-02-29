@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require 'zlib'
+require "zlib"
 
 # Permits Deflate compression in independent blocks. The workflow is as follows:
 #
@@ -49,7 +49,7 @@ require 'zlib'
 
 class ZipKit::BlockDeflate
   DEFAULT_BLOCKSIZE = 1_024 * 1024 * 5
-  END_MARKER = [3, 0].pack('C*')
+  END_MARKER = [3, 0].pack("C*")
   # Zlib::NO_COMPRESSION..
   VALID_COMPRESSIONS = (Zlib::DEFAULT_COMPRESSION..Zlib::BEST_COMPRESSION).to_a.freeze
   # Write the end marker (\x3\x0) to the given IO.
@@ -96,9 +96,9 @@ class ZipKit::BlockDeflate
   # @param block_size [Fixnum] The block size to use (defaults to `DEFAULT_BLOCKSIZE`)
   # @return [Fixnum] number of bytes written to `output_io`
   def self.deflate_in_blocks_and_terminate(input_io,
-                                           output_io,
-                                           level: Zlib::DEFAULT_COMPRESSION,
-                                           block_size: DEFAULT_BLOCKSIZE)
+    output_io,
+    level: Zlib::DEFAULT_COMPRESSION,
+    block_size: DEFAULT_BLOCKSIZE)
     bytes_written = deflate_in_blocks(input_io, output_io, level: level, block_size: block_size)
     bytes_written + write_terminator(output_io)
   end
@@ -116,11 +116,11 @@ class ZipKit::BlockDeflate
   # @param block_size [Fixnum] The block size to use (defaults to `DEFAULT_BLOCKSIZE`)
   # @return [Fixnum] number of bytes written to `output_io`
   def self.deflate_in_blocks(input_io,
-                             output_io,
-                             level: Zlib::DEFAULT_COMPRESSION,
-                             block_size: DEFAULT_BLOCKSIZE)
+    output_io,
+    level: Zlib::DEFAULT_COMPRESSION,
+    block_size: DEFAULT_BLOCKSIZE)
     bytes_written = 0
-    while block = input_io.read(block_size)
+    while (block = input_io.read(block_size))
       deflated = deflate_chunk(block, level: level)
       output_io << deflated
       bytes_written += deflated.bytesize

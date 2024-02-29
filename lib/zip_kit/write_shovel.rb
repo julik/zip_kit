@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 # A lot of objects in ZipKit accept bytes that may be sent
 # to the `<<` operator (the "shovel" operator). This is in the tradition
 # of late Jim Weirich and his Builder gem. In [this presentation](https://youtu.be/1BVFlvRPZVM?t=2403)

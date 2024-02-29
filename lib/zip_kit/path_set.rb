@@ -1,4 +1,4 @@
-# rubocop:disable Layout/IndentHeredoc
+# frozen_string_literal: true
 
 # A ZIP archive contains a flat list of entries. These entries can implicitly
 # create directories when the archive is expanded. For example, an entry with
@@ -64,16 +64,16 @@ class ZipKit::PathSet
         # Have to use the old-fashioned heredocs because ZipKit
         # aims to be compatible with MRI 2.1+ syntax, and squiggly
         # heredoc is only available starting 2.3+
-        error_message = <<ERR
-The path #{parent_directory_path.inspect} which has to be added
-as a directory is already used for a file.
+        error_message = <<~ERR
+          The path #{parent_directory_path.inspect} which has to be added
+          as a directory is already used for a file.
 
-The directory at this path would get created implicitly
-to produce #{path.inspect} during decompresison.
+          The directory at this path would get created implicitly
+          to produce #{path.inspect} during decompresison.
 
-This would make some archive utilities refuse to open
-the ZIP.
-ERR
+          This would make some archive utilities refuse to open
+          the ZIP.
+        ERR
         raise DirectoryClobbersFile, error_message
       end
       @known_directories << parent_directory_path
@@ -93,29 +93,29 @@ ERR
   # @return [void]
   def add_file_path(file_path)
     if @known_files.include?(file_path)
-      error_message = <<ERR
-The file at #{file_path.inspect} has already been included
-in the archive. Adding it the second time would cause
-the first file to be overwritten during unarchiving, and
-could also get the archive flagged as invalid.
-ERR
+      error_message = <<~ERR
+        The file at #{file_path.inspect} has already been included
+        in the archive. Adding it the second time would cause
+        the first file to be overwritten during unarchiving, and
+        could also get the archive flagged as invalid.
+      ERR
       raise Conflict, error_message
     end
 
     if @known_directories.include?(file_path)
-      error_message = <<ERR
-The path #{file_path.inspect} is already used for
-a directory, but you are trying to add it as a file.
+      error_message = <<~ERR
+        The path #{file_path.inspect} is already used for
+        a directory, but you are trying to add it as a file.
 
-This would make some archive utilities refuse
-to open the ZIP.
-ERR
+        This would make some archive utilities refuse
+        to open the ZIP.
+      ERR
       raise FileClobbersDirectory, error_message
     end
 
     # Add all the directories which this file is contained in
     *dir_components, _file_name = non_empty_path_components(file_path)
-    add_directory_path(dir_components.join('/'))
+    add_directory_path(dir_components.join("/"))
 
     # ...and then the file itself
     @known_files << file_path
@@ -141,7 +141,7 @@ ERR
   #
   # @return [void]
   def add_directory_or_file_path(path_in_archive)
-    if path_in_archive.end_with?('/')
+    if path_in_archive.end_with?("/")
       add_directory_path(path_in_archive)
     else
       add_file_path(path_in_archive)
@@ -151,13 +151,13 @@ ERR
   private
 
   def non_empty_path_components(path)
-    path.split('/').reject(&:empty?)
+    path.split("/").reject(&:empty?)
   end
 
   def path_and_ancestors(path)
     path_components = non_empty_path_components(path)
     path_components.each_with_object([]) do |component, seen|
-      seen << [seen.last, component].compact.join('/')
+      seen << [seen.last, component].compact.join("/")
     end
   end
 end

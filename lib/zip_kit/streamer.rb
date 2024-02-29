@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require 'set'
+require "set"
 
 # Is used to write streamed ZIP archives into the provided IO-ish object.
 # The output IO is never going to be rewound or seeked, so the output
@@ -82,12 +82,12 @@ require 'set'
 #
 # Calling {Streamer#close} **will not** call `#close` on the underlying IO object.
 class ZipKit::Streamer
-  autoload :DeflatedWriter, File.dirname(__FILE__) + '/streamer/deflated_writer.rb'
-  autoload :Writable, File.dirname(__FILE__) + '/streamer/writable.rb'
-  autoload :StoredWriter, File.dirname(__FILE__) + '/streamer/stored_writer.rb'
-  autoload :Entry, File.dirname(__FILE__) + '/streamer/entry.rb'
-  autoload :Filler, File.dirname(__FILE__) + '/streamer/filler.rb'
-  autoload :Heuristic, File.dirname(__FILE__) + '/streamer/heuristic.rb'
+  autoload :DeflatedWriter, File.dirname(__FILE__) + "/streamer/deflated_writer.rb"
+  autoload :Writable, File.dirname(__FILE__) + "/streamer/writable.rb"
+  autoload :StoredWriter, File.dirname(__FILE__) + "/streamer/stored_writer.rb"
+  autoload :Entry, File.dirname(__FILE__) + "/streamer/entry.rb"
+  autoload :Filler, File.dirname(__FILE__) + "/streamer/filler.rb"
+  autoload :Heuristic, File.dirname(__FILE__) + "/streamer/heuristic.rb"
 
   include ZipKit::WriteShovel
 
@@ -152,7 +152,7 @@ class ZipKit::Streamer
   #    should be suffixed with (1), (2) etc. Default value is `false` - if
   #    dupliate names are used an exception will be raised
   def initialize(writable, writer: create_writer, auto_rename_duplicate_filenames: false)
-    raise InvalidOutput, 'The writable must respond to #<< or #write' unless writable.respond_to?(:<<) || writable.respond_to?(:write)
+    raise InvalidOutput, "The writable must respond to #<< or #write" unless writable.respond_to?(:<<) || writable.respond_to?(:write)
 
     @out = ZipKit::WriteAndTell.new(writable)
     @files = []
@@ -201,13 +201,13 @@ class ZipKit::Streamer
   # @return [Integer] the offset the output IO is at after writing the entry header
   def add_deflated_entry(filename:, modification_time: Time.now.utc, compressed_size: 0, uncompressed_size: 0, crc32: 0, unix_permissions: nil, use_data_descriptor: false)
     add_file_and_write_local_header(filename: filename,
-                                    modification_time: modification_time,
-                                    crc32: crc32,
-                                    storage_mode: DEFLATED,
-                                    compressed_size: compressed_size,
-                                    uncompressed_size: uncompressed_size,
-                                    unix_permissions: unix_permissions,
-                                    use_data_descriptor: use_data_descriptor)
+      modification_time: modification_time,
+      crc32: crc32,
+      storage_mode: DEFLATED,
+      compressed_size: compressed_size,
+      uncompressed_size: uncompressed_size,
+      unix_permissions: unix_permissions,
+      use_data_descriptor: use_data_descriptor)
     @out.tell
   end
 
@@ -223,15 +223,15 @@ class ZipKit::Streamer
   # @param use_data_descriptor [Boolean] whether the entry body will be followed by a data descriptor. When in use
   # @param unix_permissions[Fixnum?] which UNIX permissions to set, normally the default should be used
   # @return [Integer] the offset the output IO is at after writing the entry header
-  def add_stored_entry(filename:, modification_time: Time.now.utc,  size: 0, crc32: 0, unix_permissions: nil, use_data_descriptor: false)
+  def add_stored_entry(filename:, modification_time: Time.now.utc, size: 0, crc32: 0, unix_permissions: nil, use_data_descriptor: false)
     add_file_and_write_local_header(filename: filename,
-                                    modification_time: modification_time,
-                                    crc32: crc32,
-                                    storage_mode: STORED,
-                                    compressed_size: size,
-                                    uncompressed_size: size,
-                                    unix_permissions: unix_permissions,
-                                    use_data_descriptor: use_data_descriptor)
+      modification_time: modification_time,
+      crc32: crc32,
+      storage_mode: STORED,
+      compressed_size: size,
+      uncompressed_size: size,
+      unix_permissions: unix_permissions,
+      use_data_descriptor: use_data_descriptor)
     @out.tell
   end
 
@@ -242,14 +242,14 @@ class ZipKit::Streamer
   # @param unix_permissions[Fixnum?] which UNIX permissions to set, normally the default should be used
   # @return [Integer] the offset the output IO is at after writing the entry header
   def add_empty_directory(dirname:, modification_time: Time.now.utc, unix_permissions: nil)
-    add_file_and_write_local_header(filename: dirname.to_s + '/',
-                                    modification_time: modification_time,
-                                    crc32: 0,
-                                    storage_mode: STORED,
-                                    compressed_size: 0,
-                                    uncompressed_size: 0,
-                                    unix_permissions: unix_permissions,
-                                    use_data_descriptor: false)
+    add_file_and_write_local_header(filename: dirname.to_s + "/",
+      modification_time: modification_time,
+      crc32: 0,
+      storage_mode: STORED,
+      compressed_size: 0,
+      uncompressed_size: 0,
+      unix_permissions: unix_permissions,
+      use_data_descriptor: false)
     @out.tell
   end
 
@@ -350,13 +350,13 @@ class ZipKit::Streamer
   # @return [#<<, #write, #close] an object that the file contents must be written to, has to be closed manually
   def write_stored_file(filename, modification_time: Time.now.utc, unix_permissions: nil, &blk)
     add_stored_entry(filename: filename,
-                     modification_time: modification_time,
-                     use_data_descriptor: true,
-                     crc32: 0,
-                     size: 0,
-                     unix_permissions: unix_permissions)
+      modification_time: modification_time,
+      use_data_descriptor: true,
+      crc32: 0,
+      size: 0,
+      unix_permissions: unix_permissions)
 
-    writable = Writable.new(self,  StoredWriter.new(@out))
+    writable = Writable.new(self, StoredWriter.new(@out))
     yield_or_return_writable(writable, &blk)
   end
 
@@ -410,12 +410,12 @@ class ZipKit::Streamer
   # @return [#<<, #write, #close] an object that the file contents must be written to, has to be closed manually
   def write_deflated_file(filename, modification_time: Time.now.utc, unix_permissions: nil, &blk)
     add_deflated_entry(filename: filename,
-                       modification_time: modification_time,
-                       use_data_descriptor: true,
-                       crc32: 0,
-                       compressed_size: 0,
-                       uncompressed_size: 0,
-                       unix_permissions: unix_permissions)
+      modification_time: modification_time,
+      use_data_descriptor: true,
+      crc32: 0,
+      compressed_size: 0,
+      uncompressed_size: 0,
+      unix_permissions: unix_permissions)
 
     writable = Writable.new(self, DeflatedWriter.new(@out))
     yield_or_return_writable(writable, &blk)
@@ -440,15 +440,15 @@ class ZipKit::Streamer
       next if entry.filler?
 
       @writer.write_central_directory_file_header(io: @out,
-                                                  local_file_header_location: entry.local_header_offset,
-                                                  gp_flags: entry.gp_flags,
-                                                  storage_mode: entry.storage_mode,
-                                                  compressed_size: entry.compressed_size,
-                                                  uncompressed_size: entry.uncompressed_size,
-                                                  mtime: entry.mtime,
-                                                  crc32: entry.crc32,
-                                                  filename: entry.filename,
-                                                  unix_permissions: entry.unix_permissions)
+        local_file_header_location: entry.local_header_offset,
+        gp_flags: entry.gp_flags,
+        storage_mode: entry.storage_mode,
+        compressed_size: entry.compressed_size,
+        uncompressed_size: entry.uncompressed_size,
+        mtime: entry.mtime,
+        crc32: entry.crc32,
+        filename: entry.filename,
+        unix_permissions: entry.unix_permissions)
     end
 
     # Record the central directory size, for the EOCDR
@@ -456,9 +456,9 @@ class ZipKit::Streamer
 
     # Write out the EOCDR
     @writer.write_end_of_central_directory(io: @out,
-                                           start_of_central_directory_location: cdir_starts_at,
-                                           central_directory_size: cdir_size,
-                                           num_files_in_archive: @files.length)
+      start_of_central_directory_location: cdir_starts_at,
+      central_directory_size: cdir_size,
+      num_files_in_archive: @files.length)
 
     # Clear the files so that GC will not have to trace all the way to here to deallocate them
     @files.clear
@@ -496,9 +496,9 @@ class ZipKit::Streamer
 
     offset_before_data_descriptor = @out.tell
     @writer.write_data_descriptor(io: @out,
-                                  crc32: last_entry.crc32,
-                                  compressed_size: last_entry.compressed_size,
-                                  uncompressed_size: last_entry.uncompressed_size)
+      crc32: last_entry.crc32,
+      compressed_size: last_entry.compressed_size,
+      uncompressed_size: last_entry.uncompressed_size)
     last_entry.bytes_used_for_data_descriptor = @out.tell - offset_before_data_descriptor
 
     @out.tell
@@ -538,8 +538,8 @@ class ZipKit::Streamer
 
   private
 
-  def yield_or_return_writable(writable, &_block_to_pass_writable_to)
-    if block_given?
+  def yield_or_return_writable(writable, &block_to_pass_writable_to)
+    if block_to_pass_writable_to
       begin
         yield(writable)
         writable.close
@@ -558,37 +558,38 @@ class ZipKit::Streamer
     computed_offset = @files.map(&:total_bytes_used).inject(0, &:+)
     actual_offset = @out.tell
     if computed_offset != actual_offset
-      message = <<-EMS
-The offset of the Streamer output IO is out of sync with the expected value. All entries written so far,
-including their compressed bodies, local headers and data descriptors, add up to a certain offset,
-but this offset does not match the actual offset of the IO.
+      message = <<~EMS
+        The offset of the Streamer output IO is out of sync with the expected value. All entries written so far,
+        including their compressed bodies, local headers and data descriptors, add up to a certain offset,
+        but this offset does not match the actual offset of the IO.
 
-Entries add up to #{computed_offset} bytes and the IO is at #{actual_offset} bytes.
+        Entries add up to #{computed_offset} bytes and the IO is at #{actual_offset} bytes.
 
-This can happen if you write local headers for an entry, write the "body" of the entry directly to the IO
-object which is your destination, but do not adjust the offset known to the Streamer object. To adjust
-the offfset you need to call `Streamer#simulate_write(body_size)` after outputting the entry. Otherwise
-the local header offsets of the entries you write are going to be incorrect and some ZIP applications
-are going to have problems opening your archive.
-EMS
+        This can happen if you write local headers for an entry, write the "body" of the entry directly to the IO
+        object which is your destination, but do not adjust the offset known to the Streamer object. To adjust
+        the offfset you need to call `Streamer#simulate_write(body_size)` after outputting the entry. Otherwise
+        the local header offsets of the entries you write are going to be incorrect and some ZIP applications
+        are going to have problems opening your archive.
+      EMS
       raise OffsetOutOfSync, message
     end
   end
 
   def add_file_and_write_local_header(
-      filename:,
-      modification_time:,
-      crc32:,
-      storage_mode:,
-      compressed_size:,
-      uncompressed_size:,
-      use_data_descriptor:,
-      unix_permissions:)
+    filename:,
+    modification_time:,
+    crc32:,
+    storage_mode:,
+    compressed_size:,
+    uncompressed_size:,
+    use_data_descriptor:,
+    unix_permissions:
+  )
 
     # Clean backslashes
     filename = remove_backslash(filename)
     raise UnknownMode, "Unknown compression mode #{storage_mode}" unless [STORED, DEFLATED].include?(storage_mode)
-    raise Overflow, 'Filename is too long' if filename.bytesize > 0xFFFF
+    raise Overflow, "Filename is too long" if filename.bytesize > 0xFFFF
 
     # If we need to massage filenames to enforce uniqueness,
     # do so before we check for file/directory conflicts
@@ -596,7 +597,7 @@ EMS
 
     # Make sure there is no file/directory clobbering (conflicts), or - if deduping is disabled -
     # no duplicate filenames/paths
-    if filename.end_with?('/')
+    if filename.end_with?("/")
       @path_set.add_directory_path(filename)
     else
       @path_set.add_file_path(filename)
@@ -611,31 +612,31 @@ EMS
     local_header_starts_at = @out.tell
 
     e = Entry.new(filename,
-                  crc32,
-                  compressed_size,
-                  uncompressed_size,
-                  storage_mode,
-                  modification_time,
-                  use_data_descriptor,
-                  _local_file_header_offset = local_header_starts_at,
-                  _bytes_used_for_local_header = 0,
-                  _bytes_used_for_data_descriptor = 0,
-                  unix_permissions)
+      crc32,
+      compressed_size,
+      uncompressed_size,
+      storage_mode,
+      modification_time,
+      use_data_descriptor,
+      _local_file_header_offset = local_header_starts_at,
+      _bytes_used_for_local_header = 0,
+      _bytes_used_for_data_descriptor = 0,
+      unix_permissions)
 
     @writer.write_local_file_header(io: @out,
-                                    gp_flags: e.gp_flags,
-                                    crc32: e.crc32,
-                                    compressed_size: e.compressed_size,
-                                    uncompressed_size: e.uncompressed_size,
-                                    mtime: e.mtime,
-                                    filename: e.filename,
-                                    storage_mode: e.storage_mode)
+      gp_flags: e.gp_flags,
+      crc32: e.crc32,
+      compressed_size: e.compressed_size,
+      uncompressed_size: e.uncompressed_size,
+      mtime: e.mtime,
+      filename: e.filename,
+      storage_mode: e.storage_mode)
     e.bytes_used_for_local_header = @out.tell - e.local_header_offset
 
     @files << e
   end
 
   def remove_backslash(filename)
-    filename.tr('\\', '_')
+    filename.tr("\\", "_")
   end
 end

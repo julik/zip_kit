@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require_relative '../lib/zip_kit'
+require_relative "../lib/zip_kit"
 
 # Using deferred writes (when you want to "pull" from a Streamer)
 # is also possible with ZipKit.
@@ -11,14 +11,14 @@ require_relative '../lib/zip_kit'
 #
 # Let's make a OutputEnumerator that writes a few files with random content. Note that when you create
 # that body it does not immediately write the ZIP:
-iterable = ZipKit::Streamer.output_enum do |zip|
+iterable = ZipKit::Streamer.output_enum { |zip|
   (1..5).each do |i|
-    zip.write_stored_file('random_%d04d.bin' % i) do |sink|
+    zip.write_stored_file("random_%d04d.bin" % i) do |sink|
       warn "Starting on file #{i}...\n"
       sink << Random.new.bytes(1024)
     end
   end
-end
+}
 
 warn "\n\nOutput using #each"
 
@@ -29,7 +29,7 @@ warn "\n\nOutput using #each"
 # the output of the block within OutputEnumerator is interspersed with the stuff
 # being yielded to each():
 iterable.each do |_binary_string|
-  $stderr << '.'
+  $stderr << "."
 end
 
 warn "\n\nOutput Enumerator returned from #each"
@@ -40,19 +40,19 @@ warn "\n\nOutput Enumerator returned from #each"
 # we find necessary:
 enum = iterable.each
 15.times do
-  _bin_str = enum.next  # Obtain the subsequent chunk of the ZIP
-  $stderr << '*'
+  _bin_str = enum.next # Obtain the subsequent chunk of the ZIP
+  $stderr << "*"
 end
 
 # ... or a Fiber
 
 warn "\n\nOutput using a Fiber"
-fib = Fiber.new do
+fib = Fiber.new {
   iterable.each do |binary_string|
-    $stderr << '•'
+    $stderr << "•"
     _next_iteration = Fiber.yield(binary_string)
   end
-end
+}
 15.times do
   fib.resume # Process the subsequent chunk of the ZIP
 end

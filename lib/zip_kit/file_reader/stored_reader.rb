@@ -19,7 +19,7 @@ class ZipKit::FileReader::StoredReader
 
     n_bytes = available if n_bytes > available
 
-    return '' if n_bytes.zero?
+    return "" if n_bytes.zero?
 
     compressed_chunk = @io.read(n_bytes)
 

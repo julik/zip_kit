@@ -11,7 +11,7 @@ module ZipKit::RailsStreaming
   #     See {ZipKit::Streamer#initialize} for the full list of options.
   # @yield [Streamer] the streamer that can be written to
   # @return [ZipKit::OutputEnumerator] The output enumerator assigned to the response body
-  def zip_kit_stream(filename: 'download.zip', type: 'application/zip', **zip_streamer_options, &zip_streaming_blk)
+  def zip_kit_stream(filename: "download.zip", type: "application/zip", **zip_streamer_options, &zip_streaming_blk)
     # The output enumerator yields chunks of bytes generated from ZipKit. Instantiating it
     # first will also validate the Streamer options.
     chunk_yielder = ZipKit::RackBody.new(**zip_streamer_options, &zip_streaming_blk)
@@ -35,7 +35,7 @@ module ZipKit::RailsStreaming
     # this reversion happens silently and it is usually not clear at all why streaming does not work. So let's at
     # the very least print it to the Rails log.
     if request.get_header("HTTP_VERSION") == "HTTP/1.0"
-      logger.warn { "The downstream HTTP proxy/LB insists on HTTP/1.0 protocol, ZIP response will be buffered." } if logger
+      logger&.warn { "The downstream HTTP proxy/LB insists on HTTP/1.0 protocol, ZIP response will be buffered." }
 
       # Buffer the ZIP into a tempfile so that we do not iterate over the ZIP-generating block twice
       tempfile_body = chunk_yielder.to_tempfile_body(request.env)

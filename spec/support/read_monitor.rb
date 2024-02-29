@@ -1,4 +1,4 @@
-require 'delegate'
+require "delegate"
 
 class ReadMonitor < SimpleDelegator
   def read(*)

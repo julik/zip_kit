@@ -1,7 +1,7 @@
-require_relative '../spec_helper'
+require_relative "../spec_helper"
 
 describe ZipKit::StreamCRC32 do
-  it 'computes the CRC32 of a large binary file' do
+  it "computes the CRC32 of a large binary file" do
     raw = StringIO.new(Random.new.bytes(45 * 1024 * 1024))
     # Rubocop:  warning: Useless assignment to variable
     crc = Zlib.crc32(raw.string)
@@ -9,7 +9,7 @@ describe ZipKit::StreamCRC32 do
     expect(via_from_io).to eq(crc)
   end
 
-  it 'when computing the CRC32 from an IO only allocates one String' do
+  it "when computing the CRC32 from an IO only allocates one String" do
     raw = StringIO.new(Random.new.bytes(45 * 1024 * 1024))
     # The number of objects allocated depends on the MRI version, but in
     # all cases there is only one String allocated. We work in blocks
@@ -19,7 +19,7 @@ describe ZipKit::StreamCRC32 do
     expect { described_class.from_io(raw) }.to allocate_under(10).objects
   end
 
-  it 'allows in-place updates' do
+  it "allows in-place updates" do
     raw = StringIO.new(Random.new.bytes(45 * 1024 * 1024))
     crc = Zlib.crc32(raw.string)
 
@@ -28,19 +28,19 @@ describe ZipKit::StreamCRC32 do
     expect(stream_crc.to_i).to eq(crc)
   end
 
-  it 'supports chained shovel' do
-    str = 'abcdef'
+  it "supports chained shovel" do
+    str = "abcdef"
     crc = Zlib.crc32(str)
 
     stream_crc = described_class.new
-    stream_crc << 'a' << 'b' << 'c' << 'd' << 'e' << 'f'
+    stream_crc << "a" << "b" << "c" << "d" << "e" << "f"
 
     expect(stream_crc.to_i).to eq(crc)
   end
 
-  it 'allows in-place update with a known value' do
+  it "allows in-place update with a known value" do
     stream_crc = described_class.new
-    stream_crc << 'This is some data'
+    stream_crc << "This is some data"
     stream_crc.append(45_678, 12_910)
     expect(stream_crc.to_i).to eq(1_555_667_875)
   end

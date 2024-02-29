@@ -5,7 +5,7 @@ class ZipKit::StreamCRC32
   include ZipKit::WriteShovel
 
   STRINGS_HAVE_CAPACITY_SUPPORT = begin
-    String.new('', capacity: 1)
+    String.new("", capacity: 1)
     true
   rescue ArgumentError
     false
@@ -21,7 +21,7 @@ class ZipKit::StreamCRC32
     # If we can specify the string capacity upfront we will not have to resize
     # the string during operation. This saves time but is only available on
     # recent Ruby 2.x versions.
-    blob = STRINGS_HAVE_CAPACITY_SUPPORT ? String.new('', capacity: CRC_BUF_SIZE) : String.new('')
+    blob = STRINGS_HAVE_CAPACITY_SUPPORT ? String.new("", capacity: CRC_BUF_SIZE) : +""
     crc = new
     crc << io.read(CRC_BUF_SIZE, blob) until io.eof?
     crc.to_i

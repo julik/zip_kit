@@ -88,8 +88,8 @@ class ZipKit::RackBody < ZipKit::OutputEnumerator
       # Rack::TempfileReaper calls close! on tempfiles which get buffered
       # We wil assume that it works fine with Rack::Sendfile (i.e. the path
       # to the file getting served gets used before we unlink the tempfile)
-      env['rack.tempfiles'] ||= []
-      env['rack.tempfiles'] << @tempfile
+      env["rack.tempfiles"] ||= []
+      env["rack.tempfiles"] << @tempfile
 
       @tempfile.binmode
 
@@ -120,7 +120,7 @@ class ZipKit::RackBody < ZipKit::OutputEnumerator
     # @return [void]
     def each
       @tempfile.rewind
-      while chunk = @tempfile.read(16384)
+      while (chunk = @tempfile.read(16384))
         yield chunk
       end
     end

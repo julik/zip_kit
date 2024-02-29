@@ -46,7 +46,7 @@ class ZipKit::RemoteIO
 
     maximum_avaialable = size - @pos
     n_bytes ||= maximum_avaialable # nil == read to the end of file
-    return '' if n_bytes.zero?
+    return "" if n_bytes.zero?
     raise ArgumentError, "No negative reads(#{n_bytes})" if n_bytes < 0
 
     n_bytes = clamp(0, n_bytes, maximum_avaialable)
@@ -95,10 +95,10 @@ class ZipKit::RemoteIO
     response = http.request(request)
     case response.code
     when "206"
-      content_range_header_value = response['Content-Range']
-      content_range_header_value.split('/').last.to_i
+      content_range_header_value = response["Content-Range"]
+      content_range_header_value.split("/").last.to_i
     when "200"
-      response['Content-Length'].to_i
+      response["Content-Length"].to_i
     else
       raise "Remote at #{@uri} replied with code #{response.code}"
     end

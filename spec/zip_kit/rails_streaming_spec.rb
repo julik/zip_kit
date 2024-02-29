@@ -1,5 +1,5 @@
-require 'spec_helper'
-require 'action_controller'
+require "spec_helper"
+require "action_controller"
 
 describe ZipKit::RailsStreaming do
   class FakeZipGenerator
@@ -8,8 +8,8 @@ describe ZipKit::RailsStreaming do
       # our ZIP generation block just once. This is to ensure Rack::ContentLength
       # does not run the generation twice
       raise "The ZIP has already been generated once" if @did_generate_zip
-      streamer.write_file('hello.txt') do |f|
-        f << 'ßHello from Rails'
+      streamer.write_file("hello.txt") do |f|
+        f << "ßHello from Rails"
       end
       @did_generate_zip = true
     end
@@ -43,7 +43,7 @@ describe ZipKit::RailsStreaming do
     end
   end
 
-  it 'degrades to a buffered response with HTTP/1.0 and produces a ZIP' do
+  it "degrades to a buffered response with HTTP/1.0 and produces a ZIP" do
     fake_rack_env = {
       "HTTP_VERSION" => "HTTP/1.0",
       "REQUEST_METHOD" => "GET",
@@ -51,7 +51,7 @@ describe ZipKit::RailsStreaming do
       "PATH_INFO" => "/download",
       "QUERY_STRING" => "",
       "SERVER_NAME" => "host.example",
-      "rack.input" => StringIO.new,
+      "rack.input" => StringIO.new
     }
     status, headers, body = FakeController.action(:stream_zip).call(fake_rack_env)
 
@@ -62,14 +62,14 @@ describe ZipKit::RailsStreaming do
     expect(status).to eq(200)
     expect_correct_headers!(headers)
 
-    expect(headers['X-Accel-Buffering']).to be_nil # Response gets buffered
-    expect(headers['Transfer-Encoding']).to be_nil
-    expect(headers['Content-Length']).to be_kind_of(String)
+    expect(headers["X-Accel-Buffering"]).to be_nil # Response gets buffered
+    expect(headers["Transfer-Encoding"]).to be_nil
+    expect(headers["Content-Length"]).to be_kind_of(String)
     expect(body).to respond_to(:to_path) # for Rack::Sendfile
     # All the other methods have been excercised by reading out the iterable body
   end
 
-  it 'uses Transfer-Encoding: chunked with HTTP/1.1 and produces a chunked response' do
+  it "uses Transfer-Encoding: chunked with HTTP/1.1 and produces a chunked response" do
     fake_rack_env = {
       "HTTP_VERSION" => "HTTP/1.1",
       "REQUEST_METHOD" => "GET",
@@ -77,7 +77,7 @@ describe ZipKit::RailsStreaming do
       "PATH_INFO" => "/download",
       "QUERY_STRING" => "",
       "SERVER_NAME" => "host.example",
-      "rack.input" => StringIO.new,
+      "rack.input" => StringIO.new
     }
     status, headers, body = FakeController.action(:stream_zip).call(fake_rack_env)
 
@@ -88,9 +88,9 @@ describe ZipKit::RailsStreaming do
     expect(status).to eq(200)
     expect_correct_headers!(headers)
 
-    expect(headers['X-Accel-Buffering']).to eq('no')
-    expect(headers['Transfer-Encoding']).to eq('chunked')
-    expect(headers['Content-Length']).to be_nil # Must be unset!
+    expect(headers["X-Accel-Buffering"]).to eq("no")
+    expect(headers["Transfer-Encoding"]).to eq("chunked")
+    expect(headers["Content-Length"]).to be_nil # Must be unset!
     expect(body).not_to respond_to(:to_path) # for Rack::Sendfile
   end
 
@@ -102,10 +102,10 @@ describe ZipKit::RailsStreaming do
   end
 
   def expect_correct_headers!(headers)
-    expect(headers['Content-Type']).to eq('application/zip')
-    expect(headers['ETag']).to be_nil # if the ETag middleware activates it will generate a weak ETag
-    expect(headers['Last-Modified']).to be_kind_of(String)
-    expect(headers['Content-Encoding']).to eq("identity")
-    expect(headers['Cache-Control']).to include("private")
+    expect(headers["Content-Type"]).to eq("application/zip")
+    expect(headers["ETag"]).to be_nil # if the ETag middleware activates it will generate a weak ETag
+    expect(headers["Last-Modified"]).to be_kind_of(String)
+    expect(headers["Content-Encoding"]).to eq("identity")
+    expect(headers["Cache-Control"]).to include("private")
   end
 end

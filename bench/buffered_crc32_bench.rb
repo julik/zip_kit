@@ -1,9 +1,9 @@
-require 'bundler'
+require "bundler"
 Bundler.setup
 
-require 'benchmark'
-require 'benchmark/ips'
-require_relative '../lib/zip_kit'
+require "benchmark"
+require "benchmark/ips"
+require_relative "../lib/zip_kit"
 
 n_bytes = 5 * 1024 * 1024
 r = Random.new
@@ -23,8 +23,6 @@ buffer_sizes = [
   1024 * 1024,
   2 * 1024 * 1024
 ]
-
-require 'benchmark/ips'
 
 Benchmark.ips do |x|
   x.config(time: 5, warmup: 2)

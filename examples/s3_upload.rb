@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require_relative '../lib/zip_kit'
+require_relative "../lib/zip_kit"
 
 # Any writable object can be used as a destination for the Streamer.
 # For example, you can write to an S3 bucket. Newer versions of the S3 SDK

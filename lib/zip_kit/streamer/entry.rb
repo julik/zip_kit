@@ -3,16 +3,16 @@
 # Is used internally by Streamer to keep track of entries in the archive during writing.
 # Normally you will not have to use this class directly
 class ZipKit::Streamer::Entry < Struct.new(:filename, :crc32, :compressed_size,
-                                              :uncompressed_size, :storage_mode, :mtime,
-                                              :use_data_descriptor, :local_header_offset, :bytes_used_for_local_header, :bytes_used_for_data_descriptor, :unix_permissions)
+  :uncompressed_size, :storage_mode, :mtime,
+  :use_data_descriptor, :local_header_offset, :bytes_used_for_local_header, :bytes_used_for_data_descriptor, :unix_permissions)
   def initialize(*)
     super
     filename.force_encoding(Encoding::UTF_8)
     @requires_efs_flag = !(begin
-                             filename.encode(Encoding::ASCII)
-                           rescue
-                             false
-                           end)
+      filename.encode(Encoding::ASCII)
+    rescue
+      false
+    end)
   end
 
   def total_bytes_used
@@ -27,7 +27,7 @@ class ZipKit::Streamer::Entry < Struct.new(:filename, :crc32, :compressed_size,
   def gp_flags
     flag = 0b00000000000
     flag |= 0b100000000000 if @requires_efs_flag # bit 11
-    flag |= 0x0008 if use_data_descriptor        # bit 3
+    flag |= 0x0008 if use_data_descriptor # bit 3
     flag
   end
 

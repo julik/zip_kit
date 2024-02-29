@@ -1,8 +1,8 @@
-require_relative '../spec_helper'
-require 'complexity_assert'
+require_relative "../spec_helper"
+require "complexity_assert"
 
 describe ZipKit::Streamer do
-  let(:test_text_file_path) { File.join(__dir__, 'war-and-peace.txt') }
+  let(:test_text_file_path) { File.join(__dir__, "war-and-peace.txt") }
 
   # Run each test in a temporady directory, and nuke it afterwards
   around(:each) do |example|
@@ -19,16 +19,20 @@ describe ZipKit::Streamer do
   end
 
   class FakeZipWriter
-    def write_local_file_header(*);               end
+    def write_local_file_header(*)
+    end
 
-    def write_data_descriptor(*);                 end
+    def write_data_descriptor(*)
+    end
 
-    def write_central_directory_file_header(*);   end
+    def write_central_directory_file_header(*)
+    end
 
-    def write_end_of_central_directory(*);        end
+    def write_end_of_central_directory(*)
+    end
   end
 
-  it 'has linear performance depending on the file count' do
+  it "has linear performance depending on the file count" do
     module FilecountComplexity
       def self.generate_args(size)
         [size]
@@ -37,7 +41,7 @@ describe ZipKit::Streamer do
       def self.run(n_files)
         ZipKit::Streamer.open(ZipKit::NullWriter, writer: FakeZipWriter.new) do |w|
           n_files.times do |i|
-            w.write_stored_file(format('file_%d', i)) { |body| body << 'w' }
+            w.write_stored_file(format("file_%d", i)) { |body| body << "w" }
           end
         end
       end
@@ -46,11 +50,11 @@ describe ZipKit::Streamer do
     expect(FilecountComplexity).to be_linear
   end
 
-  it 'raises an InvalidOutput if the given object does not support the methods' do
+  it "raises an InvalidOutput if the given object does not support the methods" do
     expect { described_class.new(nil) }.to raise_error(ZipKit::Streamer::InvalidOutput)
   end
 
-  it 'allows a destination which only supports write()' do
+  it "allows a destination which only supports write()" do
     stream_with_just_write = Object.new
     def stream_with_just_write.write(bytes)
       # noop
@@ -61,27 +65,27 @@ describe ZipKit::Streamer do
     }.not_to raise_error
   end
 
-  it 'allows the writer to be injectable' do
-    fake_writer = double('ZipWriter')
+  it "allows the writer to be injectable" do
+    fake_writer = double("ZipWriter")
     expect(fake_writer).to receive(:write_local_file_header)
     expect(fake_writer).to receive(:write_data_descriptor)
     expect(fake_writer).to receive(:write_central_directory_file_header)
     expect(fake_writer).to receive(:write_end_of_central_directory)
 
-    described_class.open('', writer: fake_writer) do |zip|
-      zip.write_deflated_file('stored.txt') do |sink|
-        sink << File.read(__dir__ + '/war-and-peace.txt')
+    described_class.open("", writer: fake_writer) do |zip|
+      zip.write_deflated_file("stored.txt") do |sink|
+        sink << File.read(__dir__ + "/war-and-peace.txt")
       end
     end
   end
 
-  it 'returns the position in the IO at every call' do
+  it "returns the position in the IO at every call" do
     io = StringIO.new
     zip = described_class.new(io)
-    pos = zip.add_deflated_entry(filename: 'file.jpg',
-                                 uncompressed_size: 182_919,
-                                 compressed_size: 8_912,
-                                 crc32: 8_912)
+    pos = zip.add_deflated_entry(filename: "file.jpg",
+      uncompressed_size: 182_919,
+      compressed_size: 8_912,
+      crc32: 8_912)
     expect(pos).to eq(io.tell)
     expect(pos).to eq(47)
 
@@ -89,7 +93,7 @@ describe ZipKit::Streamer do
     expect(retval).to eq(zip)
     expect(io.tell).to eq(8_959)
 
-    pos = zip.add_stored_entry(filename: 'filf.jpg', size: 8_921, crc32: 182_919)
+    pos = zip.add_stored_entry(filename: "filf.jpg", size: 8_921, crc32: 182_919)
     expect(pos).to eq(9006)
     zip << Random.new.bytes(8_921)
     expect(io.tell).to eq(17_927)
@@ -99,14 +103,14 @@ describe ZipKit::Streamer do
     expect(pos).to eq(18_101)
   end
 
-  it 'can write and then read the block-deflated files' do
-    f = Tempfile.new('raw')
+  it "can write and then read the block-deflated files" do
+    f = Tempfile.new("raw")
     f.binmode
 
     rewind_after(f) do
-      f << ('A' * 1_024 * 1_024)
+      f << ("A" * 1_024 * 1_024)
       f << Random.new.bytes(1_248)
-      f << ('B' * 1_024 * 1_024)
+      f << ("B" * 1_024 * 1_024)
     end
 
     crc = rewind_after(f) { Zlib.crc32(f.read) }
@@ -114,19 +118,19 @@ describe ZipKit::Streamer do
     compressed_blockwise = StringIO.new
     rewind_after(compressed_blockwise, f) do
       ZipKit::BlockDeflate.deflate_in_blocks_and_terminate(f,
-                                                              compressed_blockwise,
-                                                              block_size: 1_024)
+        compressed_blockwise,
+        block_size: 1_024)
     end
 
     # Perform the zipping
-    zip_file = Tempfile.new('z')
+    zip_file = Tempfile.new("z")
     zip_file.binmode
 
     described_class.open(zip_file) do |zip|
-      zip.add_deflated_entry(filename: 'compressed-file.bin',
-                             uncompressed_size: f.size,
-                             crc32: crc,
-                             compressed_size: compressed_blockwise.size)
+      zip.add_deflated_entry(filename: "compressed-file.bin",
+        uncompressed_size: f.size,
+        crc32: crc,
+        compressed_size: compressed_blockwise.size)
       zip << compressed_blockwise.read
     end
     zip_file.flush
@@ -140,20 +144,20 @@ describe ZipKit::Streamer do
       end
     end
 
-    expect(per_filename['compressed-file.bin'].bytesize).to eq(f.size)
-    expect(Digest::SHA1.hexdigest(per_filename['compressed-file.bin'])).to \
+    expect(per_filename["compressed-file.bin"].bytesize).to eq(f.size)
+    expect(Digest::SHA1.hexdigest(per_filename["compressed-file.bin"])).to \
       eq(Digest::SHA1.hexdigest(f.read))
 
     inspect_zip_with_external_tool(zip_file.path)
   end
 
-  it 'can write and then read an empty directory' do
+  it "can write and then read an empty directory" do
     # Perform the zipping
-    zip_file = Tempfile.new('z')
+    zip_file = Tempfile.new("z")
     zip_file.binmode
 
     described_class.open(zip_file) do |zip|
-      zip.add_empty_directory(dirname: 'Tunes')
+      zip.add_empty_directory(dirname: "Tunes")
     end
     zip_file.flush
 
@@ -167,35 +171,35 @@ describe ZipKit::Streamer do
       end
     end
 
-    expect(per_filename['Tunes/'].bytesize).to eq(154)
+    expect(per_filename["Tunes/"].bytesize).to eq(154)
 
     inspect_zip_with_external_tool(zip_file.path)
   end
 
-  it 'can write the data descriptor and updates the last entry as well' do
+  it "can write the data descriptor and updates the last entry as well" do
     out = StringIO.new
-    fake_w = double('Writer')
+    fake_w = double("Writer")
     expect(fake_w).to receive(:write_local_file_header)
     expect(fake_w).to receive(:write_data_descriptor)
     expect(fake_w).to receive(:write_central_directory_file_header)
     expect(fake_w).to receive(:write_end_of_central_directory)
 
-    file_contents = 'Some data from file'
-    crc = Zlib.crc32('Some data from file')
+    file_contents = "Some data from file"
+    crc = Zlib.crc32("Some data from file")
 
     ZipKit::Streamer.open(out, writer: fake_w) do |zip|
-      zip.add_stored_entry(filename: 'somefile.txt', use_data_descriptor: true)
+      zip.add_stored_entry(filename: "somefile.txt", use_data_descriptor: true)
       zip << file_contents
       zip.update_last_entry_and_write_data_descriptor(crc32: crc,
-                                                      compressed_size: file_contents.bytesize,
-                                                      uncompressed_size: file_contents.bytesize)
+        compressed_size: file_contents.bytesize,
+        uncompressed_size: file_contents.bytesize)
     end
   end
 
-  it 'archives files which can then be read using the usual means with Rubyzip' do
-    zip_buf = Tempfile.new('zipp')
+  it "archives files which can then be read using the usual means with Rubyzip" do
+    zip_buf = Tempfile.new("zipp")
     zip_buf.binmode
-    output_io = double('IO')
+    output_io = double("IO")
 
     # Only allow the methods we provide in BlockWrite.
     # Will raise an error if other methods are triggered (the ones that
@@ -214,13 +218,13 @@ describe ZipKit::Streamer do
 
     # Perform the zipping
     zip = described_class.new(output_io)
-    zip.add_stored_entry(filename: 'first-file.bin',
-                         size: raw_file1.size,
-                         crc32: Zlib.crc32(raw_file1))
+    zip.add_stored_entry(filename: "first-file.bin",
+      size: raw_file1.size,
+      crc32: Zlib.crc32(raw_file1))
     zip << raw_file1
-    zip.add_stored_entry(filename: 'second-file.bin',
-                         size: raw_file2.size,
-                         crc32: Zlib.crc32(raw_file2))
+    zip.add_stored_entry(filename: "second-file.bin",
+      size: raw_file2.size,
+      crc32: Zlib.crc32(raw_file2))
     zip << raw_file2
     zip.close
 
@@ -236,8 +240,8 @@ describe ZipKit::Streamer do
       end
     end
 
-    expect(per_filename['first-file.bin'].unpack('C*')).to eq(raw_file1.unpack('C*'))
-    expect(per_filename['second-file.bin'].unpack('C*')).to eq(raw_file2.unpack('C*'))
+    expect(per_filename["first-file.bin"].unpack("C*")).to eq(raw_file1.unpack("C*"))
+    expect(per_filename["second-file.bin"].unpack("C*")).to eq(raw_file2.unpack("C*"))
 
     wd = Dir.pwd
     Dir.mktmpdir do |td|
@@ -247,8 +251,8 @@ describe ZipKit::Streamer do
     Dir.chdir(wd)
   end
 
-  it 'sets the general-purpose flag for entries with UTF8 names' do
-    zip_buf = Tempfile.new('zipp')
+  it "sets the general-purpose flag for entries with UTF8 names" do
+    zip_buf = Tempfile.new("zipp")
     zip_buf.binmode
 
     # Generate a couple of random files
@@ -257,13 +261,13 @@ describe ZipKit::Streamer do
 
     # Perform the zipping
     zip = described_class.new(zip_buf)
-    zip.add_stored_entry(filename: 'first-file.bin',
-                         size: raw_file1.size,
-                         crc32: Zlib.crc32(raw_file1))
+    zip.add_stored_entry(filename: "first-file.bin",
+      size: raw_file1.size,
+      crc32: Zlib.crc32(raw_file1))
     zip << raw_file1
-    zip.add_stored_entry(filename: 'второй-файл.bin',
-                         size: raw_file2.size,
-                         crc32: Zlib.crc32(raw_file2))
+    zip.add_stored_entry(filename: "второй-файл.bin",
+      size: raw_file2.size,
+      crc32: Zlib.crc32(raw_file2))
     IO.copy_stream(StringIO.new(raw_file2), zip)
     zip.close
 
@@ -276,21 +280,21 @@ describe ZipKit::Streamer do
       first_entry, second_entry = entries
 
       expect(first_entry.gp_flags).to eq(0)
-      expect(first_entry.name).to eq('first-file.bin')
+      expect(first_entry.name).to eq("first-file.bin")
 
       # Rubyzip does not properly set the encoding of the entries it reads
       expect(second_entry.gp_flags).to eq(2_048)
-      expect(second_entry.name).to eq('второй-файл.bin'.force_encoding(Encoding::BINARY))
+      expect(second_entry.name).to eq("второй-файл.bin".force_encoding(Encoding::BINARY))
     end
   end
 
-  it 'writes the correct archive elements when using data descriptors', :aggregate_failures do
+  it "writes the correct archive elements when using data descriptors", :aggregate_failures do
     out = StringIO.new
-    fake_w = double('Writer')
+    fake_w = double("Writer")
     expect(fake_w).to receive(:write_local_file_header) { |**kwargs|
       expect(kwargs[:storage_mode]).to eq(8)
       expect(kwargs[:crc32]).to be_zero
-      expect(kwargs[:filename]).to eq('somefile.txt')
+      expect(kwargs[:filename]).to eq("somefile.txt")
     }
     expect(fake_w).to receive(:write_data_descriptor) { |**kwargs|
       expect(kwargs[:crc32]).to eq(2729945713)
@@ -300,7 +304,7 @@ describe ZipKit::Streamer do
     expect(fake_w).to receive(:write_local_file_header) { |**kwargs|
       expect(kwargs[:storage_mode]).to eq(0)
       expect(kwargs[:crc32]).to be_zero
-      expect(kwargs[:filename]).to eq('uncompressed.txt')
+      expect(kwargs[:filename]).to eq("uncompressed.txt")
     }
     expect(fake_w).to receive(:write_data_descriptor) { |**kwargs|
       expect(kwargs[:crc32]).to eq(1550572917)
@@ -309,23 +313,23 @@ describe ZipKit::Streamer do
     }
     expect(fake_w).to receive(:write_central_directory_file_header) { |**kwargs|
       expect(kwargs[:local_file_header_location]).to eq(0)
-      expect(kwargs[:filename]).to eq('somefile.txt')
+      expect(kwargs[:filename]).to eq("somefile.txt")
       expect(kwargs[:gp_flags]).to eq(8)
       expect(kwargs[:storage_mode]).to eq(8)
       expect(kwargs[:compressed_size]).to eq(19)
       expect(kwargs[:uncompressed_size]).to eq(17)
       expect(kwargs[:crc32]).to eq(2729945713)
-      kwargs[:io] << 'fake'
+      kwargs[:io] << "fake"
     }
     expect(fake_w).to receive(:write_central_directory_file_header) { |**kwargs|
       expect(kwargs[:local_file_header_location]).to eq(19)
-      expect(kwargs[:filename]).to eq('uncompressed.txt')
+      expect(kwargs[:filename]).to eq("uncompressed.txt")
       expect(kwargs[:gp_flags]).to eq(8)
       expect(kwargs[:storage_mode]).to eq(0)
       expect(kwargs[:compressed_size]).to eq(22)
       expect(kwargs[:uncompressed_size]).to eq(22)
       expect(kwargs[:crc32]).to eq(1550572917)
-      kwargs[:io] << 'fake'
+      kwargs[:io] << "fake"
     }
     expect(fake_w).to receive(:write_end_of_central_directory) { |**kwargs|
       expect(kwargs[:start_of_central_directory_location]).to be > 0
@@ -334,18 +338,18 @@ describe ZipKit::Streamer do
     }
 
     ZipKit::Streamer.open(out, writer: fake_w) do |z|
-      z.write_deflated_file('somefile.txt') do |out|
-        out << 'Experimental data'
+      z.write_deflated_file("somefile.txt") do |out|
+        out << "Experimental data"
       end
-      z.write_stored_file('uncompressed.txt') do |out|
-        out << 'Some uncompressed data'
+      z.write_stored_file("uncompressed.txt") do |out|
+        out << "Some uncompressed data"
       end
     end
   end
 
-  it 'allows the yielded writable sinks to be closed twice even when using a block' do
+  it "allows the yielded writable sinks to be closed twice even when using a block" do
     out = StringIO.new
-    fake_w = double('Writer')
+    fake_w = double("Writer")
     expect(fake_w).to receive(:write_local_file_header)
     expect(fake_w).to receive(:write_data_descriptor)
     expect(fake_w).to receive(:write_local_file_header)
@@ -355,14 +359,14 @@ describe ZipKit::Streamer do
     expect(fake_w).to receive(:write_end_of_central_directory)
 
     ZipKit::Streamer.open(out, writer: fake_w) do |z|
-      z.write_deflated_file('somefile.txt', &:close)
-      z.write_stored_file('uncompressed.txt', &:close)
+      z.write_deflated_file("somefile.txt", &:close)
+      z.write_stored_file("uncompressed.txt", &:close)
     end
   end
 
-  it 'supports deferred writes using the return values from write_deflated_file and write_stored_file' do
+  it "supports deferred writes using the return values from write_deflated_file and write_stored_file" do
     out = StringIO.new
-    fake_w = double('Writer')
+    fake_w = double("Writer")
     expect(fake_w).to receive(:write_local_file_header)
     expect(fake_w).to receive(:write_data_descriptor)
     expect(fake_w).to receive(:write_local_file_header)
@@ -372,24 +376,24 @@ describe ZipKit::Streamer do
     expect(fake_w).to receive(:write_end_of_central_directory)
 
     ZipKit::Streamer.open(out, writer: fake_w) do |z|
-      out = z.write_deflated_file('somefile.txt')
-      out << 'Experimental data'
+      out = z.write_deflated_file("somefile.txt")
+      out << "Experimental data"
       out.close
 
-      out = z.write_stored_file('uncompressed.txt')
-      out << 'Some uncompressed data'
+      out = z.write_stored_file("uncompressed.txt")
+      out << "Some uncompressed data"
       out.close
     end
   end
 
-  it 'creates an archive with data descriptors that can be opened by Rubyzip, with a small number of very tiny text files' do
-    tf = ManagedTempfile.new('zip')
+  it "creates an archive with data descriptors that can be opened by Rubyzip, with a small number of very tiny text files" do
+    tf = ManagedTempfile.new("zip")
     described_class.open(tf) do |zip|
-      zip.write_stored_file('stored.txt') do |sink|
-        sink << File.binread(__dir__ + '/war-and-peace.txt')
+      zip.write_stored_file("stored.txt") do |sink|
+        sink << File.binread(__dir__ + "/war-and-peace.txt")
       end
-      zip.write_deflated_file('deflated.txt') do |sink|
-        sink << File.binread(__dir__ + '/war-and-peace.txt')
+      zip.write_deflated_file("deflated.txt") do |sink|
+        sink << File.binread(__dir__ + "/war-and-peace.txt")
       end
     end
     tf.flush
@@ -399,7 +403,7 @@ describe ZipKit::Streamer do
       expect(entry.fstype).to eq(3)
 
       # The CRC
-      expect(entry.crc).to eq(Zlib.crc32(File.binread(__dir__ + '/war-and-peace.txt')))
+      expect(entry.crc).to eq(Zlib.crc32(File.binread(__dir__ + "/war-and-peace.txt")))
 
       # Check the name
       expect(entry.name).to match(/\.txt$/)
@@ -410,14 +414,14 @@ describe ZipKit::Streamer do
       # Check the file contents
       readback = entry.get_input_stream.read
       readback.force_encoding(Encoding::BINARY)
-      expect(readback[0..10]).to eq(File.binread(__dir__ + '/war-and-peace.txt')[0..10])
+      expect(readback[0..10]).to eq(File.binread(__dir__ + "/war-and-peace.txt")[0..10])
     end
 
     inspect_zip_with_external_tool(tf.path)
   end
 
-  it 'can create a valid ZIP archive without any files' do
-    tf = ManagedTempfile.new('zip')
+  it "can create a valid ZIP archive without any files" do
+    tf = ManagedTempfile.new("zip")
 
     described_class.open(tf) do |zip|
     end
@@ -428,12 +432,12 @@ describe ZipKit::Streamer do
     expect { |b| Zip::File.foreach(tf.path, &b) }.not_to yield_control
   end
 
-  it 'prevents duplicates in the stored files' do
+  it "prevents duplicates in the stored files" do
     files = [
-      'README', 'README', 'file.one\\two.jpg', 'file_one.jpg', 'file_one (1).jpg',
-      'file\\one.jpg', 'My.Super.file.txt.zip', 'My.Super.file.txt.zip'
+      "README", "README", 'file.one\\two.jpg', "file_one.jpg", "file_one (1).jpg",
+      'file\\one.jpg', "My.Super.file.txt.zip", "My.Super.file.txt.zip"
     ]
-    fake_writer = double('Writer').as_null_object
+    fake_writer = double("Writer").as_null_object
     seen_filenames = []
     allow(fake_writer).to receive(:write_local_file_header) { |filename:, **_others|
       seen_filenames << filename
@@ -443,71 +447,71 @@ describe ZipKit::Streamer do
       zip_streamer.add_stored_entry(filename: fn, size: 1_024, crc32: 0xCC)
     end
     expect(seen_filenames).to eq([
-      'README', 'README (1)', 'file.one_two.jpg', 'file_one.jpg',
-      'file_one (1).jpg', 'file_one (2).jpg', 'My.Super.file.txt.zip',
-      'My.Super.file (1).txt.zip'
+      "README", "README (1)", "file.one_two.jpg", "file_one.jpg",
+      "file_one (1).jpg", "file_one (2).jpg", "My.Super.file.txt.zip",
+      "My.Super.file (1).txt.zip"
     ])
   end
 
-  it 'raises when a file would clobber a directory or vice versa (without automatic deduping)' do
+  it "raises when a file would clobber a directory or vice versa (without automatic deduping)" do
     expect {
       zip_streamer = described_class.new(StringIO.new, auto_rename_duplicate_filenames: false)
-      zip_streamer.add_empty_directory(dirname: 'foo/bar/baz')
-      zip_streamer.add_stored_entry(filename: 'foo/bar/baz', size: 1_024, crc32: 0xCC)
+      zip_streamer.add_empty_directory(dirname: "foo/bar/baz")
+      zip_streamer.add_stored_entry(filename: "foo/bar/baz", size: 1_024, crc32: 0xCC)
     }.to raise_error(ZipKit::PathSet::Conflict)
 
     expect {
       zip_streamer = described_class.new(StringIO.new, auto_rename_duplicate_filenames: false)
-      zip_streamer.add_empty_directory(dirname: 'foo/bar/baz')
-      zip_streamer.add_deflated_entry(filename: 'foo/bar/baz', compressed_size: 1_024, uncompressed_size: 12548, crc32: 0xCC)
+      zip_streamer.add_empty_directory(dirname: "foo/bar/baz")
+      zip_streamer.add_deflated_entry(filename: "foo/bar/baz", compressed_size: 1_024, uncompressed_size: 12548, crc32: 0xCC)
     }.to raise_error(ZipKit::PathSet::Conflict)
 
     expect {
       zip_streamer = described_class.new(StringIO.new, auto_rename_duplicate_filenames: false)
-      zip_streamer.add_stored_entry(filename: 'foo/bar/baz', size: 1_024, crc32: 0xCC)
-      zip_streamer.add_empty_directory(dirname: 'foo/bar/baz')
+      zip_streamer.add_stored_entry(filename: "foo/bar/baz", size: 1_024, crc32: 0xCC)
+      zip_streamer.add_empty_directory(dirname: "foo/bar/baz")
     }.to raise_error(ZipKit::PathSet::Conflict)
 
     expect {
       zip_streamer = described_class.new(StringIO.new, auto_rename_duplicate_filenames: false)
-      zip_streamer.add_stored_entry(filename: 'foo/bar/baz', size: 1_024, crc32: 0xCC)
-      zip_streamer.add_stored_entry(filename: 'foo/bar/baz/bad', size: 1_024, crc32: 0xCC)
+      zip_streamer.add_stored_entry(filename: "foo/bar/baz", size: 1_024, crc32: 0xCC)
+      zip_streamer.add_stored_entry(filename: "foo/bar/baz/bad", size: 1_024, crc32: 0xCC)
     }.to raise_error(ZipKit::PathSet::Conflict)
 
     expect {
       zip_streamer = described_class.new(StringIO.new, auto_rename_duplicate_filenames: false)
-      zip_streamer.add_stored_entry(filename: 'a/b', size: 1_024, crc32: 0xCC)
-      zip_streamer.add_empty_directory(dirname: 'a/b/c')
+      zip_streamer.add_stored_entry(filename: "a/b", size: 1_024, crc32: 0xCC)
+      zip_streamer.add_empty_directory(dirname: "a/b/c")
     }.to raise_error(ZipKit::PathSet::Conflict)
 
     expect {
       zip_streamer = described_class.new(StringIO.new, auto_rename_duplicate_filenames: false)
-      zip_streamer.add_empty_directory(dirname: 'a/b/c')
-      zip_streamer.add_stored_entry(filename: 'a/b', size: 1_024, crc32: 0xCC)
+      zip_streamer.add_empty_directory(dirname: "a/b/c")
+      zip_streamer.add_stored_entry(filename: "a/b", size: 1_024, crc32: 0xCC)
     }.to raise_error(ZipKit::PathSet::Conflict)
   end
 
-  it 'raises when a file would clobber another file (without automatic deduping)' do
-    fake_writer = double('Writer').as_null_object
+  it "raises when a file would clobber another file (without automatic deduping)" do
+    fake_writer = double("Writer").as_null_object
     expect {
       zip_streamer = described_class.new(StringIO.new, writer: fake_writer, auto_rename_duplicate_filenames: false)
-      zip_streamer.add_stored_entry(filename: 'foo/bar/baz', size: 1_024, crc32: 0xCC)
-      zip_streamer.add_stored_entry(filename: 'foo/bar/baz', size: 14, crc32: 0x0C)
+      zip_streamer.add_stored_entry(filename: "foo/bar/baz", size: 1_024, crc32: 0xCC)
+      zip_streamer.add_stored_entry(filename: "foo/bar/baz", size: 14, crc32: 0x0C)
     }.to raise_error(ZipKit::PathSet::Conflict)
 
     expect {
       zip_streamer = described_class.new(StringIO.new, writer: fake_writer, auto_rename_duplicate_filenames: false)
-      zip_streamer.add_stored_entry(filename: 'foo', size: 1_024, crc32: 0xCC)
-      zip_streamer.add_stored_entry(filename: 'foo', size: 14, crc32: 0x0C)
+      zip_streamer.add_stored_entry(filename: "foo", size: 1_024, crc32: 0xCC)
+      zip_streamer.add_stored_entry(filename: "foo", size: 14, crc32: 0x0C)
     }.to raise_error(ZipKit::PathSet::Conflict)
   end
 
-  it 'raises when a file would clobber a directory or vice versa (when automatic filename deduplication is enabled)' do
-    fake_writer = double('Writer').as_null_object
+  it "raises when a file would clobber a directory or vice versa (when automatic filename deduplication is enabled)" do
+    fake_writer = double("Writer").as_null_object
     expect {
       zip_streamer = described_class.new(StringIO.new, writer: fake_writer, auto_rename_duplicate_filenames: true)
-      zip_streamer.add_stored_entry(filename: 'foo/bar/baz', size: 1_024, crc32: 0xCC)
-      zip_streamer.add_stored_entry(filename: 'foo/bar/baz/bad', size: 1_024, crc32: 0xCC)
+      zip_streamer.add_stored_entry(filename: "foo/bar/baz", size: 1_024, crc32: 0xCC)
+      zip_streamer.add_stored_entry(filename: "foo/bar/baz/bad", size: 1_024, crc32: 0xCC)
     }.to raise_error(ZipKit::PathSet::Conflict)
 
     # Contrary to what one would think, the order in which entries get added in this instance matters.
@@ -518,40 +522,40 @@ describe ZipKit::Streamer do
     # and we are going to make it optional - it can lead to very non-intuitive behavior
     expect {
       zip_streamer = described_class.new(StringIO.new, writer: fake_writer, auto_rename_duplicate_filenames: true)
-      zip_streamer.add_stored_entry(filename: 'foo/bar/baz/bad', size: 1_024, crc32: 0xCC)
-      zip_streamer.add_stored_entry(filename: 'foo/bar/baz', size: 1_024, crc32: 0xCC)
+      zip_streamer.add_stored_entry(filename: "foo/bar/baz/bad", size: 1_024, crc32: 0xCC)
+      zip_streamer.add_stored_entry(filename: "foo/bar/baz", size: 1_024, crc32: 0xCC)
       # The error raised would be ZipKit::PathSet::Conflict but RSpec reasonably advises not using
       # not_to raise_error(ZipKit::PathSet::Conflict) due to the semantics of raise_error
     }.not_to raise_error
   end
 
-  it 'raises when the IO offset is out of sync with the sizes of the entries known to the Streamer' do
+  it "raises when the IO offset is out of sync with the sizes of the entries known to the Streamer" do
     expect {
       described_class.open(StringIO.new, auto_rename_duplicate_filenames: false) do |zip_streamer|
-        zip_streamer.add_stored_entry(filename: 'foo/bar/baz', size: 1_024, crc32: 0xCC)
+        zip_streamer.add_stored_entry(filename: "foo/bar/baz", size: 1_024, crc32: 0xCC)
       end
     }.to raise_error(ZipKit::Streamer::OffsetOutOfSync, /Entries add up to \d+ bytes and the IO is at 50 bytes/)
   end
 
-  it 'writes the specified modification time', :aggregate_failures do
-    fake_writer = double('Writer').as_null_object
+  it "writes the specified modification time", :aggregate_failures do
+    fake_writer = double("Writer").as_null_object
 
     expect(fake_writer).to receive(:write_local_file_header) { |**kwargs|
       expect(kwargs[:mtime]).to eq(Time.new(2018, 1, 1))
     }.exactly(3).times
 
     described_class.open(StringIO.new, writer: fake_writer) do |zip|
-      zip.write_stored_file('stored.txt', modification_time: Time.new(2018, 1, 1)) do |sink|
-        sink << 'stored'
+      zip.write_stored_file("stored.txt", modification_time: Time.new(2018, 1, 1)) do |sink|
+        sink << "stored"
       end
-      zip.write_deflated_file('deflated.txt', modification_time: Time.new(2018, 1, 1)) do |sink|
-        sink << 'deflated'
+      zip.write_deflated_file("deflated.txt", modification_time: Time.new(2018, 1, 1)) do |sink|
+        sink << "deflated"
       end
-      zip.add_empty_directory(dirname: 'empty', modification_time: Time.new(2018, 1, 1))
+      zip.add_empty_directory(dirname: "empty", modification_time: Time.new(2018, 1, 1))
     end
   end
 
-  it 'supports automatic mode selection using a heuristic' do
+  it "supports automatic mode selection using a heuristic" do
     zip_file = Tempfile.new
     rng = Random.new(42)
     repeating_string = "many many delicious, compressible words"
@@ -604,11 +608,11 @@ describe ZipKit::Streamer do
     expect(compression_methods["empty.bin"]).to eq(0)
   end
 
-  it 'rolls back entries where writes have failed' do
-    zip_file = Tempfile.new('zipp')
+  it "rolls back entries where writes have failed" do
+    zip_file = Tempfile.new("zipp")
     described_class.open(zip_file) do |zip|
       begin
-        zip.write_deflated_file('deflated.txt', modification_time: Time.new(2018, 1, 1)) do |sink|
+        zip.write_deflated_file("deflated.txt", modification_time: Time.new(2018, 1, 1)) do |sink|
           sink << "this is attempt 1"
           raise "Oops"
         end
@@ -616,12 +620,12 @@ describe ZipKit::Streamer do
         expect(e.to_s).to match(/Oops/)
       end
 
-      zip.write_deflated_file('deflated.txt', modification_time: Time.new(2018, 1, 1)) do |sink|
+      zip.write_deflated_file("deflated.txt", modification_time: Time.new(2018, 1, 1)) do |sink|
         sink << "this is attempt 2"
       end
 
       begin
-        zip.write_stored_file('stored.txt', modification_time: Time.new(2018, 1, 1)) do |sink|
+        zip.write_stored_file("stored.txt", modification_time: Time.new(2018, 1, 1)) do |sink|
           sink << "this is attempt 1"
           raise "Oops"
         end
@@ -629,7 +633,7 @@ describe ZipKit::Streamer do
         expect(e.to_s).to match(/Oops/)
       end
 
-      zip.write_stored_file('stored.txt', modification_time: Time.new(2018, 1, 1)) do |sink|
+      zip.write_stored_file("stored.txt", modification_time: Time.new(2018, 1, 1)) do |sink|
         sink << "this is attempt 2"
       end
     end

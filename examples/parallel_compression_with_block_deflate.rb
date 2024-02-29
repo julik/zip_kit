@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
-require_relative '../lib/zip_kit'
-require 'tempfile'
+require_relative "../lib/zip_kit"
+require "tempfile"
 
 # This shows how to perform compression in parallel (a-la pigz, but in a less
 # advanced fashion since the compression tables are not shared - to
@@ -19,9 +19,9 @@ require 'tempfile'
 # as well, in an independent deflate segment - the threads do not share
 # anything. You could also multiplex this over multiple processes or
 # even machines.
-threads = (0..12).map do
+threads = (0..12).map {
   Thread.new do
-    source_tempfile = Tempfile.new 't'
+    source_tempfile = Tempfile.new "t"
     source_tempfile.binmode
 
     # Fill the part with random content
@@ -33,16 +33,16 @@ threads = (0..12).map do
     source_tempfile.rewind
 
     # Create a compressed part
-    compressed_tempfile = Tempfile.new('tc')
+    compressed_tempfile = Tempfile.new("tc")
     compressed_tempfile.binmode
     ZipKit::BlockDeflate.deflate_in_blocks(source_tempfile,
-                                              compressed_tempfile)
+      compressed_tempfile)
 
     source_tempfile.close!
     # The data that the splicing process needs.
     [compressed_tempfile, part_crc, source_tempfile.size]
   end
-end
+}
 
 # Threads return us a tuple with [compressed_tempfile, source_part_size,
 # source_part_crc]
@@ -70,16 +70,16 @@ size_of_uncompressed_file = compressed_tempfiles_and_crc_of_parts.map { |e| e[2]
 # We use a File as a destination here, but you can also use a socket or a
 # non-rewindable IO. ZipKit never needs to rewind your output, since it is
 # made for streaming.
-output = File.open('zip_created_in_parallel.zip', 'wb')
+output = File.open("zip_created_in_parallel.zip", "wb")
 
 ZipKit::Streamer.open(output) do |zip|
-  zip.add_deflated_entry('parallel.bin',
-                         size_of_uncompressed_file,
-                         entire_file_crc.to_i,
-                         size_of_deflated_segment)
+  zip.add_deflated_entry("parallel.bin",
+    size_of_uncompressed_file,
+    entire_file_crc.to_i,
+    size_of_deflated_segment)
   compressed_part_files.each do |part_file|
     part_file.rewind
-    while blob = part_file.read(2048)
+    while (blob = part_file.read(2048))
       zip << blob
     end
   end

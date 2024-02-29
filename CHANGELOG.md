@@ -2,6 +2,7 @@
 
 * Rebirth as zip_kit
 * Adopt MIT license. The changes from 5.x get grandfathered in. The base for the fork is the 4.x version which was still MIT-licensed.
+* Bump minimum Ruby version to 2.6
 * Respond to `#write` in all objects that respond to `#<<`, because they should be usable with `IO.copy_stream`
 * Allow the last file to be suppressed in the central directory via Streamer#rollback!
 * Allow heuristic compression. Use `Streamer#write_file` to let zip_kit pick the right compression method for you. If a file will benefit from

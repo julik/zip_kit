@@ -59,7 +59,7 @@ jobs:
       matrix:
         ruby:
           - '3.3'
-          - '2.1'
+          - '2.5'
         experimental: [false]
     steps:
       - name: Checkout
