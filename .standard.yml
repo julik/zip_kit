@@ -3,3 +3,6 @@ ignore:
   - 'spec/**/*':
     - Lint/ConstantDefinitionInBlock
     - Style/GlobalVars
+  - 'lib/zip_kit/rack_body.rb': # Erroneous detection
+    - Lint/OrderedMagicComments
+    - Layout/EmptyLineAfterMagicComment
