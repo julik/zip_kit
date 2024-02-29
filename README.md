@@ -119,6 +119,7 @@ end
 headers = {
   "Last-Modified" => Time.now.httpdate, # disables Rack::ETag
   "Content-Type" => "application/zip",
+  "Content-Encoding" => "identity", # disables Rack::Deflater
   "Transfer-Encoding" => "chunked",
   "X-Accel-Buffering" => "no" # disables buffering in nginx/GCP
 }
