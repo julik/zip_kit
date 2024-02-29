@@ -42,7 +42,7 @@ describe ZipKit::RemoteIO do
 
   describe "#read" do
     before :each do
-      @buf = Tempfile.new("simulated-http")
+      @buf = ManagedTempfile.new("simulated-http")
       @buf.binmode
       5.times { @buf << Random.new.bytes(1024 * 1024 * 3) }
       @buf.rewind

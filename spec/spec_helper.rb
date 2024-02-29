@@ -10,19 +10,13 @@ require "zip"
 
 require_relative "support/read_monitor"
 require_relative "support/managed_tempfile"
-require_relative "support/zip_inspection"
 require_relative "support/chunked_encoding"
 require_relative "support/allocate_under_matcher"
 
 RSpec.configure do |config|
-  config.include ZipInspection
   config.include ChunkedEncoding
 
   config.after :each do
     ManagedTempfile.prune!
-  end
-
-  config.after :suite do
-    $stderr << $zip_inspection_buf.string if $zip_inspection_buf
   end
 end

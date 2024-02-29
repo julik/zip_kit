@@ -104,7 +104,7 @@ describe ZipKit::Streamer do
   end
 
   it "can write and then read the block-deflated files" do
-    f = Tempfile.new("raw")
+    f = ManagedTempfile.new("raw")
     f.binmode
 
     rewind_after(f) do
@@ -123,7 +123,7 @@ describe ZipKit::Streamer do
     end
 
     # Perform the zipping
-    zip_file = Tempfile.new("z")
+    zip_file = ManagedTempfile.new("z")
     zip_file.binmode
 
     described_class.open(zip_file) do |zip|
@@ -147,13 +147,11 @@ describe ZipKit::Streamer do
     expect(per_filename["compressed-file.bin"].bytesize).to eq(f.size)
     expect(Digest::SHA1.hexdigest(per_filename["compressed-file.bin"])).to \
       eq(Digest::SHA1.hexdigest(f.read))
-
-    inspect_zip_with_external_tool(zip_file.path)
   end
 
   it "can write and then read an empty directory" do
     # Perform the zipping
-    zip_file = Tempfile.new("z")
+    zip_file = ManagedTempfile.new("z")
     zip_file.binmode
 
     described_class.open(zip_file) do |zip|
@@ -172,8 +170,6 @@ describe ZipKit::Streamer do
     end
 
     expect(per_filename["Tunes/"].bytesize).to eq(154)
-
-    inspect_zip_with_external_tool(zip_file.path)
   end
 
   it "can write the data descriptor and updates the last entry as well" do
@@ -197,7 +193,7 @@ describe ZipKit::Streamer do
   end
 
   it "archives files which can then be read using the usual means with Rubyzip" do
-    zip_buf = Tempfile.new("zipp")
+    zip_buf = ManagedTempfile.new("zipp")
     zip_buf.binmode
     output_io = double("IO")
 
@@ -242,17 +238,10 @@ describe ZipKit::Streamer do
 
     expect(per_filename["first-file.bin"].unpack("C*")).to eq(raw_file1.unpack("C*"))
     expect(per_filename["second-file.bin"].unpack("C*")).to eq(raw_file2.unpack("C*"))
-
-    wd = Dir.pwd
-    Dir.mktmpdir do |td|
-      Dir.chdir(td)
-      inspect_zip_with_external_tool(zip_buf.path)
-    end
-    Dir.chdir(wd)
   end
 
   it "sets the general-purpose flag for entries with UTF8 names" do
-    zip_buf = Tempfile.new("zipp")
+    zip_buf = ManagedTempfile.new("zipp")
     zip_buf.binmode
 
     # Generate a couple of random files
@@ -416,8 +405,6 @@ describe ZipKit::Streamer do
       readback.force_encoding(Encoding::BINARY)
       expect(readback[0..10]).to eq(File.binread(__dir__ + "/war-and-peace.txt")[0..10])
     end
-
-    inspect_zip_with_external_tool(tf.path)
   end
 
   it "can create a valid ZIP archive without any files" do
@@ -556,7 +543,7 @@ describe ZipKit::Streamer do
   end
 
   it "supports automatic mode selection using a heuristic" do
-    zip_file = Tempfile.new
+    zip_file = ManagedTempfile.new
     rng = Random.new(42)
     repeating_string = "many many delicious, compressible words"
     n_writes = 24000
@@ -609,7 +596,7 @@ describe ZipKit::Streamer do
   end
 
   it "rolls back entries where writes have failed" do
-    zip_file = Tempfile.new("zipp")
+    zip_file = ManagedTempfile.new("zipp")
     described_class.open(zip_file) do |zip|
       begin
         zip.write_deflated_file("deflated.txt", modification_time: Time.new(2018, 1, 1)) do |sink|

@@ -38,12 +38,12 @@ describe ZipKit::RemoteUncap do
 
   it 'returns an array of remote entries that can be used to fetch the segments \
       from within the ZIP' do
-    payload1 = Tempfile.new "payload1"
+    payload1 = ManagedTempfile.new "payload1"
     payload1 << Random.new.bytes((1024 * 1024 * 5) + 10)
     payload1.flush
     payload1.rewind
 
-    payload2 = Tempfile.new "payload2"
+    payload2 = ManagedTempfile.new "payload2"
     payload2 << Random.new.bytes(1024 * 1024 * 3)
     payload2.flush
     payload2.rewind
@@ -79,11 +79,11 @@ describe ZipKit::RemoteUncap do
   end
 
   it "can cope with an empty file within the zip" do
-    payload1 = Tempfile.new "payload1"
+    payload1 = ManagedTempfile.new "payload1"
     payload1.flush
     payload1.rewind
 
-    payload2 = Tempfile.new "payload2"
+    payload2 = ManagedTempfile.new "payload2"
     payload2 << Random.new.bytes(1024)
     payload2.flush
     payload2.rewind

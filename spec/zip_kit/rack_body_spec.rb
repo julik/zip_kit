@@ -2,7 +2,7 @@ require_relative "../spec_helper"
 
 describe ZipKit::RackBody do
   it "is usable as a Rack response body, supports each()" do
-    output_buf = Tempfile.new("output")
+    output_buf = ManagedTempfile.new("output")
 
     file_body = Random.new.bytes(1024 * 1024 + 8981)
 

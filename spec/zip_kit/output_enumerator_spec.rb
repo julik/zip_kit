@@ -2,7 +2,7 @@ require_relative "../spec_helper"
 
 describe ZipKit::OutputEnumerator do
   it "returns parts of the ZIP file when called via #each with immediate yield" do
-    output_buf = Tempfile.new("output")
+    output_buf = ManagedTempfile.new("output")
 
     file_body = Random.new.bytes(1024 * 1024 + 8981)
 
@@ -34,7 +34,7 @@ describe ZipKit::OutputEnumerator do
   end
 
   it "returns parts of the ZIP file when called using an Enumerator" do
-    output_buf = Tempfile.new("output")
+    output_buf = ManagedTempfile.new("output")
 
     file_body = Random.new.bytes(1024 * 1024 + 8981)
 
