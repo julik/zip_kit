@@ -23,5 +23,7 @@ jobs:
         with:
           ruby-version: ${{ matrix.ruby }}
           bundler-cache: true
-      - name: "Tests and Lint"
-        run: bundle exec rake
+      - name: "Tests"
+        run: bundle exec rspec --backtrace --fail-fast
+      - name: "Lint"
+        run: bundle exec standard

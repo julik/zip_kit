@@ -18,8 +18,7 @@
 #       end
 #     end
 #
-# either as a `Transfer-Encoding: chunked` response (if your webserver supports it),
-
+# Either as a `Transfer-Encoding: chunked` response (if your webserver supports it),
 # which will give you true streaming capability:
 #
 #     chunked_body = iterable_zip_body.to_chunked
