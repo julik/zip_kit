@@ -26,4 +26,4 @@ jobs:
       - name: "Tests"
         run: bundle exec rspec --backtrace --fail-fast
       - name: "Lint"
-        run: bundle exec standard
+        run: bundle exec rake standard
