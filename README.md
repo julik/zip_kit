@@ -1,23 +1,23 @@
 # zip_kit
 
-Allows streaming, non-rewinding ZIP file output from Ruby. `zip_kit` is a successor and continuation of [zip_tricks](https://github.com/WeTransfer/zip_tricks)
+Allows streaming, non-rewinding ZIP file output from Ruby.
 
-Initially written and as a spiritual successor to [zipline](https://github.com/fringd/zipline)
-and now proudly powering it under the hood.
+`zip_kit` is a successor to and continuation of [zip_tricks](https://github.com/WeTransfer/zip_tricks), which
+was inspired by [zipline](https://github.com/fringd/zipline).
 
-Allows you to write a ZIP archive out to a File, Socket, String or Array without having to rewind it at any
+Allows you to write a ZIP archive out to a `File`, `Socket`, `String` or `Array` without having to rewind it at any
 point. Usable for creating very large ZIP archives for immediate sending out to clients, or for writing
 large ZIP archives without memory inflation.
 
-zip_kit currently handles all our zipping needs (millions of ZIP files generated per day), so we are
-pretty confident it is widely compatible with a large number of unarchiving end-user applications.
+The original gem (zip_tricks) handled all the zipping needs (millions of ZIP files generated per day),
+for a large file transfer service, so we are pretty confident it is widely compatible with a large number
+of unarchiving end-user applications and is well tested.
 
 ## Requirements
 
 Ruby 2.1+ syntax support (keyword arguments with defaults) and a working zlib (all available to jRuby as well).
 jRuby might experience problems when using the reader methods due to the argument of `IO#seek` being limited
 to [32 bit sizes.](https://github.com/jruby/jruby/issues/3817)
-
 
 ## Diving in: send some large CSV reports from Rails
 
@@ -146,7 +146,15 @@ zip_body = ZipKit::RackBody.new do | zip |
   zip << read_file('myfile2.bin')
 end
 
-[200, {'Content-Length' => bytesize.to_s}, zip_body]
+headers = {
+  "Last-Modified" => Time.now.httpdate, # disables Rack::ETag
+  "Content-Type" => "application/zip",
+  "Content-Encoding" => "identity", # disables Rack::Deflater
+  "Content-Length" => bytesize.to_s,
+  "X-Accel-Buffering" => "no" # disables buffering in nginx/GCP
+}
+
+[200, headers, zip_body]
 ```
 
 ## Writing ZIP files using the Streamer bypass

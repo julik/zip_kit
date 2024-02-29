@@ -150,4 +150,4 @@ project:
 
 **IMPORTANT**: By submitting a patch, you agree to allow the project owner to
 license your work under the same license as that used by the project, which you
-can see by clicking [here](https://github.com/WeTransfer/zip_kit/blob/main/LICENSE.txt). 
+can see by clicking [here](LICENSE.txt). 
