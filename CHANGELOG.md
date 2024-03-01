@@ -1,5 +1,6 @@
 ## 6.0
 
+* Remove `RackBody` because it is just `OutputEnumerator`. Add a convenience method for Rack response generation.
 * Rebirth as zip_kit
 * Adopt MIT license. The changes from 5.x get grandfathered in. The base for the fork is the 4.x version which was still MIT-licensed.
 * Bump minimum Ruby version to 2.6

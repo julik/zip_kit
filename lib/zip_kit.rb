@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 module ZipKit
-  autoload :RackBody, File.dirname(__FILE__) + "/zip_kit/rack_body.rb"
+  autoload :OutputEnumerator, File.dirname(__FILE__) + "/zip_kit/rack_body.rb"
   autoload :RailsStreaming, File.dirname(__FILE__) + "/zip_kit/rails_streaming.rb"
   autoload :ZipWriter, File.dirname(__FILE__) + "/zip_kit/zip_writer.rb"
   autoload :RemoteIO, File.dirname(__FILE__) + "/zip_kit/remote_io.rb"
@@ -19,4 +19,6 @@ module ZipKit
   autoload :BlockWrite, File.dirname(__FILE__) + "/zip_kit/block_write.rb"
   autoload :WriteBuffer, File.dirname(__FILE__) + "/zip_kit/write_buffer.rb"
   autoload :WriteShovel, File.dirname(__FILE__) + "/zip_kit/write_shovel.rb"
+  autoload :RackChunkedBody, File.dirname(__FILE__) + "/zip_kit/rack_chunked_body.rb"
+  autoload :RackTempfileBody, File.dirname(__FILE__) + "/zip_kit/rack_tempfile_body.rb"
 end

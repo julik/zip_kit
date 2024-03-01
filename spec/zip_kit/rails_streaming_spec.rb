@@ -62,7 +62,7 @@ describe ZipKit::RailsStreaming do
     expect(status).to eq(200)
     expect_correct_headers!(headers)
 
-    expect(headers["X-Accel-Buffering"]).to be_nil # Response gets buffered
+    expect(headers["X-Accel-Buffering"]).to eq("no")
     expect(headers["Transfer-Encoding"]).to be_nil
     expect(headers["Content-Length"]).to be_kind_of(String)
     expect(body).to respond_to(:to_path) # for Rack::Sendfile
@@ -83,7 +83,7 @@ describe ZipKit::RailsStreaming do
 
     ref_output_io = FakeZipGenerator.generate_reference
     out = decode_chunked_encoding(readback_iterable(body))
-    expect(out.string).to eq(ref_output_io.string)
+    expect(out.string.b).to eq(ref_output_io.string.b)
 
     expect(status).to eq(200)
     expect_correct_headers!(headers)

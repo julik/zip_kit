@@ -118,17 +118,15 @@ since you do not know how large the compressed data segments are going to be.
 
 ## Send a ZIP from a Rack response
 
-zip_kit provides a `RackBody` object which will yield the binary chunks piece
-by piece, and apply some amount of buffering as well. Make sure to also wrap your `RackBody` in a chunker
+zip_kit provides an `OutputEnumerator` object which will yield the binary chunks piece
+by piece, and apply some amount of buffering as well. Make sure to also wrap your `OutputEnumerator` in a chunker
 by calling `#to_chunked` on it. Return it to your webserver and you will have your ZIP streamed!
-The block that you give to the `RackBody` receive the {ZipKit::Streamer} object and will only
+The block that you give to the `OutputEnumerator` receive the {ZipKit::Streamer} object and will only
 start executing once your response body starts getting iterated over - when actually sending
 the response to the client (unless you are using a buffering Rack webserver, such as Webrick).
 
 ```ruby
-require 'time'
-
-body = ZipKit::RackBody.new do | zip |
+body = ZipKit::OutputEnumerator.new do | zip |
   zip.write_file('mov.mp4') do |sink|
     File.open('mov.mp4', 'rb'){|source| IO.copy_stream(source, sink) }
   end
@@ -137,15 +135,8 @@ body = ZipKit::RackBody.new do | zip |
   end
 end
 
-headers = {
-  "Last-Modified" => Time.now.httpdate, # disables Rack::ETag
-  "Content-Type" => "application/zip",
-  "Content-Encoding" => "identity", # disables Rack::Deflater
-  "Transfer-Encoding" => "chunked",
-  "X-Accel-Buffering" => "no" # disables buffering in nginx/GCP
-}
-
-[200, headers, body.to_chunked]
+headers, streaming_body = body.to_rack_response_headers_and_body(env)
+[200, headers, streaming_body]
 ```
 
 ## Send a ZIP file of known size, with correct headers
@@ -160,22 +151,15 @@ bytesize = ZipKit::SizeEstimator.estimate do |z|
 end
 
 # Prepare the response body. The block will only be called when the response starts to be written.
-zip_body = ZipKit::RackBody.new do | zip |
+zip_body = ZipKit::OutputEnumerator.new do | zip |
   zip.add_stored_entry(filename: "myfile1.bin", size: 9090821, crc32: 12485)
   zip << read_file('myfile1.bin')
   zip.add_stored_entry(filename: "myfile2.bin", size: 458678, crc32: 89568)
   zip << read_file('myfile2.bin')
 end
 
-headers = {
-  "Last-Modified" => Time.now.httpdate, # disables Rack::ETag
-  "Content-Type" => "application/zip",
-  "Content-Encoding" => "identity", # disables Rack::Deflater
-  "Content-Length" => bytesize.to_s,
-  "X-Accel-Buffering" => "no" # disables buffering in nginx/GCP
-}
-
-[200, headers, zip_body]
+headers, streaming_body = body.to_rack_response_headers_and_body(env, content_length: bytesize)
+[200, headers, streaming_body]
 ```
 
 ## Writing ZIP files using the Streamer bypass

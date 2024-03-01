@@ -14,21 +14,11 @@ module ZipKit::RailsStreaming
   def zip_kit_stream(filename: "download.zip", type: "application/zip", **zip_streamer_options, &zip_streaming_blk)
     # The output enumerator yields chunks of bytes generated from ZipKit. Instantiating it
     # first will also validate the Streamer options.
-    chunk_yielder = ZipKit::RackBody.new(**zip_streamer_options, &zip_streaming_blk)
+    chunk_yielder = ZipKit::OutputEnumerator.new(**zip_streamer_options, &zip_streaming_blk)
 
     # We want some common headers for file sending. Rails will also set
     # self.sending_file = true for us when we call send_file_headers!
     send_file_headers!(type: type, filename: filename)
-
-    # We need to ensure Rack::ETag does not suddenly start buffering us, see
-    # https://github.com/rack/rack/issues/1619#issuecomment-606315714
-    # Set this even when not streaming for consistency. The fact that there would be
-    # a weak ETag generated would mean that the middleware buffers, so we have tests for that.
-    response.headers["Last-Modified"] = Time.now.httpdate
-
-    # Make sure Rack::Deflater does not touch our response body either, see
-    # https://github.com/felixbuenemann/xlsxtream/issues/14#issuecomment-529569548
-    response.headers["Content-Encoding"] = "identity"
 
     # Check for the proxy configuration first. This is the first common misconfiguration which destroys streaming -
     # since HTTP 1.0 does not support chunked responses we need to revert to buffering. The issue though is that
@@ -36,26 +26,12 @@ module ZipKit::RailsStreaming
     # the very least print it to the Rails log.
     if request.get_header("HTTP_VERSION") == "HTTP/1.0"
       logger&.warn { "The downstream HTTP proxy/LB insists on HTTP/1.0 protocol, ZIP response will be buffered." }
-
-      # Buffer the ZIP into a tempfile so that we do not iterate over the ZIP-generating block twice
-      tempfile_body = chunk_yielder.to_tempfile_body(request.env)
-
-      # Set the content length so that Rack::ContentLength disengages
-      response.headers["Content-Length"] = tempfile_body.size.to_s
-
-      # Assign the tempfile body. Since it supports #to_path it will likely be picked up by Rack::Sendfile
-      self.response_body = tempfile_body
-    else
-      # Disable buffering for both nginx and Google Load Balancer, see
-      # https://cloud.google.com/appengine/docs/flexible/how-requests-are-handled?tab=python#x-accel-buffering
-      response.headers["X-Accel-Buffering"] = "no"
-
-      # Make sure Rack::ContentLength does not try to compute a content length,
-      # and remove the one already set
-      response.headers["Transfer-Encoding"] = "chunked"
-      response.headers.delete("Content-Length")
-
-      self.response_body = chunk_yielder.to_chunked
     end
+
+    headers, rack_body = chunk_yielder.to_headers_and_rack_response_body(request.env)
+
+    # Set the "particular" streaming headers
+    response.headers.merge!(headers)
+    self.response_body = rack_body
   end
 end
