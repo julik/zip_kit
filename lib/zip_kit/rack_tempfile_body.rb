@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 # Contains a file handle which can be closed once the response finishes sending.
 # It supports `to_path` so that `Rack::Sendfile` can intercept it
 class ZipKit::RackTempfileBody

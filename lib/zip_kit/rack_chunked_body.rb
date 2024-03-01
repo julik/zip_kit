@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 # A body wrapper that emits chunked responses, creating valid
 # Transfer-Encoding::Chunked HTTP response body. This is copied from Rack::Chunked::Body,
 # because Rack is not going to include that class after version 3.x
