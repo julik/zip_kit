@@ -1,5 +1,8 @@
 # zip_kit
 
+[![Tests](https://github.com/julik/zip_kit/actions/workflows/ci.yml/badge.svg)](https://github.com/julik/zip_kit/actions/workflows/ci.yml)
+[![Gem Version](https://badge.fury.io/rb/zip_kit.svg)](https://badge.fury.io/rb/zip_kit)
+
 Allows streaming, non-rewinding ZIP file output from Ruby.
 
 `zip_kit` is a successor to and continuation of [zip_tricks](https://github.com/WeTransfer/zip_tricks), which
