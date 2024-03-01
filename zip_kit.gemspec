@@ -7,11 +7,12 @@ Gem::Specification.new do |spec|
   spec.version = ZipKit::VERSION
   spec.authors = ["Julik Tarkhanov", "Noah Berman", "Dmitry Tymchuk", "David Bosveld", "Felix Bünemann"]
   spec.email = ["me@julik.nl"]
-  spec.required_ruby_version = ">= 2.6.0"
 
-  spec.summary = "Stream out ZIP files from Ruby"
-  spec.description = "Stream out ZIP files from Ruby"
+  spec.summary = "Stream out ZIP files from Ruby. Successor to zip_tricks."
+  spec.description = "Stream out ZIP files from Ruby. Successor to zip_tricks."
   spec.homepage = "https://github.com/julik/zip_kit"
+
+  spec.required_ruby_version = ">= 2.6.0"
 
   spec.metadata["allowed_push_host"] = "https://rubygems.org"
   spec.files = `git ls-files -z`.split("\x0").reject do |f|

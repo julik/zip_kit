@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require_relative "zip_kit/version"
+
 module ZipKit
   autoload :OutputEnumerator, File.dirname(__FILE__) + "/zip_kit/rack_body.rb"
   autoload :RailsStreaming, File.dirname(__FILE__) + "/zip_kit/rails_streaming.rb"

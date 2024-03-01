@@ -1,3 +1,7 @@
+## 6.0.1
+
+* Fix `require` for the `VERSION` constant, as Zeitwerk would try to resolve it in Rails context, bringing the entire module under its reloading.
+
 ## 6.0
 
 * Remove `RackBody` because it is just `OutputEnumerator`. Add a convenience method for Rack response generation.
