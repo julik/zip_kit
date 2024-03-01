@@ -59,7 +59,7 @@ via HTTP.
 and the ZIP output will run in the same thread as your main request. Your testing flows (be it minitest or
 RSpec) should work normally with controller actions returning ZIPs.
 
-## Writing into other streaming destinations
+## Writing into other streaming destinations and through streaming wrappers
 
 Any object that accepts bytes via either `<<` or `write` methods can be a write destination. For example, here
 is how to upload a sizeable ZIP to S3 - the SDK will happily chop your upload into multipart upload parts:
@@ -80,8 +80,6 @@ obj.upload_stream do |write_stream|
   end
 end
 ```
-
-# Writing through an intermediary object
 
 Any object that writes using either `<<` or `write` can write into a `sink`. For example, you can do streaming
 output with [builder](https://github.com/jimweirich/builder#project-builder)
