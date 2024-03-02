@@ -121,8 +121,9 @@ since you do not know how large the compressed data segments are going to be.
 ## Send a ZIP from a Rack response
 
 zip_kit provides an `OutputEnumerator` object which will yield the binary chunks piece
-by piece, and apply some amount of buffering as well. Make sure to also wrap your `OutputEnumerator` in a chunker
-by calling `#to_chunked` on it. Return it to your webserver and you will have your ZIP streamed!
+by piece, and apply some amount of buffering as well. Note that you might want to wrap
+it with a chunked transfer encoder - the `to_rack_response_headers_and_body` method will do
+that for you. Return the headers and the body to your webserver and you will have your ZIP streamed!
 The block that you give to the `OutputEnumerator` receive the {ZipKit::Streamer} object and will only
 start executing once your response body starts getting iterated over - when actually sending
 the response to the client (unless you are using a buffering Rack webserver, such as Webrick).
@@ -146,13 +147,11 @@ headers, streaming_body = body.to_rack_response_headers_and_body(env)
 Use the `SizeEstimator` to compute the correct size of the resulting archive.
 
 ```ruby
-# Precompute the Content-Length ahead of time
 bytesize = ZipKit::SizeEstimator.estimate do |z|
  z.add_stored_entry(filename: 'myfile1.bin', size: 9090821)
  z.add_stored_entry(filename: 'myfile2.bin', size: 458678)
 end
 
-# Prepare the response body. The block will only be called when the response starts to be written.
 zip_body = ZipKit::OutputEnumerator.new do | zip |
   zip.add_stored_entry(filename: "myfile1.bin", size: 9090821, crc32: 12485)
   zip << read_file('myfile1.bin')
@@ -172,7 +171,6 @@ the metadata of the file upfront (the CRC32 of the uncompressed file and the siz
 to that socket using some accelerated writing technique, and only use the Streamer to write out the ZIP metadata.
 
 ```ruby
-# io has to be an object that supports #<< or #write()
 ZipKit::Streamer.open(io) do | zip |
   # raw_file is written "as is" (STORED mode).
   # Write the local file header first..
