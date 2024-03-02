@@ -27,7 +27,7 @@
 class ZipKit::ZipWriter
   FOUR_BYTE_MAX_UINT = 0xFFFFFFFF
   TWO_BYTE_MAX_UINT = 0xFFFF
-  ZIP_TRICKS_COMMENT = "Written using ZipKit %<version>s" % {version: ZipKit::VERSION}
+  ZIP_KIT_COMMENT = "Written using ZipKit %<version>s" % {version: ZipKit::VERSION}
   VERSION_MADE_BY = 52
   VERSION_NEEDED_TO_EXTRACT = 20
   VERSION_NEEDED_TO_EXTRACT_ZIP64 = 45
@@ -58,7 +58,7 @@ class ZipKit::ZipWriter
     :C_UINT4,
     :C_UINT2,
     :C_UINT8,
-    :ZIP_TRICKS_COMMENT
+    :ZIP_KIT_COMMENT
 
   # Writes the local file header, that precedes the actual file _data_.
   #
@@ -243,9 +243,9 @@ class ZipKit::ZipWriter
   # @param start_of_central_directory_location[Fixnum] byte offset of the start of central directory form the beginning of ZIP file
   # @param central_directory_size[Fixnum] the size of the central directory (only file headers) in bytes
   # @param num_files_in_archive[Fixnum] How many files the archive contains
-  # @param comment[String] the comment for the archive (defaults to ZIP_TRICKS_COMMENT)
+  # @param comment[String] the comment for the archive (defaults to ZIP_KIT_COMMENT)
   # @return [void]
-  def write_end_of_central_directory(io:, start_of_central_directory_location:, central_directory_size:, num_files_in_archive:, comment: ZIP_TRICKS_COMMENT)
+  def write_end_of_central_directory(io:, start_of_central_directory_location:, central_directory_size:, num_files_in_archive:, comment: ZIP_KIT_COMMENT)
     zip64_eocdr_offset = start_of_central_directory_location + central_directory_size
 
     zip64_required = central_directory_size > FOUR_BYTE_MAX_UINT ||
