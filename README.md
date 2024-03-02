@@ -102,11 +102,11 @@ Ruby code that streams its output into a destination.
 
 Basic use case is compressing on the fly. Some data will be buffered by the Zlib deflater, but
 memory inflation is going to be very constrained. Data will be written to destination at fairly regular
-intervals. Deflate compression will work best for things like text files.
+intervals. Deflate compression will work best for things like text files. For example, here is how to
+output direct to STDOUT (so that you can run `$ ruby archive.rb > file.zip` in your terminal):
 
 ```ruby
-out = my_tempfile # can also be a socket
-ZipKit::Streamer.open(out) do |zip|
+ZipKit::Streamer.open($stdout) do |zip|
   zip.write_file('mov.mp4.txt') do |sink|
     File.open('mov.mp4', 'rb'){|source| IO.copy_stream(source, sink) }
   end
@@ -115,6 +115,7 @@ ZipKit::Streamer.open(out) do |zip|
   end
 end
 ```
+
 Unfortunately with this approach it is impossible to compute the size of the ZIP file being output,
 since you do not know how large the compressed data segments are going to be.
 
