@@ -39,11 +39,6 @@ class ZipKit::Streamer::Heuristic
     self
   end
 
-  def write(bytes)
-    self << bytes
-    bytes.bytesize
-  end
-
   def close
     decide unless @winner
     @winner.close
