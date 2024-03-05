@@ -1,6 +1,6 @@
 # typed: strong
 module ZipKit
-  VERSION = T.let("6.0.1", T.untyped)
+  VERSION = T.let("6.1.0", T.untyped)
 
   # A ZIP archive contains a flat list of entries. These entries can implicitly
   # create directories when the archive is expanded. For example, an entry with
@@ -308,9 +308,6 @@ module ZipKit
     sig { params(dirname: String, modification_time: Time, unix_permissions: T.nilable(Integer)).returns(Integer) }
     def add_empty_directory(dirname:, modification_time: Time.now.utc, unix_permissions: nil); end
 
-    # sord duck - #<< looks like a duck type, replacing with untyped
-    # sord duck - #write looks like a duck type, replacing with untyped
-    # sord duck - #close looks like a duck type, replacing with untyped
     # Opens the stream for a file stored in the archive, and yields a writer
     # for that file to the block.
     # The writer will buffer a small amount of data and see whether compression is
@@ -352,20 +349,17 @@ module ZipKit
     # 
     # _@param_ `unix_permissions` — which UNIX permissions to set, normally the default should be used
     # 
-    # _@return_ — an object that the file contents must be written to, has to be closed manually
+    # _@return_ — without a block - the Writable sink which has to be closed manually
     sig do
       params(
         filename: String,
         modification_time: Time,
         unix_permissions: T.nilable(Integer),
-        blk: T.untyped
-      ).returns(T.untyped)
+        blk: T.proc.params(sink: ZipKit::Streamer::Writable).void
+      ).returns(ZipKit::Streamer::Writable)
     end
     def write_file(filename, modification_time: Time.now.utc, unix_permissions: nil, &blk); end
 
-    # sord duck - #<< looks like a duck type, replacing with untyped
-    # sord duck - #write looks like a duck type, replacing with untyped
-    # sord duck - #close looks like a duck type, replacing with untyped
     # Opens the stream for a stored file in the archive, and yields a writer
     # for that file to the block.
     # Once the write completes, a data descriptor will be written with the
@@ -409,20 +403,17 @@ module ZipKit
     # 
     # _@param_ `unix_permissions` — which UNIX permissions to set, normally the default should be used
     # 
-    # _@return_ — an object that the file contents must be written to, has to be closed manually
+    # _@return_ — without a block - the Writable sink which has to be closed manually
     sig do
       params(
         filename: String,
         modification_time: Time,
         unix_permissions: T.nilable(Integer),
-        blk: T.untyped
-      ).returns(T.untyped)
+        blk: T.proc.params(sink: ZipKit::Streamer::Writable).void
+      ).returns(ZipKit::Streamer::Writable)
     end
     def write_stored_file(filename, modification_time: Time.now.utc, unix_permissions: nil, &blk); end
 
-    # sord duck - #<< looks like a duck type, replacing with untyped
-    # sord duck - #write looks like a duck type, replacing with untyped
-    # sord duck - #close looks like a duck type, replacing with untyped
     # Opens the stream for a deflated file in the archive, and yields a writer
     # for that file to the block. Once the write completes, a data descriptor
     # will be written with the actual compressed/uncompressed sizes and the
@@ -468,14 +459,14 @@ module ZipKit
     # 
     # _@param_ `unix_permissions` — which UNIX permissions to set, normally the default should be used
     # 
-    # _@return_ — an object that the file contents must be written to, has to be closed manually
+    # _@return_ — without a block - the Writable sink which has to be closed manually
     sig do
       params(
         filename: String,
         modification_time: Time,
         unix_permissions: T.nilable(Integer),
-        blk: T.untyped
-      ).returns(T.untyped)
+        blk: T.proc.params(sink: ZipKit::Streamer::Writable).void
+      ).returns(ZipKit::Streamer::Writable)
     end
     def write_deflated_file(filename, modification_time: Time.now.utc, unix_permissions: nil, &blk); end
 
@@ -708,8 +699,7 @@ module ZipKit
     # Heuristic will call either `write_stored_file` or `write_deflated_file`
     # on the Streamer passed into it once it knows which compression
     # method should be applied
-    class Heuristic
-      include ZipKit::WriteShovel
+    class Heuristic < ZipKit::Streamer::Writable
       BYTES_WRITTEN_THRESHOLD = T.let(128 * 1024, T.untyped)
       MINIMUM_VIABLE_COMPRESSION = T.let(0.75, T.untyped)
 
@@ -719,9 +709,8 @@ module ZipKit
       sig { params(streamer: T.untyped, filename: T.untyped, write_file_options: T.untyped).void }
       def initialize(streamer, filename, **write_file_options); end
 
-      # sord omit - no YARD type given for "bytes", using untyped
-      # sord omit - no YARD return type given, using untyped
-      sig { params(bytes: T.untyped).returns(T.untyped) }
+      # sord infer - argument name in single @param inferred as "bytes"
+      sig { params(bytes: String).returns(T.self_type) }
       def <<(bytes); end
 
       # sord omit - no YARD return type given, using untyped
@@ -731,16 +720,6 @@ module ZipKit
       # sord omit - no YARD return type given, using untyped
       sig { returns(T.untyped) }
       def decide; end
-
-      # sord infer - argument name in single @param inferred as "bytes"
-      # Writes the given data to the output stream. Allows the object to be used as
-      # a target for `IO.copy_stream(from, to)`
-      # 
-      # _@param_ `d` — the binary string to write (part of the uncompressed file)
-      # 
-      # _@return_ — the number of bytes written
-      sig { params(bytes: String).returns(Fixnum) }
-      def write(bytes); end
     end
 
     # Sends writes to the given `io`, and also registers all the data passing
