@@ -23,3 +23,7 @@ task :generate_typedefs do
 end
 
 task default: [:spec, :standard, :generate_typedefs]
+
+# When building the gem, generate typedefs beforehand,
+# so that they get included
+Rake::Task["build"].enhance(["generate_typedefs"])
