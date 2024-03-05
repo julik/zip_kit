@@ -1,3 +1,7 @@
+## 6.1.0
+
+* Add Sorbet `.rbi` for type hints and resolution. This should make developing with zip_kit more pleasant, and the library - more discoverable.
+
 ## 6.0.1
 
 * Fix `require` for the `VERSION` constant, as Zeitwerk would try to resolve it in Rails context, bringing the entire module under its reloading.
