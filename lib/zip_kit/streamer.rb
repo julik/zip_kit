@@ -263,12 +263,11 @@ class ZipKit::Streamer
   # @param filename[String] the name of the file in the archive
   # @param modification_time [Time] the modification time of the file in the archive
   # @param unix_permissions[Integer] which UNIX permissions to set, normally the default should be used
-  # @yield
-  #    sink[#<<, #write]
+  # @yieldparam sink[ZipKit::Streamer::Writable]
   #    an object that the file contents must be written to.
   #    Do not call `#close` on it - Streamer will do it for you. Write in chunks to achieve proper streaming
   #    output (using `IO.copy_stream` is a good approach).
-  # @return [#<<, #write, #close] an object that the file contents must be written to, has to be closed manually
+  # @return [ZipKit::Streamer::Writable] without a block - the Writable sink which has to be closed manually
   def write_file(filename, modification_time: Time.now.utc, unix_permissions: nil, &blk)
     writable = ZipKit::Streamer::Heuristic.new(self, filename, modification_time: modification_time, unix_permissions: unix_permissions)
     yield_or_return_writable(writable, &blk)
@@ -314,12 +313,11 @@ class ZipKit::Streamer
   # @param filename[String] the name of the file in the archive
   # @param modification_time [Time] the modification time of the file in the archive
   # @param unix_permissions[Integer] which UNIX permissions to set, normally the default should be used
-  # @yield
-  #    sink[#<<, #write]
+  # @yieldparam sink[ZipKit::Streamer::Writable]
   #    an object that the file contents must be written to.
   #    Do not call `#close` on it - Streamer will do it for you. Write in chunks to achieve proper streaming
   #    output (using `IO.copy_stream` is a good approach).
-  # @return [#<<, #write, #close] an object that the file contents must be written to, has to be closed manually
+  # @return [ZipKit::Streamer::Writable] without a block - the Writable sink which has to be closed manually
   def write_stored_file(filename, modification_time: Time.now.utc, unix_permissions: nil, &blk)
     add_stored_entry(filename: filename,
       modification_time: modification_time,
@@ -374,12 +372,11 @@ class ZipKit::Streamer
   # @param filename[String] the name of the file in the archive
   # @param modification_time [Time] the modification time of the file in the archive
   # @param unix_permissions[Integer] which UNIX permissions to set, normally the default should be used
-  # @yield
-  #    sink[#<<, #write]
+  # @yieldparam sink[ZipKit::Streamer::Writable]
   #    an object that the file contents must be written to.
   #    Do not call `#close` on it - Streamer will do it for you. Write in chunks to achieve proper streaming
   #    output (using `IO.copy_stream` is a good approach).
-  # @return [#<<, #write, #close] an object that the file contents must be written to, has to be closed manually
+  # @return [ZipKit::Streamer::Writable] without a block - the Writable sink which has to be closed manually
   def write_deflated_file(filename, modification_time: Time.now.utc, unix_permissions: nil, &blk)
     add_deflated_entry(filename: filename,
       modification_time: modification_time,
