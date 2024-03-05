@@ -16,6 +16,10 @@ YARD::Rake::YardocTask.new(:doc) do |t|
   # miscellaneous documentation files that contain no code
   t.files = ["lib/**/*.rb", "-", "LICENSE.txt", "IMPLEMENTATION_DETAILS.md"]
 end
-
 RSpec::Core::RakeTask.new(:spec)
-task default: [:spec, :standard]
+
+task :generate_typedefs do
+  `bundle exec sord rbi/zip_kit.rbi`
+end
+
+task default: [:spec, :standard, :generate_typedefs]
