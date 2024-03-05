@@ -39,4 +39,5 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency "puma"
   spec.add_development_dependency "actionpack", "~> 5" # For testing RailsStreaming against an actual Rails controller
   spec.add_development_dependency "nokogiri", "~> 1", ">= 1.13" # Rails 5 does by mistake use an older Nokogiri otherwise
+  spec.add_development_dependency "sord"
 end
