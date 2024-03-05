@@ -141,7 +141,7 @@ class ZipKit::ZipWriter
   # @param crc32[Fixnum] The CRC32 checksum of the file
   # @param mtime[Time]  the modification time to be recorded in the ZIP
   # @param gp_flags[Fixnum] bit-packed general purpose flags
-  # @param unix_permissions[Fixnum?] the permissions for the file, or nil for the default to be used
+  # @param unix_permissions[Integer] the permissions for the file, or nil for the default to be used
   # @return [void]
   def write_central_directory_file_header(io:,
     local_file_header_location:,

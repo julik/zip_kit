@@ -169,7 +169,7 @@ class ZipKit::Streamer
   # @param uncompressed_size [Integer] the size of the entry when uncompressed, in bytes
   # @param crc32 [Integer] the CRC32 checksum of the entry when uncompressed
   # @param use_data_descriptor [Boolean] whether the entry body will be followed by a data descriptor
-  # @param unix_permissions[Fixnum?] which UNIX permissions to set, normally the default should be used
+  # @param unix_permissions[Integer] which UNIX permissions to set, normally the default should be used
   # @return [Integer] the offset the output IO is at after writing the entry header
   def add_deflated_entry(filename:, modification_time: Time.now.utc, compressed_size: 0, uncompressed_size: 0, crc32: 0, unix_permissions: nil, use_data_descriptor: false)
     add_file_and_write_local_header(filename: filename,
@@ -193,7 +193,7 @@ class ZipKit::Streamer
   # @param size [Integer] the size of the file when uncompressed, in bytes
   # @param crc32 [Integer] the CRC32 checksum of the entry when uncompressed
   # @param use_data_descriptor [Boolean] whether the entry body will be followed by a data descriptor. When in use
-  # @param unix_permissions[Fixnum?] which UNIX permissions to set, normally the default should be used
+  # @param unix_permissions[Integer] which UNIX permissions to set, normally the default should be used
   # @return [Integer] the offset the output IO is at after writing the entry header
   def add_stored_entry(filename:, modification_time: Time.now.utc, size: 0, crc32: 0, unix_permissions: nil, use_data_descriptor: false)
     add_file_and_write_local_header(filename: filename,
@@ -211,7 +211,7 @@ class ZipKit::Streamer
   #
   # @param dirname [String] the name of the directory in the archive
   # @param modification_time [Time] the modification time of the directory in the archive
-  # @param unix_permissions[Fixnum?] which UNIX permissions to set, normally the default should be used
+  # @param unix_permissions[Integer] which UNIX permissions to set, normally the default should be used
   # @return [Integer] the offset the output IO is at after writing the entry header
   def add_empty_directory(dirname:, modification_time: Time.now.utc, unix_permissions: nil)
     add_file_and_write_local_header(filename: dirname.to_s + "/",
@@ -262,7 +262,7 @@ class ZipKit::Streamer
   #
   # @param filename[String] the name of the file in the archive
   # @param modification_time [Time] the modification time of the file in the archive
-  # @param unix_permissions[Fixnum?] which UNIX permissions to set, normally the default should be used
+  # @param unix_permissions[Integer] which UNIX permissions to set, normally the default should be used
   # @yield
   #    sink[#<<, #write]
   #    an object that the file contents must be written to.
@@ -313,7 +313,7 @@ class ZipKit::Streamer
   #
   # @param filename[String] the name of the file in the archive
   # @param modification_time [Time] the modification time of the file in the archive
-  # @param unix_permissions[Fixnum?] which UNIX permissions to set, normally the default should be used
+  # @param unix_permissions[Integer] which UNIX permissions to set, normally the default should be used
   # @yield
   #    sink[#<<, #write]
   #    an object that the file contents must be written to.
@@ -373,7 +373,7 @@ class ZipKit::Streamer
   #
   # @param filename[String] the name of the file in the archive
   # @param modification_time [Time] the modification time of the file in the archive
-  # @param unix_permissions[Fixnum?] which UNIX permissions to set, normally the default should be used
+  # @param unix_permissions[Integer] which UNIX permissions to set, normally the default should be used
   # @yield
   #    sink[#<<, #write]
   #    an object that the file contents must be written to.
