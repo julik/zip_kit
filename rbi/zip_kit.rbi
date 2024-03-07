@@ -1867,10 +1867,11 @@ end, T.untyped)
 
   # Helps to estimate archive sizes
   class SizeEstimator
-    # sord omit - no YARD type given for "streamer", using untyped
     # Creates a new estimator with a Streamer object. Normally you should use
     # `estimate` instead an not use this method directly.
-    sig { params(streamer: T.untyped).void }
+    # 
+    # _@param_ `streamer`
+    sig { params(streamer: ZipKit::Streamer).void }
     def initialize(streamer); end
 
     # Performs the estimate using fake archiving. It needs to know the sizes of the
@@ -1885,8 +1886,8 @@ end, T.untyped)
     # _@param_ `kwargs_for_streamer_new` — Any options to pass to Streamer, see {Streamer#initialize}
     # 
     # _@return_ — the size of the resulting archive, in bytes
-    sig { params(kwargs_for_streamer_new: T.untyped).returns(Integer) }
-    def self.estimate(**kwargs_for_streamer_new); end
+    sig { params(kwargs_for_streamer_new: T.untyped, blk: T.proc.params(the: SizeEstimator).void).returns(Integer) }
+    def self.estimate(**kwargs_for_streamer_new, &blk); end
 
     # Add a fake entry to the archive, to see how big it is going to be in the end.
     # 
