@@ -1988,7 +1988,7 @@ end, T.untyped)
         filename: String,
         type: String,
         zip_streamer_options: T::Hash[T.untyped, T.untyped],
-        zip_streaming_blk: T.untyped
+        zip_streaming_blk: T.proc.params(the: ZipKit::Streamer).void
       ).returns(ZipKit::OutputEnumerator)
     end
     def zip_kit_stream(filename: "download.zip", type: "application/zip", **zip_streamer_options, &zip_streaming_blk); end
