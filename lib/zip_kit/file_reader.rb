@@ -137,7 +137,7 @@ class ZipKit::FileReader
     #   reader = entry.extractor_from(source_file)
     #   outfile << reader.extract(512 * 1024) until reader.eof?
     #
-    # @return [#extract(n_bytes), #eof?] the reader for the data
+    # @return [StoredReader,InflatingReader] the reader for the data
     def extractor_from(from_io)
       from_io.seek(compressed_data_offset, IO::SEEK_SET)
       case storage_mode

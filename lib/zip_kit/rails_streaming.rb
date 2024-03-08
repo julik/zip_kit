@@ -9,7 +9,7 @@ module ZipKit::RailsStreaming
   # @param type[String] the content type (MIME type) of the archive being output
   # @param zip_streamer_options[Hash] options that will be passed to the Streamer.
   #     See {ZipKit::Streamer#initialize} for the full list of options.
-  # @yield [Streamer] the streamer that can be written to
+  # @yieldparam [ZipKit::Streamer] the streamer that can be written to
   # @return [ZipKit::OutputEnumerator] The output enumerator assigned to the response body
   def zip_kit_stream(filename: "download.zip", type: "application/zip", **zip_streamer_options, &zip_streaming_blk)
     # The output enumerator yields chunks of bytes generated from ZipKit. Instantiating it

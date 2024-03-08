@@ -6,6 +6,8 @@ class ZipKit::SizeEstimator
 
   # Creates a new estimator with a Streamer object. Normally you should use
   # `estimate` instead an not use this method directly.
+  #
+  # @param streamer[ZipKit::Streamer]
   def initialize(streamer)
     @streamer = streamer
   end
@@ -22,7 +24,7 @@ class ZipKit::SizeEstimator
   #
   # @param kwargs_for_streamer_new Any options to pass to Streamer, see {Streamer#initialize}
   # @return [Integer] the size of the resulting archive, in bytes
-  # @yield [SizeEstimator] the estimator
+  # @yieldparam [SizeEstimator] the estimator
   def self.estimate(**kwargs_for_streamer_new)
     streamer = ZipKit::Streamer.new(ZipKit::NullWriter, **kwargs_for_streamer_new)
     estimator = new(streamer)

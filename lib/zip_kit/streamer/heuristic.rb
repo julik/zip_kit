@@ -10,9 +10,7 @@
 # Heuristic will call either `write_stored_file` or `write_deflated_file`
 # on the Streamer passed into it once it knows which compression
 # method should be applied
-class ZipKit::Streamer::Heuristic
-  include ZipKit::WriteShovel
-
+class ZipKit::Streamer::Heuristic < ZipKit::Streamer::Writable
   BYTES_WRITTEN_THRESHOLD = 128 * 1024
   MINIMUM_VIABLE_COMPRESSION = 0.75
 

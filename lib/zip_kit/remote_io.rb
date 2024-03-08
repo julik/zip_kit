@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "uri"
+
 # An object that fakes just-enough of an IO to be dangerous
 # - or, more precisely, to be useful as a source for the FileReader
 # central directory parser. Effectively we substitute an IO object
