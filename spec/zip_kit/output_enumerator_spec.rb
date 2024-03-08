@@ -123,95 +123,18 @@ describe ZipKit::OutputEnumerator do
     expect(output_chunks.length).to be > 100
   end
 
-  it "outputs a Tempfile body which offers to_path" do
+  it "outputs an enumerable body suitable for a chunked HTTP response" do
     random_bytes = Random.new(RSpec.configuration.seed).bytes(10)
     enum = described_class.new { |zip|
       zip.write_stored_file("test.bin") do |writable|
         writable << random_bytes
       end
     }
-    rack_env = {"HTTP_VERSION" => "HTTP/1.0"}
-    headers, rack_body = enum.to_headers_and_rack_response_body(rack_env)
-    expect(headers["Last-Modified"]).to be_kind_of(String)
-    expect(headers["Content-Length"]).to be_kind_of(String)
-
-    tempfile_path = rack_body.to_path
-    expect(rack_env["rack.tempfiles"]).not_to be_empty
-
-    tempfile = File.open(tempfile_path, "rb")
-    expect(tempfile.size).to be > 0
-
-    output_from_each = StringIO.new.binmode
-    rack_body.each { |bytes| output_from_each << bytes }
-    expect(output_from_each.size).to eq(tempfile.size)
-  end
-
-  it "outputs a Tempfile body which offers to_path" do
-    random_bytes = Random.new(RSpec.configuration.seed).bytes(10)
-    enum = described_class.new { |zip|
-      zip.write_stored_file("test.bin") do |writable|
-        writable << random_bytes
-      end
-    }
-    rack_env = {"HTTP_VERSION" => "HTTP/1.0"}
-    headers, rack_body = enum.to_headers_and_rack_response_body(rack_env)
-    expect(headers["Last-Modified"]).to be_kind_of(String)
-    expect(headers["Content-Length"]).to be_kind_of(String)
-
-    tempfile_path = rack_body.to_path
-    expect(rack_env["rack.tempfiles"]).not_to be_empty
-
-    tempfile = File.open(tempfile_path, "rb")
-    expect(tempfile.size).to be > 0
-
-    output_from_each = StringIO.new.binmode
-    rack_body.each { |bytes| output_from_each << bytes }
-    expect(output_from_each.size).to eq(tempfile.size)
-  end
-
-  it "outputs a chunked body suitable for a chunked HTTP response" do
-    random_bytes = Random.new(RSpec.configuration.seed).bytes(10)
-    enum = described_class.new { |zip|
-      zip.write_stored_file("test.bin") do |writable|
-        writable << random_bytes
-      end
-    }
-    rack_env = {}
-    headers, chunked_rack_body = enum.to_headers_and_rack_response_body(rack_env)
+    headers, rack_body = enum.to_headers_and_rack_response_body(nil, anything: nil, content_length: nil)
     expect(headers["Last-Modified"]).to be_kind_of(String)
     expect(headers["Content-Length"]).to be_nil
-    expect(headers["Transfer-Encoding"]).to eq("chunked")
-
-    io_output_from_bare_enum = StringIO.new.binmode
-    io_output_with_chunked_encoding = StringIO.new.binmode
-    enum.each { |bytes| io_output_from_bare_enum << bytes }
-    chunked_rack_body.each { |bytes| io_output_with_chunked_encoding << bytes }
-
-    expect(io_output_with_chunked_encoding.size).to be > io_output_from_bare_enum.size
-
-    io_output_from_bare_enum.rewind
-    io_output_with_chunked_encoding_decoded = decode_chunked_encoding(io_output_with_chunked_encoding)
-
-    expect(io_output_with_chunked_encoding_decoded.string).to eq(io_output_from_bare_enum.string)
-  end
-
-  it "outputs a pre-sized body when a specific content_length: is given" do
-    random_bytes = Random.new(RSpec.configuration.seed).bytes(10)
-    enum = described_class.new { |zip|
-      zip.write_stored_file("test.bin") do |writable|
-        writable << random_bytes
-      end
-    }
-    io_output_from_bare_enum = StringIO.new.binmode
-    enum.each { |bytes| io_output_from_bare_enum << bytes }
-
-    rack_env = {}
-    headers, presized_rack_body = enum.to_headers_and_rack_response_body(rack_env, content_length: io_output_from_bare_enum.size)
-
-    expect(headers["Last-Modified"]).to be_kind_of(String)
-    expect(headers["Content-Length"]).to eq(io_output_from_bare_enum.size.to_s)
     expect(headers["Transfer-Encoding"]).to be_nil
 
-    expect(presized_rack_body).to eq(enum) # The enum itself can work as the Rack response body in this case
+    expect(rack_body).to eq(enum)
   end
 end

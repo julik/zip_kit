@@ -28,15 +28,11 @@ require "time" # for .httpdate
 #       end
 #     end
 #
-# Either as a `Transfer-Encoding: chunked` response (if your webserver supports it),
-# which will give you true streaming capability:
+# You can grab the headers one usually needs for streaming from `#streaming_http_headers`:
 #
-#     headers, chunked_or_presized_rack_body = iterable_zip_body.to_headers_and_rack_response_body(env)
-#     [200, headers, chunked_or_presized_rack_body]
+#     [200, iterable_zip_body.streaming_http_headers, iterable_zip_body]
 #
-# or it will wrap your output in a `TempfileBody` object which buffers the ZIP before output. Buffering has
-# benefits if your webserver does not support anything beyound HTTP/1.0, and also engages automatically
-# in unit tests (since rack-test and Rails tests do not do streaming HTTP/1.1).
+# to bypass things like `Rack::ETag` and the nginx buffering.
 class ZipKit::OutputEnumerator
   DEFAULT_WRITE_BUFFER_SIZE = 64 * 1024
 
@@ -103,17 +99,11 @@ class ZipKit::OutputEnumerator
     end
   end
 
-  # Returns a tuple of `headers, body` - headers are a `Hash` and the body is
-  # an object that can be used as a Rack response body. The method will automatically
-  # switch the wrapping of the output depending on whether the response can be pre-sized,
-  # and whether your downstream webserver (like nginx) is configured to support
-  # the HTTP/1.1 protocol version.
+  # Returns a Hash of HTTP response headers you are likely to need to have your response stream correctly.
   #
-  # @param rack_env[Hash] the Rack env, which the method may need to mutate (adding a Tempfile for cleanup)
-  # @param content_length[Integer] the amount of bytes that the archive will contain. If given, no Chunked encoding gets applied.
-  # @return [Array]
-  def to_headers_and_rack_response_body(rack_env, content_length: nil)
-    headers = {
+  # @return [Hash]
+  def streaming_http_headers
+    _headers = {
       # We need to ensure Rack::ETag does not suddenly start buffering us, see
       # https://github.com/rack/rack/issues/1619#issuecomment-606315714
       # Set this even when not streaming for consistency. The fact that there would be
@@ -126,25 +116,14 @@ class ZipKit::OutputEnumerator
       # https://cloud.google.com/appengine/docs/flexible/how-requests-are-handled?tab=python#x-accel-buffering
       "X-Accel-Buffering" => "no"
     }
+  end
 
-    if content_length
-      # If we know the size of the body, transfer encoding is not required at all - so the enumerator itself
-      # can function as the Rack body. This also would apply in HTTP/2 contexts where chunked encoding would
-      # no longer be required - then the enumerator could get returned "bare".
-      body = self
-      headers["Content-Length"] = content_length.to_i.to_s
-    elsif rack_env["HTTP_VERSION"] == "HTTP/1.0"
-      # Check for the proxy configuration first. This is the first common misconfiguration which destroys streaming -
-      # since HTTP 1.0 does not support chunked responses we need to revert to buffering. The issue though is that
-      # this reversion happens silently and it is usually not clear at all why streaming does not work. So let's at
-      # the very least print it to the Rails log.
-      body = ZipKit::RackTempfileBody.new(rack_env, self)
-      headers["Content-Length"] = body.size.to_s
-    else
-      body = ZipKit::RackChunkedBody.new(self)
-      headers["Transfer-Encoding"] = "chunked"
-    end
-
-    [headers, body]
+  # Returns a tuple of `headers, body` - headers are a `Hash` and the body is
+  # an object that can be used as a Rack response body. This method used to accept arguments
+  # but will now just ignore them.
+  #
+  # @return [Array]
+  def to_headers_and_rack_response_body(*, **)
+    [streaming_http_headers, self]
   end
 end
