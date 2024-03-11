@@ -114,7 +114,10 @@ class ZipKit::OutputEnumerator
       "Content-Encoding" => "identity",
       # Disable buffering for both nginx and Google Load Balancer, see
       # https://cloud.google.com/appengine/docs/flexible/how-requests-are-handled?tab=python#x-accel-buffering
-      "X-Accel-Buffering" => "no"
+      "X-Accel-Buffering" => "no",
+      # Set the correct content type. This should be overridden if you need to
+      # serve things such as EPubs and other derived ZIP formats.
+      "Content-Type" => "application/zip"
     }
   end
 

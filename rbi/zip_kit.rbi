@@ -1981,6 +1981,8 @@ end, T.untyped)
     # 
     # _@param_ `type` — the content type (MIME type) of the archive being output
     # 
+    # _@param_ `use_chunked_transfer_encoding` — whether to forcibly encode output as chunked. Normally you should not need this.
+    # 
     # _@param_ `zip_streamer_options` — options that will be passed to the Streamer. See {ZipKit::Streamer#initialize} for the full list of options.
     # 
     # _@return_ — The output enumerator assigned to the response body
@@ -1988,11 +1990,12 @@ end, T.untyped)
       params(
         filename: String,
         type: String,
+        use_chunked_transfer_encoding: T::Boolean,
         zip_streamer_options: T::Hash[T.untyped, T.untyped],
         zip_streaming_blk: T.proc.params(the: ZipKit::Streamer).void
       ).returns(ZipKit::OutputEnumerator)
     end
-    def zip_kit_stream(filename: "download.zip", type: "application/zip", **zip_streamer_options, &zip_streaming_blk); end
+    def zip_kit_stream(filename: "download.zip", type: "application/zip", use_chunked_transfer_encoding: false, **zip_streamer_options, &zip_streaming_blk); end
   end
 
   # The output enumerator makes it possible to "pull" from a ZipKit streamer
@@ -2021,15 +2024,11 @@ end, T.untyped)
   #       end
   #     end
   # 
-  # Either as a `Transfer-Encoding: chunked` response (if your webserver supports it),
-  # which will give you true streaming capability:
+  # You can grab the headers one usually needs for streaming from `#streaming_http_headers`:
   # 
-  #     headers, chunked_or_presized_rack_body = iterable_zip_body.to_headers_and_rack_response_body(env)
-  #     [200, headers, chunked_or_presized_rack_body]
+  #     [200, iterable_zip_body.streaming_http_headers, iterable_zip_body]
   # 
-  # or it will wrap your output in a `TempfileBody` object which buffers the ZIP before output. Buffering has
-  # benefits if your webserver does not support anything beyound HTTP/1.0, and also engages automatically
-  # in unit tests (since rack-test and Rails tests do not do streaming HTTP/1.1).
+  # to bypass things like `Rack::ETag` and the nginx buffering.
   class OutputEnumerator
     DEFAULT_WRITE_BUFFER_SIZE = T.let(64 * 1024, T.untyped)
 
@@ -2083,17 +2082,15 @@ end, T.untyped)
     sig { returns(T.untyped) }
     def each; end
 
+    # Returns a Hash of HTTP response headers you are likely to need to have your response stream correctly.
+    sig { returns(T::Hash[T.untyped, T.untyped]) }
+    def streaming_http_headers; end
+
     # Returns a tuple of `headers, body` - headers are a `Hash` and the body is
-    # an object that can be used as a Rack response body. The method will automatically
-    # switch the wrapping of the output depending on whether the response can be pre-sized,
-    # and whether your downstream webserver (like nginx) is configured to support
-    # the HTTP/1.1 protocol version.
-    # 
-    # _@param_ `rack_env` — the Rack env, which the method may need to mutate (adding a Tempfile for cleanup)
-    # 
-    # _@param_ `content_length` — the amount of bytes that the archive will contain. If given, no Chunked encoding gets applied.
-    sig { params(rack_env: T::Hash[T.untyped, T.untyped], content_length: T.nilable(Integer)).returns(T::Array[T.untyped]) }
-    def to_headers_and_rack_response_body(rack_env, content_length: nil); end
+    # an object that can be used as a Rack response body. This method used to accept arguments
+    # but will now just ignore them.
+    sig { returns(T::Array[T.untyped]) }
+    def to_headers_and_rack_response_body; end
   end
 
   # A body wrapper that emits chunked responses, creating valid
@@ -2137,7 +2134,9 @@ end, T.untyped)
   end
 
   # Contains a file handle which can be closed once the response finishes sending.
-  # It supports `to_path` so that `Rack::Sendfile` can intercept it
+  # It supports `to_path` so that `Rack::Sendfile` can intercept it.
+  # This class is deprecated and is going to be removed in zip_kit 7.x
+  # @api deprecated
   class RackTempfileBody
     TEMPFILE_NAME_PREFIX = T.let("zip-tricks-tf-body-", T.untyped)
 
@@ -2166,7 +2165,6 @@ end, T.untyped)
     def flush; end
 
     # sord omit - no YARD type given for :tempfile, using untyped
-    # Returns the value of attribute tempfile.
     sig { returns(T.untyped) }
     attr_reader :tempfile
   end

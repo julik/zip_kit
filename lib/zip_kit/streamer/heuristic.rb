@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "zlib"
+
 # Will be used to pick whether to store a file in the `stored` or
 # `deflated` mode, by compressing the first N bytes of the file and
 # comparing the stored and deflated data sizes. If deflate produces

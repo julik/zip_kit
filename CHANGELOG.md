@@ -1,3 +1,7 @@
+## 6.2.0
+
+* Remove forced `Transfer-Encoding: chunked` and the chunking body wrapper. It is actually a good idea to trust the app webserver to apply the transfer encoding as is appropriate. For the case when "you really have to", add a bypass in `RailsStreaming#zip_kit_stream` for forcing the chunking manually.
+
 ## 6.1.0
 
 * Add Sorbet `.rbi` for type hints and resolution. This should make developing with zip_kit more pleasant, and the library - more discoverable.
