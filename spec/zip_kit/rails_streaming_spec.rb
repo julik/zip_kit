@@ -41,6 +41,13 @@ describe ZipKit::RailsStreaming do
         generator.generate_once(z)
       end
     end
+
+    def stream_zip_with_forced_chunking
+      generator = FakeZipGenerator.new
+      zip_kit_stream(auto_rename_duplicate_filenames: true, use_chunked_transfer_encoding: true) do |z|
+        generator.generate_once(z)
+      end
+    end
   end
 
   it "degrades to a buffered response with HTTP/1.0 and produces a ZIP" do
@@ -65,11 +72,10 @@ describe ZipKit::RailsStreaming do
     expect(headers["X-Accel-Buffering"]).to eq("no")
     expect(headers["Transfer-Encoding"]).to be_nil
     expect(headers["Content-Length"]).to be_kind_of(String)
-    expect(body).to respond_to(:to_path) # for Rack::Sendfile
     # All the other methods have been excercised by reading out the iterable body
   end
 
-  it "uses Transfer-Encoding: chunked with HTTP/1.1 and produces a chunked response" do
+  it "uses Transfer-Encoding: chunked when requested" do
     fake_rack_env = {
       "HTTP_VERSION" => "HTTP/1.1",
       "REQUEST_METHOD" => "GET",
@@ -79,7 +85,7 @@ describe ZipKit::RailsStreaming do
       "SERVER_NAME" => "host.example",
       "rack.input" => StringIO.new
     }
-    status, headers, body = FakeController.action(:stream_zip).call(fake_rack_env)
+    status, headers, body = FakeController.action(:stream_zip_with_forced_chunking).call(fake_rack_env)
 
     ref_output_io = FakeZipGenerator.generate_reference
     out = decode_chunked_encoding(readback_iterable(body))

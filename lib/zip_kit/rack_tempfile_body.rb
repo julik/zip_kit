@@ -1,7 +1,9 @@
 # frozen_string_literal: true
 
 # Contains a file handle which can be closed once the response finishes sending.
-# It supports `to_path` so that `Rack::Sendfile` can intercept it
+# It supports `to_path` so that `Rack::Sendfile` can intercept it.
+# This class is deprecated and is going to be removed in zip_kit 7.x
+# @api deprecated
 class ZipKit::RackTempfileBody
   TEMPFILE_NAME_PREFIX = "zip-tricks-tf-body-"
   attr_reader :tempfile
