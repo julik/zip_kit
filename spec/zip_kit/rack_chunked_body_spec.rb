@@ -1,6 +1,5 @@
 require "spec_helper"
 
-# This is a deprecated class and will be removed in zip_kit 7.x
 describe ZipKit::RackChunkedBody do
   it "applies a chunked encoding" do
     iterable = ["foo", "bar", "baz"].each
