@@ -122,12 +122,10 @@ since you do not know how large the compressed data segments are going to be.
 ## Send a ZIP from a Rack response
 
 zip_kit provides an `OutputEnumerator` object which will yield the binary chunks piece
-by piece, and apply some amount of buffering as well. Note that you might want to wrap
-it with a chunked transfer encoder - the `to_rack_response_headers_and_body` method will do
-that for you. Return the headers and the body to your webserver and you will have your ZIP streamed!
-The block that you give to the `OutputEnumerator` receive the {ZipKit::Streamer} object and will only
-start executing once your response body starts getting iterated over - when actually sending
-the response to the client (unless you are using a buffering Rack webserver, such as Webrick).
+by piece, and apply some amount of buffering as well. Return the headers and the body to your webserver
+and you will have your ZIP streamed! The block that you give to the `OutputEnumerator` will receive
+the {ZipKit::Streamer} object and will only start executing once your response body starts getting iterated
+over - when actually sending the response to the client (unless you are using a buffering Rack webserver, such as Webrick).
 
 ```ruby
 body = ZipKit::OutputEnumerator.new do | zip |
@@ -139,8 +137,7 @@ body = ZipKit::OutputEnumerator.new do | zip |
   end
 end
 
-headers, streaming_body = body.to_rack_response_headers_and_body(env)
-[200, headers, streaming_body]
+[200, body.streaming_http_headers, body]
 ```
 
 ## Send a ZIP file of known size, with correct headers
@@ -160,8 +157,10 @@ zip_body = ZipKit::OutputEnumerator.new do | zip |
   zip << read_file('myfile2.bin')
 end
 
-headers, streaming_body = body.to_rack_response_headers_and_body(env, content_length: bytesize)
-[200, headers, streaming_body]
+hh = zip_body.streaming_http_headers
+hh["Content-Length"] = bytesize.to_s
+
+[200, hh, zip_body]
 ```
 
 ## Writing ZIP files using the Streamer bypass
