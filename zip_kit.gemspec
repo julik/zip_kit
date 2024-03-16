@@ -7,7 +7,7 @@ Gem::Specification.new do |spec|
   spec.version = ZipKit::VERSION
   spec.authors = ["Julik Tarkhanov", "Noah Berman", "Dmitry Tymchuk", "David Bosveld", "Felix Bünemann"]
   spec.email = ["me@julik.nl"]
-
+  spec.license = "MIT"
   spec.summary = "Stream out ZIP files from Ruby. Successor to zip_tricks."
   spec.description = "Stream out ZIP files from Ruby. Successor to zip_tricks."
   spec.homepage = "https://github.com/julik/zip_kit"
