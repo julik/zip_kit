@@ -60,14 +60,11 @@ class ZipKit::OutputEnumerator
   #       ...
   #     end
   #
-  # @param kwargs_for_new [Hash] keyword arguments for {Streamer.new}
-  # @return [ZipKit::OutputEnumerator] the enumerator you can read bytestrings of the ZIP from by calling `each`
-  #
   # @param streamer_options[Hash] options for Streamer, see {ZipKit::Streamer.new}
   # @param write_buffer_size[Integer] By default all ZipKit writes are unbuffered. For output to sockets
   #     it is beneficial to bulkify those writes so that they are roughly sized to a socket buffer chunk. This
   #     object will bulkify writes for you in this way (so `each` will yield not on every call to `<<` from the Streamer
-  #     but at block size boundaries or greater). Set it to 0 for unbuffered writes.
+  #     but at block size boundaries or greater). Set the parameter to 0 for unbuffered writes.
   # @param blk a block that will receive the Streamer object when executing. The block will not be executed
   #     immediately but only once `each` is called on the OutputEnumerator
   def initialize(write_buffer_size: DEFAULT_WRITE_BUFFER_SIZE, **streamer_options, &blk)
