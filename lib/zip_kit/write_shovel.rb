@@ -13,8 +13,8 @@ module ZipKit::WriteShovel
   # Writes the given data to the output stream. Allows the object to be used as
   # a target for `IO.copy_stream(from, to)`
   #
-  # @param d[String] the binary string to write (part of the uncompressed file)
-  # @return [Fixnum] the number of bytes written
+  # @param bytes[String] the binary string to write (part of the uncompressed file)
+  # @return [Fixnum] the number of bytes written (will always be the bytesize of `bytes`)
   def write(bytes)
     self << bytes
     bytes.bytesize

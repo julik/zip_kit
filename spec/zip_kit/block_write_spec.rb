@@ -21,6 +21,17 @@ describe ZipKit::BlockWrite do
     expect(blobs).to eq(["hello", "world", "!"])
   end
 
+  it "supports write()" do
+    blobs = []
+    adapter = described_class.new { |s| blobs << s }
+
+    expect(adapter.write("hello")).to eq(5)
+    expect(adapter.write("worlde")).to eq(6)
+    expect(adapter.write("!")).to eq(1)
+
+    expect(blobs).to eq(["hello", "worlde", "!"])
+  end
+
   it "can write in all possible encodings, even if the strings are frozen" do
     accum_string = ""
     adapter = described_class.new { |s| accum_string << s }

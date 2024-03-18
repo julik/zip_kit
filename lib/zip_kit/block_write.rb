@@ -17,9 +17,12 @@
 #     end
 #     [200, {}, MyRackResponse.new]
 class ZipKit::BlockWrite
+  include ZipKit::WriteShovel
+
   # Creates a new BlockWrite.
   #
   # @param block The block that will be called when this object receives the `<<` message
+  # @yieldparam bytes[String] A string in binary encoding which has just been written into the object
   def initialize(&block)
     @block = block
   end
@@ -36,7 +39,7 @@ class ZipKit::BlockWrite
   # @param buf[String] the string to write. Note that a zero-length String
   #    will not be forwarded to the block, as it has special meaning when used
   #    with chunked encoding (it indicates the end of the stream).
-  # @return self
+  # @return [ZipKit::BlockWrite]
   def <<(buf)
     # Zero-size output has a special meaning  when using chunked encoding
     return if buf.nil? || buf.bytesize.zero?

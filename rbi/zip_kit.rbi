@@ -563,13 +563,12 @@ module ZipKit
     sig { params(filename: T.untyped).returns(T.untyped) }
     def remove_backslash(filename); end
 
-    # sord infer - argument name in single @param inferred as "bytes"
     # Writes the given data to the output stream. Allows the object to be used as
     # a target for `IO.copy_stream(from, to)`
     # 
-    # _@param_ `d` — the binary string to write (part of the uncompressed file)
+    # _@param_ `bytes` — the binary string to write (part of the uncompressed file)
     # 
-    # _@return_ — the number of bytes written
+    # _@return_ — the number of bytes written (will always be the bytesize of `bytes`)
     sig { params(bytes: String).returns(Fixnum) }
     def write(bytes); end
 
@@ -678,13 +677,12 @@ module ZipKit
       sig { returns(T.untyped) }
       def close; end
 
-      # sord infer - argument name in single @param inferred as "bytes"
       # Writes the given data to the output stream. Allows the object to be used as
       # a target for `IO.copy_stream(from, to)`
       # 
-      # _@param_ `d` — the binary string to write (part of the uncompressed file)
+      # _@param_ `bytes` — the binary string to write (part of the uncompressed file)
       # 
-      # _@return_ — the number of bytes written
+      # _@return_ — the number of bytes written (will always be the bytesize of `bytes`)
       sig { params(bytes: String).returns(Fixnum) }
       def write(bytes); end
     end
@@ -748,13 +746,12 @@ module ZipKit
       sig { returns(T::Hash[T.untyped, T.untyped]) }
       def finish; end
 
-      # sord infer - argument name in single @param inferred as "bytes"
       # Writes the given data to the output stream. Allows the object to be used as
       # a target for `IO.copy_stream(from, to)`
       # 
-      # _@param_ `d` — the binary string to write (part of the uncompressed file)
+      # _@param_ `bytes` — the binary string to write (part of the uncompressed file)
       # 
-      # _@return_ — the number of bytes written
+      # _@return_ — the number of bytes written (will always be the bytesize of `bytes`)
       sig { params(bytes: String).returns(Fixnum) }
       def write(bytes); end
     end
@@ -787,13 +784,12 @@ module ZipKit
       sig { returns(T::Hash[T.untyped, T.untyped]) }
       def finish; end
 
-      # sord infer - argument name in single @param inferred as "bytes"
       # Writes the given data to the output stream. Allows the object to be used as
       # a target for `IO.copy_stream(from, to)`
       # 
-      # _@param_ `d` — the binary string to write (part of the uncompressed file)
+      # _@param_ `bytes` — the binary string to write (part of the uncompressed file)
       # 
-      # _@return_ — the number of bytes written
+      # _@return_ — the number of bytes written (will always be the bytesize of `bytes`)
       sig { params(bytes: String).returns(Fixnum) }
       def write(bytes); end
     end
@@ -1107,19 +1103,28 @@ end, T.untyped)
   #     end
   #     [200, {}, MyRackResponse.new]
   class BlockWrite
+    include ZipKit::WriteShovel
+
     # Creates a new BlockWrite.
     # 
     # _@param_ `block` — The block that will be called when this object receives the `<<` message
-    sig { params(block: T.untyped).void }
+    sig { params(block: T.proc.params(bytes: String).void).void }
     def initialize(&block); end
 
     # Sends a string through to the block stored in the BlockWrite.
     # 
     # _@param_ `buf` — the string to write. Note that a zero-length String will not be forwarded to the block, as it has special meaning when used with chunked encoding (it indicates the end of the stream).
-    # 
-    # _@return_ — self
-    sig { params(buf: String).returns(T.untyped) }
+    sig { params(buf: String).returns(ZipKit::BlockWrite) }
     def <<(buf); end
+
+    # Writes the given data to the output stream. Allows the object to be used as
+    # a target for `IO.copy_stream(from, to)`
+    # 
+    # _@param_ `bytes` — the binary string to write (part of the uncompressed file)
+    # 
+    # _@return_ — the number of bytes written (will always be the bytesize of `bytes`)
+    sig { params(bytes: String).returns(Fixnum) }
+    def write(bytes); end
   end
 
   # A very barebones ZIP file reader. Is made for maximum interoperability, but at the same
@@ -1657,13 +1662,12 @@ end, T.untyped)
     sig { params(crc32: Fixnum, blob_size: Fixnum).returns(Fixnum) }
     def append(crc32, blob_size); end
 
-    # sord infer - argument name in single @param inferred as "bytes"
     # Writes the given data to the output stream. Allows the object to be used as
     # a target for `IO.copy_stream(from, to)`
     # 
-    # _@param_ `d` — the binary string to write (part of the uncompressed file)
+    # _@param_ `bytes` — the binary string to write (part of the uncompressed file)
     # 
-    # _@return_ — the number of bytes written
+    # _@return_ — the number of bytes written (will always be the bytesize of `bytes`)
     sig { params(bytes: String).returns(Fixnum) }
     def write(bytes); end
   end
@@ -1728,13 +1732,12 @@ end, T.untyped)
   # "IO-ish" things to also respond to `write`? This is what this module does.
   # Jim would be proud. We miss you, Jim.
   module WriteShovel
-    # sord infer - argument name in single @param inferred as "bytes"
     # Writes the given data to the output stream. Allows the object to be used as
     # a target for `IO.copy_stream(from, to)`
     # 
-    # _@param_ `d` — the binary string to write (part of the uncompressed file)
+    # _@param_ `bytes` — the binary string to write (part of the uncompressed file)
     # 
-    # _@return_ — the number of bytes written
+    # _@return_ — the number of bytes written (will always be the bytesize of `bytes`)
     sig { params(bytes: String).returns(Fixnum) }
     def write(bytes); end
   end
@@ -1960,13 +1963,12 @@ end, T.untyped)
     sig { returns(T.untyped) }
     def tell; end
 
-    # sord infer - argument name in single @param inferred as "bytes"
     # Writes the given data to the output stream. Allows the object to be used as
     # a target for `IO.copy_stream(from, to)`
     # 
-    # _@param_ `d` — the binary string to write (part of the uncompressed file)
+    # _@param_ `bytes` — the binary string to write (part of the uncompressed file)
     # 
-    # _@return_ — the number of bytes written
+    # _@return_ — the number of bytes written (will always be the bytesize of `bytes`)
     sig { params(bytes: String).returns(Fixnum) }
     def write(bytes); end
   end
