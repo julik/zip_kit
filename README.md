@@ -59,7 +59,7 @@ via HTTP.
 and the ZIP output will run in the same thread as your main request. Your testing flows (be it minitest or
 RSpec) should work normally with controller actions returning ZIPs.
 
-## Writing into other streaming destinations and through streaming wrappers
+## Writing into streaming destinations
 
 Any object that accepts bytes via either `<<` or `write` methods can be a write destination. For example, here
 is how to upload a sizeable ZIP to S3 - the SDK will happily chop your upload into multipart upload parts:
@@ -69,23 +69,23 @@ bucket = Aws::S3::Bucket.new("mybucket")
 obj = bucket.object("big.zip")
 obj.upload_stream do |write_stream|
   ZipKit::Streamer.open(write_stream) do |zip|
-    zip.write_file("large.csv") do |sink|
-      CSV(sink) do |csv|
-        csv << ["Line", "Item"]
-        20_000.times do |n|
-          csv << [n, "Item number #{n}"]
-        end
+    zip.write_file("file.csv") do |sink|
+      File.open("large.csv", "rb") do |file_input|
+        IO.copy_stream(file_input, sink)
       end
     end
   end
 end
 ```
 
+## Writing through streaming wrappers
+
 Any object that writes using either `<<` or `write` can write into a `sink`. For example, you can do streaming
-output with [builder](https://github.com/jimweirich/builder#project-builder)
+output with [builder](https://github.com/jimweirich/builder#project-builder) which calls `<<` on its `target`
+every time a complete write call is done:
 
 ```ruby
-zip.write_file('report1.csv') do |sink|
+zip.write_file('employees.xml') do |sink|
   builder = Builder::XmlMarkup.new(target: sink, indent: 2)
   builder.people do
     Person.all.find_each do |person|
@@ -95,8 +95,18 @@ zip.write_file('report1.csv') do |sink|
 end
 ```
 
-and this output will be compressed and output into the ZIP file on the fly. zip_kit composes with any
-Ruby code that streams its output into a destination.
+The output will be compressed and output into the ZIP file on the fly. Same for CSV:
+
+```ruby
+zip.write_file('line_items.csv') do |sink|
+  CSV(sink) do |csv|
+    csv << ["Line", "Item"]
+    20_000.times do |n|
+      csv << [n, "Item number #{n}"]
+    end
+  end
+end
+```
 
 ## Create a ZIP file without size estimation, compress on-the-fly during writes
 
