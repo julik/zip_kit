@@ -23,9 +23,12 @@ Gem::Specification.new do |spec|
   spec.require_paths = ["lib"]
 
   spec.add_development_dependency "bundler"
-  spec.add_development_dependency "rubyzip", "~> 1"
 
-  spec.add_development_dependency "rack" # For tests where we spin up a server
+  # zip_kit does not use any runtime dependencies (besides zlib). However, for testing
+  # things quite a few things are used - and for a good reason.
+
+  spec.add_development_dependency "rubyzip", "~> 1" # We test our output with _another_ ZIP library, which is the way to go here
+  spec.add_development_dependency "rack" # For tests where we spin up a server. Both for streaming out and for testing reads over HTTP
   spec.add_development_dependency "rake", "~> 12.2"
   spec.add_development_dependency "rspec", "~> 3"
   spec.add_development_dependency "rspec-mocks", "~> 3.10", ">= 3.10.2" # ruby 3 compatibility
