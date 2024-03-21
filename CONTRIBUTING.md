@@ -106,11 +106,11 @@ project:
 
    ```bash
    # Clone your fork of the repo into the current directory
-   git clone git@github.com:WeTransfer/zip_kit.git
+   git clone git@github.com:julik/zip_kit.git
    # Navigate to the newly cloned directory
    cd zip_kit
    # Assign the original repo to a remote called "upstream"
-   git remote add upstream git@github.com:WeTransfer/zip_kit.git
+   git remote add upstream git@github.com:julik/zip_kit.git
    ```
 
 2. If you cloned a while ago, get the latest changes from upstream:
