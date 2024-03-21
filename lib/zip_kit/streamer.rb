@@ -2,13 +2,15 @@
 
 require "set"
 
-# Is used to write streamed ZIP archives into the provided IO-ish object.
-# The output IO is never going to be rewound or seeked, so the output
-# of this object can be coupled directly to, say, a Rack output. The
-# output can also be a String, Array or anything that responds to `<<`.
+# Is used to write ZIP archives without having to read them back or to overwrite
+# data. It outputs into any object that supports `<<` or `write`, namely:
 #
-# Allows for splicing raw files (for "stored" entries without compression)
-# and splicing of deflated files (for "deflated" storage mode).
+# An `Array`, `File`, `IO`, `Socket` and even `String` all can be output destinations
+# for the `Streamer`.
+#
+# You can also combine output through the `Streamer` with direct output to the destination,
+# all while preserving the correct offsets in the ZIP file structures. This allows usage
+# of `sendfile()` or socket `splice()` calls for "through" proxying.
 #
 # For stored entries, you need to know the CRC32 (as a uint) and the filesize upfront,
 # before the writing of the entry body starts.
