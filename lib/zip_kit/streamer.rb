@@ -36,7 +36,7 @@ require "set"
 #       end
 #     end
 #
-# The central directory will be written automatically at the end of the block.
+# The central directory will be written automatically at the end of the `open` block.
 #
 # ## Using the Streamer with entries of known size and having a known CRC32 checksum
 #
