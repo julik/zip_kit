@@ -13,10 +13,6 @@ module ZipKit::RailsStreaming
   # @yieldparam [ZipKit::Streamer] the streamer that can be written to
   # @return [ZipKit::OutputEnumerator] The output enumerator assigned to the response body
   def zip_kit_stream(filename: "download.zip", type: "application/zip", use_chunked_transfer_encoding: false, **zip_streamer_options, &zip_streaming_blk)
-    # The output enumerator yields chunks of bytes generated from ZipKit. Instantiating it
-    # first will also validate the Streamer options.
-    output_enum = ZipKit::OutputEnumerator.new(**zip_streamer_options, &zip_streaming_blk)
-
     # We want some common headers for file sending. Rails will also set
     # self.sending_file = true for us when we call send_file_headers!
     send_file_headers!(type: type, filename: filename)
@@ -29,16 +25,39 @@ module ZipKit::RailsStreaming
       logger&.warn { "The downstream HTTP proxy/LB insists on HTTP/1.0 protocol, ZIP response will be buffered." }
     end
 
-    headers = output_enum.streaming_http_headers
-
-    # In rare circumstances (such as the app using Rack::ContentLength - which should normally
-    # not be used allow the user to force the use of the chunked encoding
-    if use_chunked_transfer_encoding
-      output_enum = ZipKit::RackChunkedBody.new(output_enum)
-      headers["Transfer-Encoding"] = "chunked"
-    end
-
+    headers = ZipKit::OutputEnumerator.streaming_http_headers
     response.headers.merge!(headers)
-    self.response_body = output_enum
+
+    # The output enumerator yields chunks of bytes generated from the Streamer,
+    # with some buffering
+    output_enum = ZipKit::OutputEnumerator.new(**zip_streamer_options, &zip_streaming_blk)
+
+    # Time for some branching, which mostly has to do with the 999 flavours of
+    # "how to make both Rails and Rack stream"
+    if self.class.ancestors.include?(ActionController::Live)
+      # If this controller includes Live it will not work correctly with a Rack
+      # response body assignment - we need to write into the Live output stream instead
+      begin
+        output_enum.each { |bytes| response.stream.write(bytes) }
+      ensure
+        response.stream.close
+      end
+    elsif use_chunked_transfer_encoding
+      # Chunked encoding may be forced if, for example, you _need_ to bypass Rack::ContentLength.
+      # Rack::ContentLength is normally not in a Rails middleware stack, but it might get
+      # introduced unintentionally - for example, "rackup" adds the ContentLength middleware for you.
+      # There is a recommendation to leave the chunked encoding to the app server, so that servers
+      # that support HTTP/2 can use native framing and not have to deal with the chunked encoding,
+      # see https://github.com/julik/zip_kit/issues/7
+      # But it is not to be excluded that a user may need to force the chunked encoding to bypass
+      # some especially pesky Rack middleware that just would not cooperate. Those include
+      # Rack::MiniProfiler and the above-mentioned Rack::ContentLength.
+      response.headers["Transfer-Encoding"] = "chunked"
+      self.response_body = ZipKit::RackChunkedBody.new(output_enum)
+    else
+      # Stream using a Rack body assigned to the ActionController response body, without
+      # doing explicit chunked encoding. See above for the reasoning.
+      self.response_body = output_enum
+    end
   end
 end

@@ -1,4 +1,7 @@
-* Make `BlockWrite` respond to `write`
+## 6.2.1
+
+* Make `RailsStreaming` compatible with `ActionController::Live` (previously the response would hang)
+* Make `BlockWrite` respond to `write` in addition to `<<`
 
 ## 6.2.0
 
