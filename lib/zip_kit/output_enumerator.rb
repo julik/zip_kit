@@ -100,7 +100,7 @@ class ZipKit::OutputEnumerator
   # This is on the {ZipKit::OutputEnumerator} class since those headers are common, independent of the
   # particular response body getting served. You might want to override the headers with your particular
   # ones - for example, specific content types are needed for files which are, technically, ZIP files
-  # but are of a file format built "on top" of ZIPs - such as ODTs, the [Apple Wallet passes](https://developer.apple.com/documentation/walletpasses/building_a_pass)
+  # but are of a file format built "on top" of ZIPs - such as ODTs, [pkpass files](https://developer.apple.com/documentation/walletpasses/building_a_pass)
   # and ePubs.
   #
   # @return [Hash]
