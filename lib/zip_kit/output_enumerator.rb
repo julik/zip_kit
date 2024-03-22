@@ -97,9 +97,14 @@ class ZipKit::OutputEnumerator
   end
 
   # Returns a Hash of HTTP response headers you are likely to need to have your response stream correctly.
+  # This is on the {ZipKit::OutputEnumerator} class since those headers are common, independent of the
+  # particular response body getting served. You might want to override the headers with your particular
+  # ones - for example, specific content types are needed for files which are, technically, ZIP files
+  # but are of a file format built "on top" of ZIPs - such as ODTs, the [Apple Wallet passes](https://developer.apple.com/documentation/walletpasses/building_a_pass)
+  # and ePubs.
   #
   # @return [Hash]
-  def streaming_http_headers
+  def self.streaming_http_headers
     _headers = {
       # We need to ensure Rack::ETag does not suddenly start buffering us, see
       # https://github.com/rack/rack/issues/1619#issuecomment-606315714
@@ -116,6 +121,15 @@ class ZipKit::OutputEnumerator
       # serve things such as EPubs and other derived ZIP formats.
       "Content-Type" => "application/zip"
     }
+  end
+
+  # Returns a Hash of HTTP response headers for this particular response. This used to contain "Content-Length" for
+  # presized responses, but is now effectively a no-op.
+  #
+  # @see [ZipKit::OutputEnumerator.streaming_http_headers]
+  # @return [Hash]
+  def streaming_http_headers
+    self.class.streaming_http_headers
   end
 
   # Returns a tuple of `headers, body` - headers are a `Hash` and the body is

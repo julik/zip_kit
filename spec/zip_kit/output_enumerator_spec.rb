@@ -33,6 +33,18 @@ describe ZipKit::OutputEnumerator do
     expect(per_filename["A file"].bytesize).to eq(file_body.bytesize)
   end
 
+  it "provides streaming headers on the object instance" do
+    headers = described_class.new.streaming_http_headers
+    expect(headers).to be_kind_of(Hash)
+    expect(headers["Content-Encoding"]).to eq("identity")
+  end
+
+  it "provides streaming headers on the class" do
+    headers = described_class.streaming_http_headers
+    expect(headers).to be_kind_of(Hash)
+    expect(headers["Content-Encoding"]).to eq("identity")
+  end
+
   it "returns parts of the ZIP file when called using an Enumerator" do
     output_buf = ManagedTempfile.new("output")
 

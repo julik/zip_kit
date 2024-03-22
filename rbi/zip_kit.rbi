@@ -100,13 +100,15 @@ module ZipKit
     end
   end
 
-  # Is used to write streamed ZIP archives into the provided IO-ish object.
-  # The output IO is never going to be rewound or seeked, so the output
-  # of this object can be coupled directly to, say, a Rack output. The
-  # output can also be a String, Array or anything that responds to `<<`.
+  # Is used to write ZIP archives without having to read them back or to overwrite
+  # data. It outputs into any object that supports `<<` or `write`, namely:
   # 
-  # Allows for splicing raw files (for "stored" entries without compression)
-  # and splicing of deflated files (for "deflated" storage mode).
+  # An `Array`, `File`, `IO`, `Socket` and even `String` all can be output destinations
+  # for the `Streamer`.
+  # 
+  # You can also combine output through the `Streamer` with direct output to the destination,
+  # all while preserving the correct offsets in the ZIP file structures. This allows usage
+  # of `sendfile()` or socket `splice()` calls for "through" proxying.
   # 
   # For stored entries, you need to know the CRC32 (as a uint) and the filesize upfront,
   # before the writing of the entry body starts.
@@ -132,7 +134,7 @@ module ZipKit
   #       end
   #     end
   # 
-  # The central directory will be written automatically at the end of the block.
+  # The central directory will be written automatically at the end of the `open` block.
   # 
   # ## Using the Streamer with entries of known size and having a known CRC32 checksum
   # 
@@ -2058,15 +2060,11 @@ end, T.untyped)
     #       ...
     #     end
     # 
-    # _@param_ `kwargs_for_new` — keyword arguments for {Streamer.new}
-    # 
     # _@param_ `streamer_options` — options for Streamer, see {ZipKit::Streamer.new}
     # 
-    # _@param_ `write_buffer_size` — By default all ZipKit writes are unbuffered. For output to sockets it is beneficial to bulkify those writes so that they are roughly sized to a socket buffer chunk. This object will bulkify writes for you in this way (so `each` will yield not on every call to `<<` from the Streamer but at block size boundaries or greater). Set it to 0 for unbuffered writes.
+    # _@param_ `write_buffer_size` — By default all ZipKit writes are unbuffered. For output to sockets it is beneficial to bulkify those writes so that they are roughly sized to a socket buffer chunk. This object will bulkify writes for you in this way (so `each` will yield not on every call to `<<` from the Streamer but at block size boundaries or greater). Set the parameter to 0 for unbuffered writes.
     # 
     # _@param_ `blk` — a block that will receive the Streamer object when executing. The block will not be executed immediately but only once `each` is called on the OutputEnumerator
-    # 
-    # _@return_ — the enumerator you can read bytestrings of the ZIP from by calling `each`
     sig { params(write_buffer_size: Integer, streamer_options: T::Hash[T.untyped, T.untyped], blk: T.untyped).void }
     def initialize(write_buffer_size: DEFAULT_WRITE_BUFFER_SIZE, **streamer_options, &blk); end
 
@@ -2085,6 +2083,18 @@ end, T.untyped)
     def each; end
 
     # Returns a Hash of HTTP response headers you are likely to need to have your response stream correctly.
+    # This is on the {ZipKit::OutputEnumerator} class since those headers are common, independent of the
+    # particular response body getting served. You might want to override the headers with your particular
+    # ones - for example, specific content types are needed for files which are, technically, ZIP files
+    # but are of a file format built "on top" of ZIPs - such as ODTs, the [Apple Wallet passes](https://developer.apple.com/documentation/walletpasses/building_a_pass)
+    # and ePubs.
+    sig { returns(T::Hash[T.untyped, T.untyped]) }
+    def self.streaming_http_headers; end
+
+    # Returns a Hash of HTTP response headers for this particular response. This used to contain "Content-Length" for
+    # presized responses, but is now effectively a no-op.
+    # 
+    # _@see_ `[ZipKit::OutputEnumerator.streaming_http_headers]`
     sig { returns(T::Hash[T.untyped, T.untyped]) }
     def streaming_http_headers; end
 
