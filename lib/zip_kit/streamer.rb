@@ -12,7 +12,7 @@ require "set"
 # all while preserving the correct offsets in the ZIP file structures. This allows usage
 # of `sendfile()` or socket `splice()` calls for "through" proxying.
 #
-# If you want to avoid data descriptors - or write data bypassing the Streamer - 
+# If you want to avoid data descriptors - or write data bypassing the Streamer -
 # you need to know the CRC32 (as a uint) and the filesize upfront,
 # before the writing of the entry body starts.
 #
