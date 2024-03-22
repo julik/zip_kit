@@ -110,11 +110,9 @@ module ZipKit
   # all while preserving the correct offsets in the ZIP file structures. This allows usage
   # of `sendfile()` or socket `splice()` calls for "through" proxying.
   # 
-  # For stored entries, you need to know the CRC32 (as a uint) and the filesize upfront,
+  # If you want to avoid data descriptors - or write data bypassing the Streamer -
+  # you need to know the CRC32 (as a uint) and the filesize upfront,
   # before the writing of the entry body starts.
-  # 
-  # Any object that responds to `<<` can be used as the Streamer target - you can use
-  # a String, an Array, a Socket or a File, at your leisure.
   # 
   # ## Using the Streamer with runtime compression
   # 
@@ -2086,7 +2084,7 @@ end, T.untyped)
     # This is on the {ZipKit::OutputEnumerator} class since those headers are common, independent of the
     # particular response body getting served. You might want to override the headers with your particular
     # ones - for example, specific content types are needed for files which are, technically, ZIP files
-    # but are of a file format built "on top" of ZIPs - such as ODTs, the [Apple Wallet passes](https://developer.apple.com/documentation/walletpasses/building_a_pass)
+    # but are of a file format built "on top" of ZIPs - such as ODTs, [pkpass files](https://developer.apple.com/documentation/walletpasses/building_a_pass)
     # and ePubs.
     sig { returns(T::Hash[T.untyped, T.untyped]) }
     def self.streaming_http_headers; end

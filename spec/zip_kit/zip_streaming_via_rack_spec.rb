@@ -31,8 +31,8 @@ describe "Streaming using OutputEnumerator and Rack" do
     end
   end
 
-  it "serves a ZIP correctly" do
-    url = "http://#{@server_addr}/temp.zip"
+  it "serves a ZIP correctly via naked Rack" do
+    url = "http://#{@server_addr}/rack-app"
     uri = URI.parse(url)
 
     http = Net::HTTP.start(uri.hostname, uri.port)
@@ -43,5 +43,27 @@ describe "Streaming using OutputEnumerator and Rack" do
     expect(response.header["Content-Length"]).to be_nil
 
     expect(response.body.bytesize).to eq(87228)
+  end
+
+  paths = %w[
+    rails-controller-implicit-chunking
+    rails-controller-explicit-chunking
+    rails-controller-with-live-implicit-chunking
+    rails-controller-with-live-explicit-chunking
+  ]
+  paths.each do |path|
+    it "serves a ZIP correctly via /#{path}" do
+      url = "http://#{@server_addr}/#{path}"
+      uri = URI.parse(url)
+
+      http = Net::HTTP.start(uri.hostname, uri.port)
+      request = Net::HTTP::Get.new(url)
+      response = http.request(request)
+
+      expect(response.body.bytesize).to eq(67109038)
+
+      expect(response.header["Content-Length"]).to be_nil
+      expect(response.header["Transfer-Encoding"]).to eq("chunked") # Puma should auto-add it
+    end
   end
 end
