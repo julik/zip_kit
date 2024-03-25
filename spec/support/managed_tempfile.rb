@@ -3,6 +3,7 @@ class ManagedTempfile < Tempfile
 
   def initialize(*)
     super
+    binmode
     @@managed_tempfiles << self
   end
 
