@@ -1999,7 +1999,7 @@ end, T.untyped)
     # 
     # _@param_ `use_chunked_transfer_encoding` — whether to forcibly encode output as chunked. Normally you should not need this.
     # 
-    # _@param_ `zip_streamer_options` — options that will be passed to the Streamer. See {ZipKit::Streamer#initialize} for the full list of options.
+    # _@param_ `output_enumerator_options` — options that will be passed to the OutputEnumerator - these include options for the Streamer. See {ZipKit::OutputEnumerator#initialize} for the full list of options.
     # 
     # _@return_ — always returns true
     sig do
@@ -2007,11 +2007,11 @@ end, T.untyped)
         filename: String,
         type: String,
         use_chunked_transfer_encoding: T::Boolean,
-        zip_streamer_options: T::Hash[T.untyped, T.untyped],
+        output_enumerator_options: T::Hash[T.untyped, T.untyped],
         zip_streaming_blk: T.proc.params(the: ZipKit::Streamer).void
       ).returns(T::Boolean)
     end
-    def zip_kit_stream(filename: "download.zip", type: "application/zip", use_chunked_transfer_encoding: false, **zip_streamer_options, &zip_streaming_blk); end
+    def zip_kit_stream(filename: "download.zip", type: "application/zip", use_chunked_transfer_encoding: false, **output_enumerator_options, &zip_streaming_blk); end
   end
 
   # The output enumerator makes it possible to "pull" from a ZipKit streamer

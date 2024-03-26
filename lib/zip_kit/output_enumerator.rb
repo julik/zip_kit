@@ -34,6 +34,15 @@ require "time" # for .httpdate
 #
 # to bypass things like `Rack::ETag` and the nginx buffering.
 class ZipKit::OutputEnumerator
+  # With HTTP output it is better to apply a small amount of buffering. While Streamer
+  # output does not buffer at all, the `OutputEnumerator` does as it is going to
+  # be used as a Rack response body. Applying some buffering helps reduce the number
+  # of syscalls for otherwise tiny writes, which relieves the app webserver from
+  # doing too much work managing those writes. While we recommend buffering, the
+  # buffer size is configurable via the constructor - so you can disable buffering
+  # if you really need to. While ZipKit ams not to buffer, in this instance this
+  # buffering is justified. See https://github.com/WeTransfer/zip_tricks/issues/78
+  # for the background on buffering.
   DEFAULT_WRITE_BUFFER_SIZE = 64 * 1024
 
   # Creates a new OutputEnumerator enumerator. The enumerator can be read from using `each`,

@@ -23,11 +23,11 @@ module ZipKit::RailsStreaming
   # @param filename[String] name of the file for the Content-Disposition header
   # @param type[String] the content type (MIME type) of the archive being output
   # @param use_chunked_transfer_encoding[Boolean] whether to forcibly encode output as chunked. Normally you should not need this.
-  # @param zip_streamer_options[Hash] options that will be passed to the Streamer.
-  #     See {ZipKit::Streamer#initialize} for the full list of options.
+  # @param output_enumerator_options[Hash] options that will be passed to the OutputEnumerator - these include
+  #     options for the Streamer. See {ZipKit::OutputEnumerator#initialize} for the full list of options.
   # @yieldparam [ZipKit::Streamer] the streamer that can be written to
   # @return [Boolean] always returns true
-  def zip_kit_stream(filename: "download.zip", type: "application/zip", use_chunked_transfer_encoding: false, **zip_streamer_options, &zip_streaming_blk)
+  def zip_kit_stream(filename: "download.zip", type: "application/zip", use_chunked_transfer_encoding: false, **output_enumerator_options, &zip_streaming_blk)
     # We want some common headers for file sending. Rails will also set
     # self.sending_file = true for us when we call send_file_headers!
     send_file_headers!(type: type, filename: filename)
@@ -44,8 +44,8 @@ module ZipKit::RailsStreaming
     response.headers.merge!(headers)
 
     # The output enumerator yields chunks of bytes generated from the Streamer,
-    # with some buffering
-    rack_zip_body = ZipKit::OutputEnumerator.new(**zip_streamer_options, &zip_streaming_blk)
+    # with some buffering. See OutputEnumerator docs for more.
+    rack_zip_body = ZipKit::OutputEnumerator.new(**output_enumerator_options, &zip_streaming_blk)
 
     # Chunked encoding may be forced if, for example, you _need_ to bypass Rack::ContentLength.
     # Rack::ContentLength is normally not in a Rails middleware stack, but it might get
