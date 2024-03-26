@@ -47,17 +47,16 @@ module ZipKit::RailsStreaming
     # with some buffering
     rack_zip_body = ZipKit::OutputEnumerator.new(**zip_streamer_options, &zip_streaming_blk)
 
-    # It is not really possible to force chunked encoding with ActionController::Live
+    # Chunked encoding may be forced if, for example, you _need_ to bypass Rack::ContentLength.
+    # Rack::ContentLength is normally not in a Rails middleware stack, but it might get
+    # introduced unintentionally - for example, "rackup" adds the ContentLength middleware for you.
+    # There is a recommendation to leave the chunked encoding to the app server, so that servers
+    # that support HTTP/2 can use native framing and not have to deal with the chunked encoding,
+    # see https://github.com/julik/zip_kit/issues/7
+    # But it is not to be excluded that a user may need to force the chunked encoding to bypass
+    # some especially pesky Rack middleware that just would not cooperate. Those include
+    # Rack::MiniProfiler and the above-mentioned Rack::ContentLength.
     if use_chunked_transfer_encoding
-      # Chunked encoding may be forced if, for example, you _need_ to bypass Rack::ContentLength.
-      # Rack::ContentLength is normally not in a Rails middleware stack, but it might get
-      # introduced unintentionally - for example, "rackup" adds the ContentLength middleware for you.
-      # There is a recommendation to leave the chunked encoding to the app server, so that servers
-      # that support HTTP/2 can use native framing and not have to deal with the chunked encoding,
-      # see https://github.com/julik/zip_kit/issues/7
-      # But it is not to be excluded that a user may need to force the chunked encoding to bypass
-      # some especially pesky Rack middleware that just would not cooperate. Those include
-      # Rack::MiniProfiler and the above-mentioned Rack::ContentLength.
       response.headers["Transfer-Encoding"] = "chunked"
       rack_zip_body = ZipKit::RackChunkedBody.new(rack_zip_body)
     end
