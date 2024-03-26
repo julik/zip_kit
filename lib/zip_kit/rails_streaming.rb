@@ -41,7 +41,10 @@ module ZipKit::RailsStreaming
     end
 
     headers = ZipKit::OutputEnumerator.streaming_http_headers
-    response.headers.merge!(headers)
+
+    # Allow Rails headers to override ours. This is important if, for example, a content type gets
+    # set to something else than "application/zip"
+    response.headers.reverse_merge!(headers)
 
     # The output enumerator yields chunks of bytes generated from the Streamer,
     # with some buffering. See OutputEnumerator docs for more.

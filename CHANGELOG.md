@@ -1,3 +1,7 @@
+* Improve documentation
+* Make sure `zip_kit_stream` honors the custom `Content-Type` parameter
+* Add a streaming example with Sinatra (and add a Sinatra app to the test harness)
+
 ## 6.2.1
 
 * Make `RailsStreaming` compatible with `ActionController::Live` (previously the response would hang)

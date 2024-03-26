@@ -48,6 +48,13 @@ describe ZipKit::RailsStreaming do
         generator.generate_once(z)
       end
     end
+
+    def stream_zip_with_custom_content_type
+      generator = FakeZipGenerator.new
+      zip_kit_stream(type: "application/epub+zip") do |z|
+        generator.generate_once(z)
+      end
+    end
   end
 
   it "degrades to a buffered response with HTTP/1.0 and produces a ZIP" do
@@ -100,6 +107,22 @@ describe ZipKit::RailsStreaming do
     expect(body).not_to respond_to(:to_path) # for Rack::Sendfile
   end
 
+  it "honors the content type set in zip_kit_stream" do
+    fake_rack_env = {
+      "HTTP_VERSION" => "HTTP/1.1",
+      "REQUEST_METHOD" => "GET",
+      "SCRIPT_NAME" => "",
+      "PATH_INFO" => "/download",
+      "QUERY_STRING" => "",
+      "SERVER_NAME" => "host.example",
+      "rack.input" => StringIO.new
+    }
+    status, headers, _body = FakeController.action(:stream_zip_with_custom_content_type).call(fake_rack_env)
+
+    expect(status).to eq(200)
+    expect(headers["Content-Type"]).to eq("application/epub+zip")
+  end
+
   def readback_iterable(iterable)
     StringIO.new.binmode.tap do |out|
       iterable.each { |chunk| out.write(chunk) }
@@ -113,5 +136,6 @@ describe ZipKit::RailsStreaming do
     expect(headers["Last-Modified"]).to be_kind_of(String)
     expect(headers["Content-Encoding"]).to eq("identity")
     expect(headers["Cache-Control"]).to include("private")
+    expect(headers["X-Accel-Buffering"]).to eq("no")
   end
 end
