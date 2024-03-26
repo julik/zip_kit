@@ -1979,6 +1979,20 @@ end, T.untyped)
     # gets automatically forwarded to the Rails response stream. When the output completes,
     # the Rails response stream is going to be closed automatically.
     # 
+    # Note that there is an important difference in how this method works, depending whether
+    # you use it in a controller which includes `ActionController::Live` vs. one that does not.
+    # With a standard `ActionController` this method will assign a response body, but streaming
+    # will begin when your action method returns. With `ActionController::Live` the streaming
+    # will begin immediately, before the method returns. In all other aspects the method should
+    # stream correctly in both types of controllers.
+    # 
+    # If you encounter buffering (streaming does not start for a very long time) you probably
+    # have a piece of Rack middleware in your stack which buffers. Known offenders are `Rack::ContentLength`,
+    # `Rack::MiniProfiler` and `Rack::ETag`. ZipKit will try to work around these but it is not
+    # always possible. If you encounter buffering, examine your middleware stack and try to suss
+    # out whether any middleware might be buffering. You can also try setting `use_chunked_transfer_encoding`
+    # to `true` - this is not recommended but sometimes necessary, for example to bypass `Rack::ContentLength`.
+    # 
     # _@param_ `filename` — name of the file for the Content-Disposition header
     # 
     # _@param_ `type` — the content type (MIME type) of the archive being output
@@ -1987,7 +2001,7 @@ end, T.untyped)
     # 
     # _@param_ `zip_streamer_options` — options that will be passed to the Streamer. See {ZipKit::Streamer#initialize} for the full list of options.
     # 
-    # _@return_ — The output enumerator assigned to the response body
+    # _@return_ — always returns true
     sig do
       params(
         filename: String,
@@ -1995,7 +2009,7 @@ end, T.untyped)
         use_chunked_transfer_encoding: T::Boolean,
         zip_streamer_options: T::Hash[T.untyped, T.untyped],
         zip_streaming_blk: T.proc.params(the: ZipKit::Streamer).void
-      ).returns(ZipKit::OutputEnumerator)
+      ).returns(T::Boolean)
     end
     def zip_kit_stream(filename: "download.zip", type: "application/zip", use_chunked_transfer_encoding: false, **zip_streamer_options, &zip_streaming_blk); end
   end
