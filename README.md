@@ -55,9 +55,9 @@ If you want some more conveniences you can also use [zipline](https://github.com
 will automatically process and stream attachments (Carrierwave, Shrine, ActiveStorage) and remote objects
 via HTTP.
 
-`RailsStreaming` will *not* use [ActionController::Live](https://api.rubyonrails.org/classes/ActionController/Live.html)
-and the ZIP output will run in the same thread as your main request. Your testing flows (be it minitest or
-RSpec) should work normally with controller actions returning ZIPs.
+`RailsStreaming` does *not* require [ActionController::Live](https://api.rubyonrails.org/classes/ActionController/Live.html)
+and will stream without it. See {ZipKit::RailsStreaming#zip_kit_stream} for more details on this. You can use it
+together with `Live` just fine if you need to.
 
 ## Writing into streaming destinations
 
@@ -108,11 +108,17 @@ zip.write_file('line_items.csv') do |sink|
 end
 ```
 
-## Create a ZIP file without size estimation, compress on-the-fly during writes
+## Automatic storage mode (stored vs. deflated)
 
-Basic use case is compressing on the fly. Some data will be buffered by the Zlib deflater, but
-memory inflation is going to be very constrained. Data will be written to destination at fairly regular
-intervals. Deflate compression will work best for things like text files. For example, here is how to
+The ZIP file format allows storage in both compressed and raw storage modes. The raw ("stored")
+mode does not require decompression and unarchives faster.
+
+ZipKit will buffer a small amount of output and attempt to compress it using deflate compression.
+If this turns out to be significantly smaller than raw data, it is then going to proceed with
+all further output using deflate compression. Memory use is going to be very modest, but it allows
+you to not have to think about the appropriate storage mode.
+
+Deflate compression will work great for JSONs, CSVs and other text- or text-like formats. For example, here is how to
 output direct to STDOUT (so that you can run `$ ruby archive.rb > file.zip` in your terminal):
 
 ```ruby
@@ -126,8 +132,8 @@ ZipKit::Streamer.open($stdout) do |zip|
 end
 ```
 
-Unfortunately with this approach it is impossible to compute the size of the ZIP file being output,
-since you do not know how large the compressed data segments are going to be.
+If you want to use specific storage modes, use `write_deflated_file` and `write_stored_file` instead of
+`write_file`.
 
 ## Send a ZIP from a Rack response
 
@@ -152,7 +158,11 @@ end
 
 ## Send a ZIP file of known size, with correct headers
 
-Use the `SizeEstimator` to compute the correct size of the resulting archive.
+Sending a file with data descriptors is not always desirable - you don't really know how large your ZIP is going to be.
+If you want to present your users with proper download progress, you would need to set a `Content-Length` header - and
+know ahead of time how large your download is going to be. This can be done with ZipKit, provided you know how large
+the compressed versions of your file are going to be. Use the {ZipKit::SizeEstimator} to do the pre-calculation - it
+is not going to produce any large amounts of output, and will give you a to-the-byte value for your future archive:
 
 ```ruby
 bytesize = ZipKit::SizeEstimator.estimate do |z|
