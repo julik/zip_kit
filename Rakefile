@@ -11,11 +11,7 @@ task :format do
   `bundle exec magic_frozen_string_literal ./lib`
 end
 
-YARD::Rake::YardocTask.new(:doc) do |t|
-  # The dash has to be between the two to "divide" the source files and
-  # miscellaneous documentation files that contain no code
-  t.files = ["lib/**/*.rb", "-", "LICENSE.txt", "IMPLEMENTATION_DETAILS.md"]
-end
+YARD::Rake::YardocTask.new(:doc)
 RSpec::Core::RakeTask.new(:spec)
 
 task :generate_typedefs do

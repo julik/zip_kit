@@ -16,7 +16,7 @@ If you are interested in contributing code and would like to learn more about th
 
  - [ruby](https://ruby-doc.org)
  - [rubyzip](https://github.com/rubyzip/rubyzip) as we like to test "our implementation against theirs"
- - [rspec](http://rspec.info/) and [appraisal]() https://github.com/thoughtbot/appraisal) for testing
+ - [rspec](http://rspec.info/) for testing
  - [zip files](https://en.wikipedia.org/wiki/Zip_(file_format))
 
 # How do I make a contribution?

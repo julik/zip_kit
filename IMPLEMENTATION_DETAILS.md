@@ -78,8 +78,8 @@ you can try this:
 
    [Encoding::CP437, Encoding::ISO_8859_1, Encoding::UTF_8]
 
-We don't want no such thing, and sorry Windows users, you are going to need a decent unarchiver
-that honors the standard. Alas, alas.
+While this could work, we found it to be broken in practice as the decoding of the filename
+also depends on the system locale.
 
 Additionally, the tests with the unarchivers we _do_ support have shown that including the InfoZIP
 extra field does not actually help any of them recognize the file name correctly. And the use of

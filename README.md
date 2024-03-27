@@ -14,8 +14,13 @@ point. Usable for creating very large ZIP archives for immediate sending out to 
 large ZIP archives without memory inflation.
 
 The original gem (zip_tricks) handled all the zipping needs (millions of ZIP files generated per day),
-for a large file transfer service, so we are pretty confident it is widely compatible with a large number
-of unarchiving end-user applications and is well tested.
+for WeTransfer, it is widely compatible with a large number of unarchiving end-user applications.
+
+## How does it work? How is it different from Rubyzip?
+
+Check out [the implementation details](IMPLEMENTATION_DETAILS.md) on the design of the library, and
+we have a separate [reference](RUBYZIP_DIFFERENCES.md) on why you might want to use ZipKit over
+Rubyzip and vice versa.
 
 ## Requirements
 

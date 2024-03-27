@@ -1,1 +1,1 @@
---markup markdown
+--markup markdown --no-private --protected lib/**/*.rb - LICENSE.txt IMPLEMENTATION_DETAILS.md RUBYZIP_DIFFERENCES.md CONTRIBUTING.md CODE_OF_CONDUCT.md CHANGELOG.md
