@@ -1,3 +1,6 @@
+## 6.2.2
+
+* Make sure "zlib" gets required at the top, as it is used everywhere
 * Improve documentation
 * Make sure `zip_kit_stream` honors the custom `Content-Type` parameter
 * Add a streaming example with Sinatra (and add a Sinatra app to the test harness)

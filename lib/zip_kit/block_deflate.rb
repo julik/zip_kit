@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require "zlib"
-
 # Permits Deflate compression in independent blocks. The workflow is as follows:
 #
 # * Run every block to compress through deflate_chunk, remove the header,

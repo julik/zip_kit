@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require_relative "zip_kit/version"
+require "zlib"
 
 module ZipKit
   autoload :OutputEnumerator, File.dirname(__FILE__) + "/zip_kit/rack_body.rb"
