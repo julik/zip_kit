@@ -1,6 +1,6 @@
 # typed: strong
 module ZipKit
-  VERSION = T.let("6.2.1", T.untyped)
+  VERSION = T.let("6.2.2", T.untyped)
 
   # A ZIP archive contains a flat list of entries. These entries can implicitly
   # create directories when the archive is expanded. For example, an entry with
