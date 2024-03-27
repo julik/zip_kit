@@ -3,8 +3,7 @@
 # Should be included into a Rails controller for easy ZIP output from any action.
 module ZipKit::RailsStreaming
   # Opens a {ZipKit::Streamer} and yields it to the caller. The output of the streamer
-  # gets automatically forwarded to the Rails response stream. When the output completes,
-  # the Rails response stream is going to be closed automatically.
+  # will be sent through to the HTTP response body as it gets produced.
   #
   # Note that there is an important difference in how this method works, depending whether
   # you use it in a controller which includes `ActionController::Live` vs. one that does not.
