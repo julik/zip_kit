@@ -24,7 +24,7 @@ module ZipKit::RailsStreaming
   # @param use_chunked_transfer_encoding[Boolean] whether to forcibly encode output as chunked. Normally you should not need this.
   # @param output_enumerator_options[Hash] options that will be passed to the OutputEnumerator - these include
   #     options for the Streamer. See {ZipKit::OutputEnumerator#initialize} for the full list of options.
-  # @yieldparam [ZipKit::Streamer] the streamer that can be written to
+  # @yieldparam [ZipKit::Streamer] zip the {ZipKit::Streamer} that can be written to
   # @return [Boolean] always returns true
   def zip_kit_stream(filename: "download.zip", type: "application/zip", use_chunked_transfer_encoding: false, **output_enumerator_options, &zip_streaming_blk)
     # We want some common headers for file sending. Rails will also set
