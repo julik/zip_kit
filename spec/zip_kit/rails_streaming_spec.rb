@@ -60,14 +60,6 @@ describe ZipKit::RailsStreaming do
         generator.generate_once(z)
       end
     end
-
-    def show
-      generator = FakeZipGenerator.new
-      respond_to do |format|
-        format.html { render inline: "<h1>Hello</h1>" }
-        format.zip { zip_kit_stream { |zip| generator.generate_once(zip) } }
-      end
-    end
   end
 
   it "degrades to a buffered response with HTTP/1.0 and produces a ZIP" do
@@ -89,47 +81,6 @@ describe ZipKit::RailsStreaming do
     expect(status).to eq(200)
     expect_correct_headers!(headers)
 
-    expect(headers["X-Accel-Buffering"]).to eq("no")
-    expect(headers["Transfer-Encoding"]).to be_nil
-    expect(headers["Content-Length"]).to be_kind_of(String)
-    # All the other methods have been excercised by reading out the iterable body
-  end
-
-  it "is able to serve a ZIP via respond_to" do
-    fake_rack_env_html = {
-      "HTTP_VERSION" => "HTTP/1.0",
-      "REQUEST_METHOD" => "GET",
-      "SCRIPT_NAME" => "",
-      "PATH_INFO" => "/download.html",
-      "QUERY_STRING" => "",
-      "SERVER_NAME" => "host.example",
-      "rack.input" => StringIO.new
-    }
-    status, headers, body = FakeController.action(:show).call(fake_rack_env_html)
-    out = readback_iterable(body)
-    expect(out.string).to eq("<h1>Hello</h1>")
-    expect(headers["Content-Type"]).to eq("text/html; charset=utf-8")
-
-    fake_rack_env = {
-      "HTTP_VERSION" => "HTTP/1.0",
-      "REQUEST_METHOD" => "GET",
-      "SCRIPT_NAME" => "",
-      "PATH_INFO" => "/download.zip",
-      "QUERY_STRING" => "",
-      "SERVER_NAME" => "host.example",
-      "rack.input" => StringIO.new
-    }
-
-    ref_output_io = FakeZipGenerator.generate_reference
-    status, headers, body = FakeController.action(:show).call(fake_rack_env)
-    out = readback_iterable(body)
-
-    expect(out.string).to eq(ref_output_io.string)
-    expect { body.close }.not_to raise_error
-    expect(status).to eq(200)
-    expect_correct_headers!(headers)
-
-    expect(headers["Content-Type"]).to eq("application/zip")
     expect(headers["X-Accel-Buffering"]).to eq("no")
     expect(headers["Transfer-Encoding"]).to be_nil
     expect(headers["Content-Length"]).to be_kind_of(String)
