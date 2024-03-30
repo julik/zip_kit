@@ -89,7 +89,7 @@ class ZipKit::Streamer
   autoload :Filler, File.dirname(__FILE__) + "/streamer/filler.rb"
   autoload :Heuristic, File.dirname(__FILE__) + "/streamer/heuristic.rb"
   autoload :NoEncryption, File.dirname(__FILE__) + "/streamer/no_encryption.rb"
-  autoload :AESEncription, File.dirname(__FILE__) + "/streamer/aes_encryption.rb"
+  autoload :AESEncryption, File.dirname(__FILE__) + "/streamer/aes_encryption.rb"
 
   include ZipKit::WriteShovel
 
