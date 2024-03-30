@@ -1,3 +1,6 @@
+require "securerandom"
+require "openssl"
+
 # https://www.winzip.com/en/support/aes-encryption/#auth-faq
 # https://www.ruby-forum.com/t/make-aes-encrypted-zip-file-in-ruby/234782
 # https://github.com/jphastings/rubyzip/blob/d226e0f5283a30a3a436f57277e8711846e9161f/lib/zip/extra_field/aes.rb#L3
@@ -6,42 +9,13 @@ class ZipKit::Streamer::AESEncryption
   VERIFIER_LENGTH_BYTES = 2
   AUTHENTICATION_CODE_LENGTH_BYTES = 10
   BLOCK_SIZE_BYTES = 16
-  def initialize(password:, storage_mode:, encryption_strength: 3)
-    @encryption_strength = encryption_strength
-
-    n = encryption_strength + 1
-    @bits = 64 * n
-    @key_length = 8 * n
-    @mac_length = 8 * n
-    @salt_length = 4 * n
-
-    @salt = SecureRandom.bytes(@salt_length)
-    @storage_mode = storage_mode
-
-    # Derive the password with BKDF and 1000 revolutions
-    # @encryption_key = OpenSSL::PKCS5.pbkdf2_hmac_sha1(
-    #         password,
-    #         @salt,
-    #         1000,
-    #         @key_length + @mac_length + VERIFIER_LENGTH_BYTES
-    # )
-    # Modern syntax: https://ruby-doc.org/3.2.2/exts/openssl/OpenSSL/KDF.html#method-c-pbkdf2_hmac
-    key_mac_and_verification_bytes = OpenSSL::PKCS5.pbkdf2_hmac_sha1(
-            password,
-            @salt,
-            1000,
-            @key_length + @mac_length + VERIFIER_LENGTH_BYTES
-    )
-    @encryption_key = key_mac_and_verification_bytes.byteslice(0, @key_length)
-    @verification_code = key_mac_and_verification_bytes.byteslice(key_mac_and_verification_bytes.bytesize - 2, 2)
-  end
 
   class BlockEncryptor
     def initialize(io, cipher, mac)
       @io = io
       @cipher = cipher
       @mac = mac
-      @block_n = 1
+      @block_n = 0
       @block_buffer = String.new.b
     end
 
@@ -79,6 +53,37 @@ class ZipKit::Streamer::AESEncryption
     end
   end
 
+  def initialize(password:, storage_mode:, encryption_strength: 3)
+    @encryption_strength = encryption_strength
+
+    n = encryption_strength + 1
+    @bits = 64 * n
+    @key_length = 8 * n
+    @mac_key_length = 8 * n
+    @salt_length = 4 * n
+
+    @salt = SecureRandom.bytes(@salt_length)
+    @storage_mode = storage_mode
+
+    # Derive the password with BKDF and 1000 revolutions
+    # @encryption_key = OpenSSL::PKCS5.pbkdf2_hmac_sha1(
+    #         password,
+    #         @salt,
+    #         1000,
+    #         @key_length + @mac_length + VERIFIER_LENGTH_BYTES
+    # )
+    # Modern syntax: https://ruby-doc.org/3.2.2/exts/openssl/OpenSSL/KDF.html#method-c-pbkdf2_hmac
+    key_mac_and_verification_bytes = OpenSSL::PKCS5.pbkdf2_hmac_sha1(
+            password,
+            @salt,
+            1000,
+            @key_length + @mac_length + VERIFIER_LENGTH_BYTES
+    )
+    @encryption_key = key_mac_and_verification_bytes.byteslice(0, @key_length)
+    @mac_key = key_mac_and_verification_bytes.byteslice(@key_length, @mac_key_length)
+    @verification_code = key_mac_and_verification_bytes.byteslice(key_mac_and_verification_bytes.bytesize - 2, 2)
+  end
+
   def wrap_io(io)
     io << @salt
     io << @verification_code
@@ -87,7 +92,7 @@ class ZipKit::Streamer::AESEncryption
     cipher.encrypt
     cipher.key = @encryption_key
 
-    hmac = OpenSSL::HMAC.new(@encryption_key, OpenSSL::Digest::SHA1.new)
+    hmac = OpenSSL::HMAC.new(@mac_key, OpenSSL::Digest::SHA1.new)
     BlockEncryptor.new(io, cipher, hmac)
   end
 
