@@ -4,7 +4,7 @@
 # Normally you will not have to use this class directly
 class ZipKit::Streamer::Entry < Struct.new(:filename, :crc32, :compressed_size,
   :uncompressed_size, :storage_mode, :mtime,
-  :use_data_descriptor, :local_header_offset, :bytes_used_for_local_header, :bytes_used_for_data_descriptor, :unix_permissions)
+  :use_data_descriptor, :local_header_offset, :bytes_used_for_local_header, :bytes_used_for_data_descriptor, :unix_permissions, :is_encrypted, :extra_field_bytes)
   def initialize(*)
     super
     filename.force_encoding(Encoding::UTF_8)
@@ -26,8 +26,9 @@ class ZipKit::Streamer::Entry < Struct.new(:filename, :crc32, :compressed_size,
   # Additionally, we care about bit 3 which toggles the use of the postfix data descriptor.
   def gp_flags
     flag = 0b00000000000
-    flag |= 0b100000000000 if @requires_efs_flag # bit 11
-    flag |= 0x0008 if use_data_descriptor # bit 3
+    flag |= (2 ** 11) if @requires_efs_flag # bit 11
+    flag |= (2 ** 3) if use_data_descriptor # bit 3
+    flag |= (2 ** 1) if is_encrypted # bit 1
     flag
   end
 

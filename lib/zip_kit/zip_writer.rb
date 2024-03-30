@@ -70,8 +70,9 @@ class ZipKit::ZipWriter
   # @param mtime[Time]  the modification time to be recorded in the ZIP
   # @param gp_flags[Fixnum] bit-packed general purpose flags
   # @param storage_mode[Fixnum] 8 for deflated, 0 for stored...
+  # @param extra_field_bytes[String] any pre-encoded extra fields
   # @return [void]
-  def write_local_file_header(io:, filename:, compressed_size:, uncompressed_size:, crc32:, gp_flags:, mtime:, storage_mode:)
+  def write_local_file_header(io:, filename:, compressed_size:, uncompressed_size:, crc32:, gp_flags:, mtime:, storage_mode:, extra_field_bytes: "".b)
     requires_zip64 = compressed_size > FOUR_BYTE_MAX_UINT || uncompressed_size > FOUR_BYTE_MAX_UINT
 
     # local file header signature     4 bytes  (0x04034b50)
@@ -120,6 +121,7 @@ class ZipKit::ZipWriter
       extra_fields << zip_64_extra_for_local_file_header(compressed_size: compressed_size, uncompressed_size: uncompressed_size)
     end
     extra_fields << timestamp_extra_for_local_file_header(mtime)
+    extra_fields << extra_field_bytes
 
     # extra field length              2 bytes
     io << [extra_fields.size].pack(C_UINT2)
@@ -142,6 +144,7 @@ class ZipKit::ZipWriter
   # @param mtime[Time]  the modification time to be recorded in the ZIP
   # @param gp_flags[Fixnum] bit-packed general purpose flags
   # @param unix_permissions[Integer] the permissions for the file, or nil for the default to be used
+  # @param extra_field_bytes[String] any pre-encoded extra fields
   # @return [void]
   def write_central_directory_file_header(io:,
     local_file_header_location:,
@@ -152,7 +155,8 @@ class ZipKit::ZipWriter
     mtime:,
     crc32:,
     filename:,
-    unix_permissions: nil)
+    unix_permissions: nil,
+    extra_field_bytes: "".b)
     # At this point if the header begins somewhere beyound 0xFFFFFFFF we _have_ to record the offset
     # of the local file header as a zip64 extra field, so we give up, give in, you loose, love will always win...
     add_zip64 = (local_file_header_location > FOUR_BYTE_MAX_UINT) ||
@@ -202,6 +206,7 @@ class ZipKit::ZipWriter
         uncompressed_size: uncompressed_size)
     end
     extra_fields << timestamp_extra_for_central_directory_entry(mtime)
+    extra_fields << extra_field_bytes
 
     # extra field length              2 bytes
     io << [extra_fields.size].pack(C_UINT2)

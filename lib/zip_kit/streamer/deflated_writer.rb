@@ -37,6 +37,7 @@ class ZipKit::Streamer::DeflatedWriter
   # @return [Hash] a hash of `{crc32, compressed_size, uncompressed_size}`
   def finish
     @compressed_io << @deflater.finish until @deflater.finished?
+    @compressed_io.finish if @compressed_io.respond_to?(:finish)
     @crc_buf.flush
     {crc32: @crc.to_i, compressed_size: @deflater.total_out, uncompressed_size: @deflater.total_in}
   ensure

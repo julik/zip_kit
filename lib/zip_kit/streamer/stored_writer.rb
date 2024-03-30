@@ -33,6 +33,7 @@ class ZipKit::Streamer::StoredWriter
   #
   # @return [Hash] a hash of `{crc32, compressed_size, uncompressed_size}`
   def finish
+    @io.finish if @io.respond_to?(:finish)
     @crc.flush
     {crc32: @crc_compute.to_i, compressed_size: @io.tell, uncompressed_size: @io.tell}
   end
