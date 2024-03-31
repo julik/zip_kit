@@ -6,9 +6,10 @@ module ZipKit::Streamer::NoEncryption
 
     def <<(b)
       @io << b
+      self
     end
 
-    def finish
+    def close
     end
   end
 

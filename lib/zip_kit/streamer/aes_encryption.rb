@@ -32,7 +32,7 @@ class ZipKit::Streamer::AESEncryption
       self
     end
 
-    def finish
+    def close
       _, remaining_bytes = @block_buffer.bytesize.divmod(BLOCK_SIZE_BYTES)
       if remaining_bytes > 0
         write_block(@block_buffer)
@@ -77,7 +77,7 @@ class ZipKit::Streamer::AESEncryption
             password,
             @salt,
             1000,
-            @key_length + @mac_length + VERIFIER_LENGTH_BYTES
+            @key_length + @mac_key_length + VERIFIER_LENGTH_BYTES
     )
     @encryption_key = key_mac_and_verification_bytes.byteslice(0, @key_length)
     @mac_key = key_mac_and_verification_bytes.byteslice(@key_length, @mac_key_length)
