@@ -28,13 +28,11 @@ Ruby 2.6+ syntax support is required, as well as a a working zlib (all available
 
 ## Diving in: send some large CSV reports from Rails
 
-The easiest is to include the `ZipKit::RailsStreaming` module into your
-controller. You will then have a `zip_kit_stream` method available which accepts a block:
+The included `Railtie` will automatically include `ZipKit::RailsStreaming` into the
+`ActionController::Base` class. You will then have a `zip_kit_stream` method available which accepts a block:
 
 ```ruby
 class ZipsController < ActionController::Base
-  include ZipKit::RailsStreaming
-
   def download
     zip_kit_stream do |zip|
       zip.write_file('report1.csv') do |sink|
@@ -52,6 +50,8 @@ class ZipsController < ActionController::Base
   end
 end
 ```
+
+The block receives the `ZipKit::Streamer` object you can write your files through.
 
 The `write_file` method will use some heuristics to determine whether your output file would benefit
 from compression, and pick the appropriate storage mode for the file accordingly.

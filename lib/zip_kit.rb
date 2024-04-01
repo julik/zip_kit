@@ -24,4 +24,6 @@ module ZipKit
   autoload :WriteShovel, File.dirname(__FILE__) + "/zip_kit/write_shovel.rb"
   autoload :RackChunkedBody, File.dirname(__FILE__) + "/zip_kit/rack_chunked_body.rb"
   autoload :RackTempfileBody, File.dirname(__FILE__) + "/zip_kit/rack_tempfile_body.rb"
+
+  require_relative "zip_kit/railtie" if defined?(::Rails)
 end

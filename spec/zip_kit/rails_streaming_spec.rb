@@ -1,58 +1,66 @@
 require "spec_helper"
-require "action_controller"
 
 describe ZipKit::RailsStreaming do
-  class FakeZipGenerator
-    def generate_once(streamer)
-      # Only allow the call to be executed once, to ensure that we run
-      # our ZIP generation block just once. This is to ensure Rack::ContentLength
-      # does not run the generation twice
-      raise "The ZIP has already been generated once" if @did_generate_zip
-      streamer.write_file("hello.txt") do |f|
-        f << "ßHello from Rails"
-      end
-      @did_generate_zip = true
-    end
+  before :all do
+    # Defer requires of Rails components until the test runs.
+    # This will make other tests fail if they use Rails-specific things
+    # and run before this one
+    require "action_controller"
+    require "rails"
+    require "zip_kit/railtie"
+    ZipKit::Railtie.initializers.each(&:run)
 
-    def self.generate_reference
-      StringIO.new.binmode.tap do |sio|
-        ZipKit::Streamer.open(sio) do |streamer|
-          new.generate_once(streamer)
+    class FakeZipGenerator
+      def generate_once(streamer)
+        # Only allow the call to be executed once, to ensure that we run
+        # our ZIP generation block just once. This is to ensure Rack::ContentLength
+        # does not run the generation twice
+        raise "The ZIP has already been generated once" if @did_generate_zip
+        streamer.write_file("hello.txt") do |f|
+          f << "ßHello from Rails"
         end
-        sio.rewind
+        @did_generate_zip = true
       end
-    end
-  end
 
-  class FakeController < ActionController::Base
-    # Make sure both Rack middlewares which are known to cause trouble
-    # are used in this controller, so that we can ensure they get bypassed.
-    # Use them in the same order Rails inserts them.
-    middleware.use Rack::Sendfile
-    middleware.use Rack::ETag
-    middleware.use Rack::Deflater
-    middleware.use Rack::ContentLength # This does not get injected by Rails
-    middleware.use Rack::TempfileReaper
-
-    include ZipKit::RailsStreaming
-    def stream_zip
-      generator = FakeZipGenerator.new
-      zip_kit_stream(auto_rename_duplicate_filenames: true) do |z|
-        generator.generate_once(z)
+      def self.generate_reference
+        StringIO.new.binmode.tap do |sio|
+          ZipKit::Streamer.open(sio) do |streamer|
+            new.generate_once(streamer)
+          end
+          sio.rewind
+        end
       end
     end
 
-    def stream_zip_with_forced_chunking
-      generator = FakeZipGenerator.new
-      zip_kit_stream(auto_rename_duplicate_filenames: true, use_chunked_transfer_encoding: true) do |z|
-        generator.generate_once(z)
-      end
-    end
+    class FakeController < ActionController::Base
+      # Make sure both Rack middlewares which are known to cause trouble
+      # are used in this controller, so that we can ensure they get bypassed.
+      # Use them in the same order Rails inserts them.
+      middleware.use Rack::Sendfile
+      middleware.use Rack::ETag
+      middleware.use Rack::Deflater
+      middleware.use Rack::ContentLength # This does not get injected by Rails
+      middleware.use Rack::TempfileReaper
 
-    def stream_zip_with_custom_content_type
-      generator = FakeZipGenerator.new
-      zip_kit_stream(type: "application/epub+zip") do |z|
-        generator.generate_once(z)
+      def stream_zip
+        generator = FakeZipGenerator.new
+        zip_kit_stream(auto_rename_duplicate_filenames: true) do |z|
+          generator.generate_once(z)
+        end
+      end
+
+      def stream_zip_with_forced_chunking
+        generator = FakeZipGenerator.new
+        zip_kit_stream(auto_rename_duplicate_filenames: true, use_chunked_transfer_encoding: true) do |z|
+          generator.generate_once(z)
+        end
+      end
+
+      def stream_zip_with_custom_content_type
+        generator = FakeZipGenerator.new
+        zip_kit_stream(type: "application/epub+zip") do |z|
+          generator.generate_once(z)
+        end
       end
     end
   end
