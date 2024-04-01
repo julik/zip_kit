@@ -2,6 +2,9 @@
 module ZipKit
   VERSION = T.let("6.2.2", T.untyped)
 
+  class Railtie < Rails::Railtie
+  end
+
   # A ZIP archive contains a flat list of entries. These entries can implicitly
   # create directories when the archive is expanded. For example, an entry with
   # the filename of "some folder/file.docx" will make the unarchiving application
@@ -1976,8 +1979,7 @@ end, T.untyped)
   # Should be included into a Rails controller for easy ZIP output from any action.
   module RailsStreaming
     # Opens a {ZipKit::Streamer} and yields it to the caller. The output of the streamer
-    # gets automatically forwarded to the Rails response stream. When the output completes,
-    # the Rails response stream is going to be closed automatically.
+    # will be sent through to the HTTP response body as it gets produced.
     # 
     # Note that there is an important difference in how this method works, depending whether
     # you use it in a controller which includes `ActionController::Live` vs. one that does not.
@@ -2008,7 +2010,7 @@ end, T.untyped)
         type: String,
         use_chunked_transfer_encoding: T::Boolean,
         output_enumerator_options: T::Hash[T.untyped, T.untyped],
-        zip_streaming_blk: T.proc.params(the: ZipKit::Streamer).void
+        zip_streaming_blk: T.proc.params(zip: ZipKit::Streamer).void
       ).returns(T::Boolean)
     end
     def zip_kit_stream(filename: "download.zip", type: "application/zip", use_chunked_transfer_encoding: false, **output_enumerator_options, &zip_streaming_blk); end

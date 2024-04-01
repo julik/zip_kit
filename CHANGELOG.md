@@ -1,3 +1,5 @@
+## 6.3.0
+
 * Include `RailsStreaming` automatically via a Railtie. It is not really necessary to force people to manage it manually.
 
 ## 6.2.2
