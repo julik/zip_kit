@@ -60,9 +60,8 @@ If you want some more conveniences you can also use [zipline](https://github.com
 will automatically process and stream attachments (Carrierwave, Shrine, ActiveStorage) and remote objects
 via HTTP.
 
-`RailsStreaming` does *not* require [ActionController::Live](https://api.rubyonrails.org/classes/ActionController/Live.html)
-and will stream without it. See {ZipKit::RailsStreaming#zip_kit_stream} for more details on this. You can use it
-together with `Live` just fine if you need to.
+`zip_kit_stream` does *not* require [ActionController::Live](https://api.rubyonrails.org/classes/ActionController/Live.html)
+and will stream without it. It will work inside `Live` controllers just fine though.
 
 ## Writing into streaming destinations
 
