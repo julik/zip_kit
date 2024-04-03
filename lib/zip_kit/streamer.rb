@@ -88,6 +88,8 @@ class ZipKit::Streamer
   autoload :Entry, File.dirname(__FILE__) + "/streamer/entry.rb"
   autoload :Filler, File.dirname(__FILE__) + "/streamer/filler.rb"
   autoload :Heuristic, File.dirname(__FILE__) + "/streamer/heuristic.rb"
+  autoload :NoEncryption, File.dirname(__FILE__) + "/streamer/no_encryption.rb"
+  autoload :AESEncryption, File.dirname(__FILE__) + "/streamer/aes_encryption.rb"
 
   include ZipKit::WriteShovel
 
@@ -171,7 +173,7 @@ class ZipKit::Streamer
   # @param use_data_descriptor [Boolean] whether the entry body will be followed by a data descriptor
   # @param unix_permissions[Integer] which UNIX permissions to set, normally the default should be used
   # @return [Integer] the offset the output IO is at after writing the entry header
-  def add_deflated_entry(filename:, modification_time: Time.now.utc, compressed_size: 0, uncompressed_size: 0, crc32: 0, unix_permissions: nil, use_data_descriptor: false)
+  def add_deflated_entry(filename:, modification_time: Time.now.utc, compressed_size: 0, uncompressed_size: 0, crc32: 0, unix_permissions: nil, use_data_descriptor: false, encryption: NoEncryption)
     add_file_and_write_local_header(filename: filename,
       modification_time: modification_time,
       crc32: crc32,
@@ -179,7 +181,8 @@ class ZipKit::Streamer
       compressed_size: compressed_size,
       uncompressed_size: uncompressed_size,
       unix_permissions: unix_permissions,
-      use_data_descriptor: use_data_descriptor)
+      use_data_descriptor: use_data_descriptor,
+      encryption: encryption)
     @out.tell
   end
 
@@ -195,7 +198,7 @@ class ZipKit::Streamer
   # @param use_data_descriptor [Boolean] whether the entry body will be followed by a data descriptor. When in use
   # @param unix_permissions[Integer] which UNIX permissions to set, normally the default should be used
   # @return [Integer] the offset the output IO is at after writing the entry header
-  def add_stored_entry(filename:, modification_time: Time.now.utc, size: 0, crc32: 0, unix_permissions: nil, use_data_descriptor: false)
+  def add_stored_entry(filename:, modification_time: Time.now.utc, size: 0, crc32: 0, unix_permissions: nil, use_data_descriptor: false, encryption: NoEncryption)
     add_file_and_write_local_header(filename: filename,
       modification_time: modification_time,
       crc32: crc32,
@@ -203,7 +206,8 @@ class ZipKit::Streamer
       compressed_size: size,
       uncompressed_size: size,
       unix_permissions: unix_permissions,
-      use_data_descriptor: use_data_descriptor)
+      use_data_descriptor: use_data_descriptor,
+      encryption: encryption)
     @out.tell
   end
 
@@ -221,7 +225,8 @@ class ZipKit::Streamer
       compressed_size: 0,
       uncompressed_size: 0,
       unix_permissions: unix_permissions,
-      use_data_descriptor: false)
+      use_data_descriptor: false,
+      encryption: NoEncryption)
     @out.tell
   end
 
@@ -268,8 +273,8 @@ class ZipKit::Streamer
   #    Do not call `#close` on it - Streamer will do it for you. Write in chunks to achieve proper streaming
   #    output (using `IO.copy_stream` is a good approach).
   # @return [ZipKit::Streamer::Writable] without a block - the Writable sink which has to be closed manually
-  def write_file(filename, modification_time: Time.now.utc, unix_permissions: nil, &blk)
-    writable = ZipKit::Streamer::Heuristic.new(self, filename, modification_time: modification_time, unix_permissions: unix_permissions)
+  def write_file(filename, modification_time: Time.now.utc, unix_permissions: nil, encryption: NoEncryption, &blk)
+    writable = ZipKit::Streamer::Heuristic.new(self, filename, modification_time: modification_time, unix_permissions: unix_permissions, encryption: encryption)
     yield_or_return_writable(writable, &blk)
   end
 
@@ -318,15 +323,22 @@ class ZipKit::Streamer
   #    Do not call `#close` on it - Streamer will do it for you. Write in chunks to achieve proper streaming
   #    output (using `IO.copy_stream` is a good approach).
   # @return [ZipKit::Streamer::Writable] without a block - the Writable sink which has to be closed manually
-  def write_stored_file(filename, modification_time: Time.now.utc, unix_permissions: nil, &blk)
+  def write_stored_file(filename, modification_time: Time.now.utc, unix_permissions: nil, encryption: NoEncryption, &blk)
     add_stored_entry(filename: filename,
       modification_time: modification_time,
       use_data_descriptor: true,
       crc32: 0,
       size: 0,
-      unix_permissions: unix_permissions)
+      unix_permissions: unix_permissions,
+      encryption: encryption)
 
-    writable = Writable.new(self, StoredWriter.new(@out))
+    tellable = ZipKit::WriteAndTell.new(@out)
+    encryptor = encryption.wrap_io(tellable)
+    compressor = StoredWriter.new(encryptor)
+    writable = Writable.new(compressor) do |bytes_received:, crc32:|
+      update_last_entry_and_write_data_descriptor(crc32: crc32, uncompressed_size: bytes_received, compressed_size: tellable.tell)
+    end
+
     yield_or_return_writable(writable, &blk)
   end
 
@@ -377,16 +389,22 @@ class ZipKit::Streamer
   #    Do not call `#close` on it - Streamer will do it for you. Write in chunks to achieve proper streaming
   #    output (using `IO.copy_stream` is a good approach).
   # @return [ZipKit::Streamer::Writable] without a block - the Writable sink which has to be closed manually
-  def write_deflated_file(filename, modification_time: Time.now.utc, unix_permissions: nil, &blk)
+  def write_deflated_file(filename, modification_time: Time.now.utc, unix_permissions: nil, encryption: NoEncryption, &blk)
     add_deflated_entry(filename: filename,
       modification_time: modification_time,
       use_data_descriptor: true,
       crc32: 0,
       compressed_size: 0,
       uncompressed_size: 0,
-      unix_permissions: unix_permissions)
+      unix_permissions: unix_permissions,
+      encryption: encryption)
 
-    writable = Writable.new(self, DeflatedWriter.new(@out))
+    tellable = ZipKit::WriteAndTell.new(@out)
+    encryptor = encryption.wrap_io(tellable)
+    compressor = DeflatedWriter.new(encryptor)
+    writable = Writable.new(compressor) do |bytes_received:, crc32:|
+      update_last_entry_and_write_data_descriptor(crc32: crc32, uncompressed_size: bytes_received, compressed_size: tellable.tell)
+    end
     yield_or_return_writable(writable, &blk)
   end
 
@@ -417,7 +435,8 @@ class ZipKit::Streamer
         mtime: entry.mtime,
         crc32: entry.crc32,
         filename: entry.filename,
-        unix_permissions: entry.unix_permissions)
+        unix_permissions: entry.unix_permissions,
+        extra_field_bytes: entry.extra_field_bytes)
     end
 
     # Record the central directory size, for the EOCDR
@@ -552,7 +571,8 @@ class ZipKit::Streamer
     compressed_size:,
     uncompressed_size:,
     use_data_descriptor:,
-    unix_permissions:
+    unix_permissions:,
+    encryption:
   )
 
     # Clean backslashes
@@ -584,13 +604,15 @@ class ZipKit::Streamer
       crc32,
       compressed_size,
       uncompressed_size,
-      storage_mode,
+      encryption.override_storage_mode || storage_mode,
       modification_time,
       use_data_descriptor,
       _local_file_header_offset = local_header_starts_at,
       _bytes_used_for_local_header = 0,
       _bytes_used_for_data_descriptor = 0,
-      unix_permissions)
+      unix_permissions,
+      encryption.set_gp_bit1?,
+      encryption.extra_field_bytes)
 
     @writer.write_local_file_header(io: @out,
       gp_flags: e.gp_flags,
@@ -599,7 +621,8 @@ class ZipKit::Streamer
       uncompressed_size: e.uncompressed_size,
       mtime: e.mtime,
       filename: e.filename,
-      storage_mode: e.storage_mode)
+      storage_mode: e.storage_mode,
+      extra_field_bytes: e.extra_field_bytes)
     e.bytes_used_for_local_header = @out.tell - e.local_header_offset
 
     @files << e

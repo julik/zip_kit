@@ -14,7 +14,5 @@ describe ZipKit::Streamer::DeflatedWriter do
     zlib_inflater = ::Zlib::Inflate.new(-Zlib::MAX_WBITS)
     inflated = zlib_inflater.inflate(out.string)
     expect(inflated).to eq(("a" * 256) + ("b" * 256) + ("b" * 256))
-
-    expect(finish_result).to eq(crc32: 234880044, compressed_size: out.size, uncompressed_size: 768)
   end
 end
