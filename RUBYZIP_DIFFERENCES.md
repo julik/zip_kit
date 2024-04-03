@@ -16,10 +16,6 @@ differences in supported features which may be important for you when choosing.
   and Zip64, and is economical enough to enable "remote uncapping" where pieces of a ZIP file get read over HTTP to reconstruct
   the archive structure. Actual reading can then be done on a per-entry basis. Rubyzip reads entry data from local entries, which
   is error prone and much less economical than using the central directory
-* ZipKit deliberately _does not_ allow you to crawl directories to add to an archive, as this has been used for security exploits
-  in Rubyzip.
-* ZipKit deliberately _does not_ allow you to extract a ZIP archive directly to the filesystem, as this has been used for security
-  exploits in Rubyzip.
 * When writing, ZipKit applies careful buffering to speed up CRC32 calculations. Rubyzip combines CRC32 values at every write, which
   can be slow if there are many small writes.
 * ZipKit comes with a Rails helper and a Rack-compatible response body for facilitating streaming. Rubyzip has no Rails integration
@@ -29,6 +25,7 @@ differences in supported features which may be important for you when choosing.
 * ZipKit requires components using autoloading, which means that your application will likely boot faster as you will almost never
   need all of the features in one codebase. Rubyzip requires its components eagerly.
 * ZipKit comes with exhaustive YARD documentation and `.rbi` typedefs for [Sorbet/Tapioca](https://sorbet.org/blog/2022/07/27/srb-tapioca)
+* ZipKit allows you to compose "sparse" ZIP files where the contents of the files inside the archive comes from an external source, and does not have to be passed through the library (or be turned into Ruby strings), which enables interesting use cases such as download proxies with random access and resume.
 
 ## What Rubyzip supports and ZipKit does not
 
