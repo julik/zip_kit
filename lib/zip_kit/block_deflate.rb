@@ -55,7 +55,7 @@ class ZipKit::BlockDeflate
   # `output_io` can also be a {ZipKit::Streamer} to expedite ops.
   #
   # @param output_io [IO] the stream to write to (should respond to `:<<`)
-  # @return [Fixnum] number of bytes written to `output_io`
+  # @return [Integer] number of bytes written to `output_io`
   def self.write_terminator(output_io)
     output_io << END_MARKER
     END_MARKER.bytesize
@@ -65,7 +65,7 @@ class ZipKit::BlockDeflate
   # The returned string can be spliced into another deflate stream.
   #
   # @param bytes [String] Bytes to compress
-  # @param level [Fixnum] Zlib compression level (defaults to `Zlib::DEFAULT_COMPRESSION`)
+  # @param level [Integer] Zlib compression level (defaults to `Zlib::DEFAULT_COMPRESSION`)
   # @return [String] compressed bytes
   def self.deflate_chunk(bytes, level: Zlib::DEFAULT_COMPRESSION)
     raise "Invalid Zlib compression level #{level}" unless VALID_COMPRESSIONS.include?(level)
@@ -90,9 +90,9 @@ class ZipKit::BlockDeflate
   #
   # @param input_io [IO] the stream to read from (should respond to `:read`)
   # @param output_io [IO] the stream to write to (should respond to `:<<`)
-  # @param level [Fixnum] Zlib compression level (defaults to `Zlib::DEFAULT_COMPRESSION`)
-  # @param block_size [Fixnum] The block size to use (defaults to `DEFAULT_BLOCKSIZE`)
-  # @return [Fixnum] number of bytes written to `output_io`
+  # @param level [Integer] Zlib compression level (defaults to `Zlib::DEFAULT_COMPRESSION`)
+  # @param block_size [Integer] The block size to use (defaults to `DEFAULT_BLOCKSIZE`)
+  # @return [Integer] number of bytes written to `output_io`
   def self.deflate_in_blocks_and_terminate(input_io,
     output_io,
     level: Zlib::DEFAULT_COMPRESSION,
@@ -110,9 +110,9 @@ class ZipKit::BlockDeflate
   #
   # @param input_io [IO] the stream to read from (should respond to `:read`)
   # @param output_io [IO] the stream to write to (should respond to `:<<`)
-  # @param level [Fixnum] Zlib compression level (defaults to `Zlib::DEFAULT_COMPRESSION`)
-  # @param block_size [Fixnum] The block size to use (defaults to `DEFAULT_BLOCKSIZE`)
-  # @return [Fixnum] number of bytes written to `output_io`
+  # @param level [Integer] Zlib compression level (defaults to `Zlib::DEFAULT_COMPRESSION`)
+  # @param block_size [Integer] The block size to use (defaults to `DEFAULT_BLOCKSIZE`)
+  # @return [Integer] number of bytes written to `output_io`
   def self.deflate_in_blocks(input_io,
     output_io,
     level: Zlib::DEFAULT_COMPRESSION,

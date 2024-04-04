@@ -14,7 +14,7 @@ module ZipKit::WriteShovel
   # a target for `IO.copy_stream(from, to)`
   #
   # @param bytes[String] the binary string to write (part of the uncompressed file)
-  # @return [Fixnum] the number of bytes written (will always be the bytesize of `bytes`)
+  # @return [Integer] the number of bytes written (will always be the bytesize of `bytes`)
   def write(bytes)
     self << bytes
     bytes.bytesize

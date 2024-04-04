@@ -86,46 +86,46 @@ class ZipKit::FileReader
   # the Entry object used in Streamer for ZIP writing, since during writing more
   # data can be kept in memory for immediate use.
   class ZipEntry
-    # @return [Fixnum] bit-packed version signature of the program that made the archive
+    # @return [Integer] bit-packed version signature of the program that made the archive
     attr_accessor :made_by
 
-    # @return [Fixnum] ZIP version support needed to extract this file
+    # @return [Integer] ZIP version support needed to extract this file
     attr_accessor :version_needed_to_extract
 
-    # @return [Fixnum] bit-packed general purpose flags
+    # @return [Integer] bit-packed general purpose flags
     attr_accessor :gp_flags
 
-    # @return [Fixnum] Storage mode (0 for stored, 8 for deflate)
+    # @return [Integer] Storage mode (0 for stored, 8 for deflate)
     attr_accessor :storage_mode
 
-    # @return [Fixnum] the bit-packed DOS time
+    # @return [Integer] the bit-packed DOS time
     attr_accessor :dos_time
 
-    # @return [Fixnum] the bit-packed DOS date
+    # @return [Integer] the bit-packed DOS date
     attr_accessor :dos_date
 
-    # @return [Fixnum] the CRC32 checksum of this file
+    # @return [Integer] the CRC32 checksum of this file
     attr_accessor :crc32
 
-    # @return [Fixnum] size of compressed file data in the ZIP
+    # @return [Integer] size of compressed file data in the ZIP
     attr_accessor :compressed_size
 
-    # @return [Fixnum] size of the file once uncompressed
+    # @return [Integer] size of the file once uncompressed
     attr_accessor :uncompressed_size
 
     # @return [String] the filename
     attr_accessor :filename
 
-    # @return [Fixnum] disk number where this file starts
+    # @return [Integer] disk number where this file starts
     attr_accessor :disk_number_start
 
-    # @return [Fixnum] internal attributes of the file
+    # @return [Integer] internal attributes of the file
     attr_accessor :internal_attrs
 
-    # @return [Fixnum] external attributes of the file
+    # @return [Integer] external attributes of the file
     attr_accessor :external_attrs
 
-    # @return [Fixnum] at what offset the local file header starts
+    # @return [Integer] at what offset the local file header starts
     #        in your original IO object
     attr_accessor :local_file_header_offset
 
@@ -151,7 +151,7 @@ class ZipKit::FileReader
       end
     end
 
-    # @return [Fixnum] at what offset you should start reading
+    # @return [Integer] at what offset you should start reading
     #       for the compressed data in your original IO object
     def compressed_data_offset
       @compressed_data_offset || raise(LocalHeaderPending)
@@ -298,7 +298,7 @@ class ZipKit::FileReader
   # this offset to get the data).
   #
   # @param io[#read] an IO-ish object the ZIP file can be read from
-  # @return [Array<ZipEntry, Fixnum>] the parsed local header entry and
+  # @return [Array<ZipEntry, Integer>] the parsed local header entry and
   # the compressed data offset
   def read_local_file_header(io:)
     local_file_header_offset = io.tell
@@ -365,8 +365,8 @@ class ZipKit::FileReader
   # (read starting at this offset to get the data).
   #
   # @param io[#seek, #read] an IO-ish object the ZIP file can be read from
-  # @param local_file_header_offset[Fixnum] absolute offset (0-based) where the
-  # local file header is supposed to begin @return [Fixnum] absolute offset
+  # @param local_file_header_offset[Integer] absolute offset (0-based) where the
+  # local file header is supposed to begin @return [Integer] absolute offset
   # (0-based) of where the compressed data begins for this file within the ZIP
   def get_compressed_data_offset(io:, local_file_header_offset:)
     seek(io, local_file_header_offset)

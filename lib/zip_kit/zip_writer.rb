@@ -64,12 +64,12 @@ class ZipKit::ZipWriter
   #
   # @param io[#<<] the buffer to write the local file header to
   # @param filename[String]  the name of the file in the archive
-  # @param compressed_size[Fixnum]    The size of the compressed (or stored) data - how much space it uses in the ZIP
-  # @param uncompressed_size[Fixnum]  The size of the file once extracted
-  # @param crc32[Fixnum] The CRC32 checksum of the file
+  # @param compressed_size[Integer]    The size of the compressed (or stored) data - how much space it uses in the ZIP
+  # @param uncompressed_size[Integer]  The size of the file once extracted
+  # @param crc32[Integer] The CRC32 checksum of the file
   # @param mtime[Time]  the modification time to be recorded in the ZIP
-  # @param gp_flags[Fixnum] bit-packed general purpose flags
-  # @param storage_mode[Fixnum] 8 for deflated, 0 for stored...
+  # @param gp_flags[Integer] bit-packed general purpose flags
+  # @param storage_mode[Integer] 8 for deflated, 0 for stored...
   # @return [void]
   def write_local_file_header(io:, filename:, compressed_size:, uncompressed_size:, crc32:, gp_flags:, mtime:, storage_mode:)
     requires_zip64 = compressed_size > FOUR_BYTE_MAX_UINT || uncompressed_size > FOUR_BYTE_MAX_UINT
@@ -136,11 +136,11 @@ class ZipKit::ZipWriter
   #
   # @param io[#<<] the buffer to write the local file header to
   # @param filename[String]  the name of the file in the archive
-  # @param compressed_size[Fixnum]    The size of the compressed (or stored) data - how much space it uses in the ZIP
-  # @param uncompressed_size[Fixnum]  The size of the file once extracted
-  # @param crc32[Fixnum] The CRC32 checksum of the file
+  # @param compressed_size[Integer]    The size of the compressed (or stored) data - how much space it uses in the ZIP
+  # @param uncompressed_size[Integer]  The size of the file once extracted
+  # @param crc32[Integer] The CRC32 checksum of the file
   # @param mtime[Time]  the modification time to be recorded in the ZIP
-  # @param gp_flags[Fixnum] bit-packed general purpose flags
+  # @param gp_flags[Integer] bit-packed general purpose flags
   # @param unix_permissions[Integer] the permissions for the file, or nil for the default to be used
   # @return [void]
   def write_central_directory_file_header(io:,
@@ -253,9 +253,9 @@ class ZipKit::ZipWriter
   # the data descriptor will have the sizes written out as 8-byte values instead of 4-byte values.
   #
   # @param io[#<<] the buffer to write the local file header to
-  # @param crc32[Fixnum]    The CRC32 checksum of the file
-  # @param compressed_size[Fixnum]    The size of the compressed (or stored) data - how much space it uses in the ZIP
-  # @param uncompressed_size[Fixnum]  The size of the file once extracted
+  # @param crc32[Integer]    The CRC32 checksum of the file
+  # @param compressed_size[Integer]    The size of the compressed (or stored) data - how much space it uses in the ZIP
+  # @param uncompressed_size[Integer]  The size of the file once extracted
   # @return [void]
   def write_data_descriptor(io:, compressed_size:, uncompressed_size:, crc32:)
     # Although not originally assigned a signature, the value
@@ -282,9 +282,9 @@ class ZipKit::ZipWriter
   # Writes the "end of central directory record" (including the Zip6 salient bits if necessary)
   #
   # @param io[#<<] the buffer to write the central directory to.
-  # @param start_of_central_directory_location[Fixnum] byte offset of the start of central directory form the beginning of ZIP file
-  # @param central_directory_size[Fixnum] the size of the central directory (only file headers) in bytes
-  # @param num_files_in_archive[Fixnum] How many files the archive contains
+  # @param start_of_central_directory_location[Integer] byte offset of the start of central directory form the beginning of ZIP file
+  # @param central_directory_size[Integer] the size of the central directory (only file headers) in bytes
+  # @param num_files_in_archive[Integer] How many files the archive contains
   # @param comment[String] the comment for the archive (defaults to ZIP_KIT_COMMENT)
   # @return [void]
   def write_end_of_central_directory(io:, start_of_central_directory_location:, central_directory_size:, num_files_in_archive:, comment: ZIP_KIT_COMMENT)
@@ -386,8 +386,8 @@ class ZipKit::ZipWriter
 
   # Writes the Zip64 extra field for the local file header. Will be used by `write_local_file_header` when any sizes given to it warrant that.
   #
-  # @param compressed_size[Fixnum]    The size of the compressed (or stored) data - how much space it uses in the ZIP
-  # @param uncompressed_size[Fixnum]  The size of the file once extracted
+  # @param compressed_size[Integer]    The size of the compressed (or stored) data - how much space it uses in the ZIP
+  # @param uncompressed_size[Integer]  The size of the file once extracted
   # @return [String]
   def zip_64_extra_for_local_file_header(compressed_size:, uncompressed_size:)
     data_and_packspecs = [
@@ -460,9 +460,9 @@ class ZipKit::ZipWriter
   # Writes the Zip64 extra field for the central directory header.It differs from the extra used in the local file header because it
   # also contains the location of the local file header in the ZIP as an 8-byte int.
   #
-  # @param compressed_size[Fixnum]    The size of the compressed (or stored) data - how much space it uses in the ZIP
-  # @param uncompressed_size[Fixnum]  The size of the file once extracted
-  # @param local_file_header_location[Fixnum] Byte offset of the start of the local file header from the beginning of the ZIP archive
+  # @param compressed_size[Integer]    The size of the compressed (or stored) data - how much space it uses in the ZIP
+  # @param uncompressed_size[Integer]  The size of the file once extracted
+  # @param local_file_header_location[Integer] Byte offset of the start of the local file header from the beginning of the ZIP archive
   # @return [String]
   def zip_64_extra_for_central_directory_file_header(compressed_size:, uncompressed_size:, local_file_header_location:)
     data_and_packspecs = [
