@@ -165,7 +165,7 @@ end
 Sending a file with data descriptors is not always desirable - you don't really know how large your ZIP is going to be.
 If you want to present your users with proper download progress, you would need to set a `Content-Length` header - and
 know ahead of time how large your download is going to be. This can be done with ZipKit, provided you know how large
-the compressed versions of your file are going to be. Use the {ZipKit::SizeEstimator} to do the pre-calculation - it
+the compressed versions of your file are going to be. Use the `ZipKit::SizeEstimator` to do the pre-calculation - it
 is not going to produce any large amounts of output, and will give you a to-the-byte value for your future archive:
 
 ```ruby
