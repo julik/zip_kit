@@ -572,7 +572,7 @@ module ZipKit
     # _@param_ `bytes` — the binary string to write (part of the uncompressed file)
     # 
     # _@return_ — the number of bytes written (will always be the bytesize of `bytes`)
-    sig { params(bytes: String).returns(Fixnum) }
+    sig { params(bytes: String).returns(Integer) }
     def write(bytes); end
 
     # Is used internally by Streamer to keep track of entries in the archive during writing.
@@ -686,7 +686,7 @@ module ZipKit
       # _@param_ `bytes` — the binary string to write (part of the uncompressed file)
       # 
       # _@return_ — the number of bytes written (will always be the bytesize of `bytes`)
-      sig { params(bytes: String).returns(Fixnum) }
+      sig { params(bytes: String).returns(Integer) }
       def write(bytes); end
     end
 
@@ -755,7 +755,7 @@ module ZipKit
       # _@param_ `bytes` — the binary string to write (part of the uncompressed file)
       # 
       # _@return_ — the number of bytes written (will always be the bytesize of `bytes`)
-      sig { params(bytes: String).returns(Fixnum) }
+      sig { params(bytes: String).returns(Integer) }
       def write(bytes); end
     end
 
@@ -793,7 +793,7 @@ module ZipKit
       # _@param_ `bytes` — the binary string to write (part of the uncompressed file)
       # 
       # _@return_ — the number of bytes written (will always be the bytesize of `bytes`)
-      sig { params(bytes: String).returns(Fixnum) }
+      sig { params(bytes: String).returns(Integer) }
       def write(bytes); end
     end
   end
@@ -835,11 +835,11 @@ module ZipKit
     # _@param_ `n_bytes` — how many bytes to read, or `nil` to read all the way to the end
     # 
     # _@return_ — the read bytes
-    sig { params(n_bytes: T.nilable(Fixnum)).returns(String) }
+    sig { params(n_bytes: T.nilable(Integer)).returns(String) }
     def read(n_bytes = nil); end
 
     # Returns the current pointer position within the IO
-    sig { returns(Fixnum) }
+    sig { returns(Integer) }
     def tell; end
 
     # Only used internally when reading the remote ZIP.
@@ -933,12 +933,12 @@ end, T.untyped)
       params(
         io: T.untyped,
         filename: String,
-        compressed_size: Fixnum,
-        uncompressed_size: Fixnum,
-        crc32: Fixnum,
-        gp_flags: Fixnum,
+        compressed_size: Integer,
+        uncompressed_size: Integer,
+        crc32: Integer,
+        gp_flags: Integer,
         mtime: Time,
-        storage_mode: Fixnum
+        storage_mode: Integer
       ).void
     end
     def write_local_file_header(io:, filename:, compressed_size:, uncompressed_size:, crc32:, gp_flags:, mtime:, storage_mode:); end
@@ -968,12 +968,12 @@ end, T.untyped)
       params(
         io: T.untyped,
         local_file_header_location: T.untyped,
-        gp_flags: Fixnum,
+        gp_flags: Integer,
         storage_mode: T.untyped,
-        compressed_size: Fixnum,
-        uncompressed_size: Fixnum,
+        compressed_size: Integer,
+        uncompressed_size: Integer,
         mtime: Time,
-        crc32: Fixnum,
+        crc32: Integer,
         filename: String,
         unix_permissions: T.nilable(Integer)
       ).void
@@ -995,9 +995,9 @@ end, T.untyped)
     sig do
       params(
         io: T.untyped,
-        compressed_size: Fixnum,
-        uncompressed_size: Fixnum,
-        crc32: Fixnum
+        compressed_size: Integer,
+        uncompressed_size: Integer,
+        crc32: Integer
       ).void
     end
     def write_data_descriptor(io:, compressed_size:, uncompressed_size:, crc32:); end
@@ -1017,9 +1017,9 @@ end, T.untyped)
     sig do
       params(
         io: T.untyped,
-        start_of_central_directory_location: Fixnum,
-        central_directory_size: Fixnum,
-        num_files_in_archive: Fixnum,
+        start_of_central_directory_location: Integer,
+        central_directory_size: Integer,
+        num_files_in_archive: Integer,
         comment: String
       ).void
     end
@@ -1030,7 +1030,7 @@ end, T.untyped)
     # _@param_ `compressed_size` — The size of the compressed (or stored) data - how much space it uses in the ZIP
     # 
     # _@param_ `uncompressed_size` — The size of the file once extracted
-    sig { params(compressed_size: Fixnum, uncompressed_size: Fixnum).returns(String) }
+    sig { params(compressed_size: Integer, uncompressed_size: Integer).returns(String) }
     def zip_64_extra_for_local_file_header(compressed_size:, uncompressed_size:); end
 
     # sord omit - no YARD type given for "mtime", using untyped
@@ -1053,7 +1053,7 @@ end, T.untyped)
     # _@param_ `uncompressed_size` — The size of the file once extracted
     # 
     # _@param_ `local_file_header_location` — Byte offset of the start of the local file header from the beginning of the ZIP archive
-    sig { params(compressed_size: Fixnum, uncompressed_size: Fixnum, local_file_header_location: Fixnum).returns(String) }
+    sig { params(compressed_size: Integer, uncompressed_size: Integer, local_file_header_location: Integer).returns(String) }
     def zip_64_extra_for_central_directory_file_header(compressed_size:, uncompressed_size:, local_file_header_location:); end
 
     # sord omit - no YARD type given for "t", using untyped
@@ -1126,7 +1126,7 @@ end, T.untyped)
     # _@param_ `bytes` — the binary string to write (part of the uncompressed file)
     # 
     # _@return_ — the number of bytes written (will always be the bytesize of `bytes`)
-    sig { params(bytes: String).returns(Fixnum) }
+    sig { params(bytes: String).returns(Integer) }
     def write(bytes); end
   end
 
@@ -1286,7 +1286,7 @@ end, T.untyped)
     # _@param_ `io` — an IO-ish object the ZIP file can be read from
     # 
     # _@return_ — the parsed local header entry and
-    sig { params(io: T.untyped).returns(T::Array[T.any(ZipEntry, Fixnum)]) }
+    sig { params(io: T.untyped).returns(T::Array[T.any(ZipEntry, Integer)]) }
     def read_local_file_header(io:); end
 
     # sord duck - #seek looks like a duck type, replacing with untyped
@@ -1299,13 +1299,13 @@ end, T.untyped)
     # header offset given will be the compressed data offset of the entry
     # (read starting at this offset to get the data).
     # 
-    # local file header is supposed to begin @return [Fixnum] absolute offset
+    # local file header is supposed to begin @return [Integer] absolute offset
     # (0-based) of where the compressed data begins for this file within the ZIP
     # 
     # _@param_ `io` — an IO-ish object the ZIP file can be read from
     # 
     # _@param_ `local_file_header_offset` — absolute offset (0-based) where the
-    sig { params(io: T.untyped, local_file_header_offset: Fixnum).returns(T.untyped) }
+    sig { params(io: T.untyped, local_file_header_offset: Integer).returns(T.untyped) }
     def get_compressed_data_offset(io:, local_file_header_offset:); end
 
     # Parse an IO handle to a ZIP archive into an array of Entry objects, reading from the end
@@ -1502,7 +1502,7 @@ end, T.untyped)
 
       # _@return_ — at what offset you should start reading
       # for the compressed data in your original IO object
-      sig { returns(Fixnum) }
+      sig { returns(Integer) }
       def compressed_data_offset; end
 
       # Tells whether the compressed data offset is already known for this entry
@@ -1514,7 +1514,7 @@ end, T.untyped)
       sig { returns(T::Boolean) }
       def uses_data_descriptor?; end
 
-      # sord infer - inferred type of parameter "offset" as Fixnum using getter's return type
+      # sord infer - inferred type of parameter "offset" as Integer using getter's return type
       # sord omit - no YARD return type given, using untyped
       # Sets the offset at which the compressed data for this file starts in the ZIP.
       # By default, the value will be set by the Reader for you. If you use delayed
@@ -1522,43 +1522,43 @@ end, T.untyped)
       # 
       #     entry.compressed_data_offset = reader.get_compressed_data_offset(io: file,
       #            local_file_header_offset: entry.local_header_offset)
-      sig { params(offset: Fixnum).returns(T.untyped) }
+      sig { params(offset: Integer).returns(T.untyped) }
       def compressed_data_offset=(offset); end
 
       # _@return_ — bit-packed version signature of the program that made the archive
-      sig { returns(Fixnum) }
+      sig { returns(Integer) }
       attr_accessor :made_by
 
       # _@return_ — ZIP version support needed to extract this file
-      sig { returns(Fixnum) }
+      sig { returns(Integer) }
       attr_accessor :version_needed_to_extract
 
       # _@return_ — bit-packed general purpose flags
-      sig { returns(Fixnum) }
+      sig { returns(Integer) }
       attr_accessor :gp_flags
 
       # _@return_ — Storage mode (0 for stored, 8 for deflate)
-      sig { returns(Fixnum) }
+      sig { returns(Integer) }
       attr_accessor :storage_mode
 
       # _@return_ — the bit-packed DOS time
-      sig { returns(Fixnum) }
+      sig { returns(Integer) }
       attr_accessor :dos_time
 
       # _@return_ — the bit-packed DOS date
-      sig { returns(Fixnum) }
+      sig { returns(Integer) }
       attr_accessor :dos_date
 
       # _@return_ — the CRC32 checksum of this file
-      sig { returns(Fixnum) }
+      sig { returns(Integer) }
       attr_accessor :crc32
 
       # _@return_ — size of compressed file data in the ZIP
-      sig { returns(Fixnum) }
+      sig { returns(Integer) }
       attr_accessor :compressed_size
 
       # _@return_ — size of the file once uncompressed
-      sig { returns(Fixnum) }
+      sig { returns(Integer) }
       attr_accessor :uncompressed_size
 
       # _@return_ — the filename
@@ -1566,20 +1566,20 @@ end, T.untyped)
       attr_accessor :filename
 
       # _@return_ — disk number where this file starts
-      sig { returns(Fixnum) }
+      sig { returns(Integer) }
       attr_accessor :disk_number_start
 
       # _@return_ — internal attributes of the file
-      sig { returns(Fixnum) }
+      sig { returns(Integer) }
       attr_accessor :internal_attrs
 
       # _@return_ — external attributes of the file
-      sig { returns(Fixnum) }
+      sig { returns(Integer) }
       attr_accessor :external_attrs
 
       # _@return_ — at what offset the local file header starts
       # in your original IO object
-      sig { returns(Fixnum) }
+      sig { returns(Integer) }
       attr_accessor :local_file_header_offset
 
       # _@return_ — the file comment
@@ -1635,7 +1635,7 @@ end, T.untyped)
     # _@param_ `io` — the IO to read the data from
     # 
     # _@return_ — the computed CRC32 value
-    sig { params(io: IO).returns(Fixnum) }
+    sig { params(io: IO).returns(Integer) }
     def self.from_io(io); end
 
     # Creates a new streaming CRC32 calculator
@@ -1651,7 +1651,7 @@ end, T.untyped)
     # Returns the CRC32 value computed so far
     # 
     # _@return_ — the updated CRC32 value for all the blobs so far
-    sig { returns(Fixnum) }
+    sig { returns(Integer) }
     def to_i; end
 
     # Appends a known CRC32 value to the current one, and combines the
@@ -1662,7 +1662,7 @@ end, T.untyped)
     # _@param_ `blob_size` — the size of the daata the `crc32` is computed from
     # 
     # _@return_ — the updated CRC32 value for all the blobs so far
-    sig { params(crc32: Fixnum, blob_size: Fixnum).returns(Fixnum) }
+    sig { params(crc32: Integer, blob_size: Integer).returns(Integer) }
     def append(crc32, blob_size); end
 
     # Writes the given data to the output stream. Allows the object to be used as
@@ -1671,7 +1671,7 @@ end, T.untyped)
     # _@param_ `bytes` — the binary string to write (part of the uncompressed file)
     # 
     # _@return_ — the number of bytes written (will always be the bytesize of `bytes`)
-    sig { params(bytes: String).returns(Fixnum) }
+    sig { params(bytes: String).returns(Integer) }
     def write(bytes); end
   end
 
@@ -1741,7 +1741,7 @@ end, T.untyped)
     # _@param_ `bytes` — the binary string to write (part of the uncompressed file)
     # 
     # _@return_ — the number of bytes written (will always be the bytesize of `bytes`)
-    sig { params(bytes: String).returns(Fixnum) }
+    sig { params(bytes: String).returns(Integer) }
     def write(bytes); end
   end
 
@@ -1801,7 +1801,7 @@ end, T.untyped)
     # _@param_ `output_io` — the stream to write to (should respond to `:<<`)
     # 
     # _@return_ — number of bytes written to `output_io`
-    sig { params(output_io: IO).returns(Fixnum) }
+    sig { params(output_io: IO).returns(Integer) }
     def self.write_terminator(output_io); end
 
     # Compress a given binary string and flush the deflate stream at byte boundary.
@@ -1812,7 +1812,7 @@ end, T.untyped)
     # _@param_ `level` — Zlib compression level (defaults to `Zlib::DEFAULT_COMPRESSION`)
     # 
     # _@return_ — compressed bytes
-    sig { params(bytes: String, level: Fixnum).returns(String) }
+    sig { params(bytes: String, level: Integer).returns(String) }
     def self.deflate_chunk(bytes, level: Zlib::DEFAULT_COMPRESSION); end
 
     # Compress the contents of input_io into output_io, in blocks
@@ -1838,9 +1838,9 @@ end, T.untyped)
       params(
         input_io: IO,
         output_io: IO,
-        level: Fixnum,
-        block_size: Fixnum
-      ).returns(Fixnum)
+        level: Integer,
+        block_size: Integer
+      ).returns(Integer)
     end
     def self.deflate_in_blocks_and_terminate(input_io, output_io, level: Zlib::DEFAULT_COMPRESSION, block_size: DEFAULT_BLOCKSIZE); end
 
@@ -1864,9 +1864,9 @@ end, T.untyped)
       params(
         input_io: IO,
         output_io: IO,
-        level: Fixnum,
-        block_size: Fixnum
-      ).returns(Fixnum)
+        level: Integer,
+        block_size: Integer
+      ).returns(Integer)
     end
     def self.deflate_in_blocks(input_io, output_io, level: Zlib::DEFAULT_COMPRESSION, block_size: DEFAULT_BLOCKSIZE); end
   end
@@ -1906,7 +1906,7 @@ end, T.untyped)
     # _@param_ `use_data_descriptor` — whether the entry uses a postfix
     # 
     # _@return_ — self
-    sig { params(filename: String, size: Fixnum, use_data_descriptor: T::Boolean).returns(T.untyped) }
+    sig { params(filename: String, size: Integer, use_data_descriptor: T::Boolean).returns(T.untyped) }
     def add_stored_entry(filename:, size:, use_data_descriptor: false); end
 
     # Add a fake entry to the archive, to see how big it is going to be in the end.
@@ -1923,8 +1923,8 @@ end, T.untyped)
     sig do
       params(
         filename: String,
-        uncompressed_size: Fixnum,
-        compressed_size: Fixnum,
+        uncompressed_size: Integer,
+        compressed_size: Integer,
         use_data_descriptor: T::Boolean
       ).returns(T.untyped)
     end
@@ -1972,7 +1972,7 @@ end, T.untyped)
     # _@param_ `bytes` — the binary string to write (part of the uncompressed file)
     # 
     # _@return_ — the number of bytes written (will always be the bytesize of `bytes`)
-    sig { params(bytes: String).returns(Fixnum) }
+    sig { params(bytes: String).returns(Integer) }
     def write(bytes); end
   end
 

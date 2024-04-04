@@ -16,7 +16,7 @@ class ZipKit::StreamCRC32
   # Compute a CRC32 value from an IO object. The object should respond to `read` and `eof?`
   #
   # @param io[IO] the IO to read the data from
-  # @return [Fixnum] the computed CRC32 value
+  # @return [Integer] the computed CRC32 value
   def self.from_io(io)
     # If we can specify the string capacity upfront we will not have to resize
     # the string during operation. This saves time but is only available on
@@ -43,7 +43,7 @@ class ZipKit::StreamCRC32
 
   # Returns the CRC32 value computed so far
   #
-  # @return [Fixnum] the updated CRC32 value for all the blobs so far
+  # @return [Integer] the updated CRC32 value for all the blobs so far
   def to_i
     @crc
   end
@@ -51,9 +51,9 @@ class ZipKit::StreamCRC32
   # Appends a known CRC32 value to the current one, and combines the
   # contained CRC32 value in-place.
   #
-  # @param crc32[Fixnum] the CRC32 value to append
-  # @param blob_size[Fixnum] the size of the daata the `crc32` is computed from
-  # @return [Fixnum] the updated CRC32 value for all the blobs so far
+  # @param crc32[Integer] the CRC32 value to append
+  # @param blob_size[Integer] the size of the daata the `crc32` is computed from
+  # @return [Integer] the updated CRC32 value for all the blobs so far
   def append(crc32, blob_size)
     @crc = Zlib.crc32_combine(@crc, crc32, blob_size)
   end

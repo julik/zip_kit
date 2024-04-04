@@ -35,7 +35,7 @@ class ZipKit::SizeEstimator
   # Add a fake entry to the archive, to see how big it is going to be in the end.
   #
   # @param filename [String] the name of the file (filenames are variable-width in the ZIP)
-  # @param size [Fixnum] size of the uncompressed entry
+  # @param size [Integer] size of the uncompressed entry
   # @param use_data_descriptor[Boolean] whether the entry uses a postfix
   # data descriptor to specify size
   # @return self
@@ -54,8 +54,8 @@ class ZipKit::SizeEstimator
   # Add a fake entry to the archive, to see how big it is going to be in the end.
   #
   # @param filename [String] the name of the file (filenames are variable-width in the ZIP)
-  # @param uncompressed_size [Fixnum] size of the uncompressed entry
-  # @param compressed_size [Fixnum] size of the compressed entry
+  # @param uncompressed_size [Integer] size of the uncompressed entry
+  # @param compressed_size [Integer] size of the compressed entry
   # @param use_data_descriptor[Boolean] whether the entry uses a postfix data
   #                                     descriptor to specify size
   # @return self

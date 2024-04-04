@@ -40,7 +40,7 @@ class ZipKit::RemoteIO
   # so if you are at offset 0 in the IO of size 10, doing a `read(20)`
   # will only return you 10 bytes of result, and not raise any exceptions.
   #
-  # @param n_bytes[Fixnum, nil] how many bytes to read, or `nil` to read all the way to the end
+  # @param n_bytes[Integer, nil] how many bytes to read, or `nil` to read all the way to the end
   # @return [String] the read bytes
   def read(n_bytes = nil)
     # If the resource is empty there is nothing to read
@@ -62,7 +62,7 @@ class ZipKit::RemoteIO
 
   # Returns the current pointer position within the IO
   #
-  # @return [Fixnum]
+  # @return [Integer]
   def tell
     @pos
   end
