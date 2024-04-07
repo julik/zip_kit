@@ -5,6 +5,7 @@ The ZipKit streaming implementation is designed around the following requirement
 * Only ahead-writes (no IO seek or rewind)
 * Automatic switching to Zip64 as the files get written (no IO seeks), but not requiring Zip64 support if the archive can do without
 * Make use of the fact that CRC32 checksums and the sizes of the files (compressed _and_ uncompressed) are known upfront
+* Make it possible to output "sparse" ZIP archives (manifests that can be resolved into a ZIP via edge includes)
 
 It strives to be compatible with the following unzip programs _at the minimum:_
 
@@ -14,9 +15,6 @@ It strives to be compatible with the following unzip programs _at the minimum:_
 * Windows 7 - 7Zip 9.20
 
 Below is the list of _specific_ decisions taken when writing the implementation, with an explanation for each.
-We specifically _omit_ a number of things that we could do, but that are not necessary to satisfy our objectives.
-The omissions are _intentional_ since we do not want to have things of which we _assume_ they work, or have things
-that work only for one obscure unarchiver in one obscure case (like WinRAR with chinese filenames).
 
 ## Data descriptors (postfix CRC32/file sizes)
 
@@ -53,38 +51,14 @@ field, any other extra fields should come after.
 
 If a diacritic-containing character (such as å) does fit into the DOS-437
 codepage, it should be encodable as such. This would, in theory, let older Windows tools
-decode the filename correctly. However, this kills the filename decoding for the OSX builtin
-archive utility (it assumes the filename to be UTF-8, regardless). So if we allow filenames
-to be encoded in DOS-437, we _potentially_ have support in Windows but we upset everyone on Mac.
-If we just use UTF-8 and set the right EFS bit in general purpose flags, we upset Windows users
-because most of the Windows unarchive tools (at least the builtin ones) do not give a flying eff
-about the EFS support bit being set.
+decode the filename correctly. However, this only works under the following circumstances:
 
-Additionally, if we use Unarchiver on OSX (which is our recommended unpacker for large files),
-it will (very rightfully) ask us how we should decode each filename that does not have the EFS bit,
-but does contain something non-ASCII-decodable. This is horrible UX for users.
+* All the filenames in the archive are within the same "super-ASCII" encoding
+* The Windows locale on the computer opening the archive is set to the same locale as the filename in the archive
 
-So, basically, we have 2 choices, for filenames containing diacritics (for bona-fide UTF-8 you do not
-even get those choices, you _have_ to use UTF-8):
-
-* Make life easier for Windows users by setting stuff to DOS, not care about the standard _and_ make
-  most of Mac users upset
-* Make life easy for Mac users and conform to the standard, and tell Windows users to get a _decent_
-  ZIP unarchiving tool.
-
-We are going with option 2, and this is well-thought-out. Trust me. If you want the crazytown
-filename encoding scheme that is described here http://stackoverflow.com/questions/13261347
-you can try this:
-
-   [Encoding::CP437, Encoding::ISO_8859_1, Encoding::UTF_8]
-
-While this could work, we found it to be broken in practice as the decoding of the filename
-also depends on the system locale.
-
-Additionally, the tests with the unarchivers we _do_ support have shown that including the InfoZIP
-extra field does not actually help any of them recognize the file name correctly. And the use of
-those fields for the UTF-8 filename, per spec, tells us we should not set the EFS bit - which ruins
-the unarchiving for all other solutions. As any other, this decision may be changed in the future.
+A better approach is to use the EFS flag, which we enable when a filename does not encode cleanly
+into base ASCII. The extended filename extra field did not work well for us - and it does not
+combine correctly with the EFS flag.
 
 There are some interesting notes about the Info-ZIP/EFS combination here
 https://commons.apache.org/proper/commons-compress/zip.html
