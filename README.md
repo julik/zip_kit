@@ -5,9 +5,9 @@
 
 Allows streaming, non-rewinding ZIP file output from Ruby.
 
-`zip_kit` is a successor to and continuation of [zip_tricks](https://github.com/WeTransfer/zip_tricks), which
-was inspired by [zipline](https://github.com/fringd/zipline). I am grateful to WeTransfer for allowing me
-to develop zip_tricks and for sharing it with the community.
+> [!IMPORTANT]
+> `zip_kit` is a successor to and continuation of [zip_tricks](https://github.com/WeTransfer/zip_tricks)
+> I am grateful to WeTransfer for allowing me to develop zip_tricks and for sharing it with the community.
 
 Allows you to write a ZIP archive out to a `File`, `Socket`, `String` or `Array` without having to rewind it at any
 point. Usable for creating very large ZIP archives for immediate sending out to clients, or for writing
@@ -21,6 +21,13 @@ for WeTransfer, it is widely compatible with a large number of unarchiving end-u
 Check out [the implementation details](IMPLEMENTATION_DETAILS.md) on the design of the library, and
 we have a separate [reference](RUBYZIP_DIFFERENCES.md) on why you might want to use ZipKit over
 Rubyzip and vice versa.
+
+## Migrating from zip_tricks
+
+If you want to migrate your code from zip_tricks to zip_kit, all you need to do is a blanket replacement in your code.
+Swap out the `ZipTricks` constant for `ZipKit` and you should be in business. All of the API available in ZipTricks 5.x
+still works as of ZipKit 6.x and will stay working. If something in your project still depends on zip_tricks you can use
+both gems inside of the same "apex" project - there will be no conflicts.
 
 ## Requirements
 
