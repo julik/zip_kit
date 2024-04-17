@@ -17,6 +17,7 @@ The gem handled all the zipping needs for WeTransfer for half a decade, with hun
 of correct ZIP files generated. It is widely compatible with a large number of unarchiving end-user applications,
 and this compatibility has been well-tested.
 
+
 ## How does it work? How is it different from Rubyzip?
 
 Check out [the implementation details](IMPLEMENTATION_DETAILS.md) on the design of the library, and
