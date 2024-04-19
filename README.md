@@ -13,8 +13,9 @@ Allows you to write a ZIP archive out to a `File`, `Socket`, `String` or `Array`
 point. Usable for creating very large ZIP archives for immediate sending out to clients, or for writing
 large ZIP archives without memory inflation.
 
-The original gem (zip_tricks) handled all the zipping needs (millions of ZIP files generated per day),
-for WeTransfer, it is widely compatible with a large number of unarchiving end-user applications.
+The gem handled all the zipping needs for WeTransfer for half a decade, with hundreds of millions
+of correct ZIP files generated. It is widely compatible with a large number of unarchiving end-user applications,
+and this compatibility has been well-tested.
 
 ## How does it work? How is it different from Rubyzip?
 
