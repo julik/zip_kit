@@ -136,10 +136,10 @@ output direct to STDOUT (so that you can run `$ ruby archive.rb > file.zip` in y
 
 ```ruby
 ZipKit::Streamer.open($stdout) do |zip|
-  zip.write_file('mov.mp4.txt') do |sink|
+  zip.write_file('mov.mp4') do |sink| # Will use "stored" mode
     File.open('mov.mp4', 'rb'){|source| IO.copy_stream(source, sink) }
   end
-  zip.write_file('long-novel.txt') do |sink|
+  zip.write_file('long-novel.txt') do |sink| # Will use "deflated" mode
     File.open('novel.txt', 'rb'){|source| IO.copy_stream(source, sink) }
   end
 end
