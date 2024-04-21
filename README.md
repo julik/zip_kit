@@ -6,7 +6,7 @@
 Allows streaming, non-rewinding ZIP file output from Ruby.
 
 > [!IMPORTANT]
-> `zip_kit` is a successor to and continuation of [zip_tricks](https://github.com/WeTransfer/zip_tricks)
+> `zip_kit` is a successor to and continuation of [zip_tricks.](https://github.com/WeTransfer/zip_tricks)
 > I am grateful to WeTransfer for allowing me to develop zip_tricks and for sharing it with the community.
 
 Allows you to write a ZIP archive out to a `File`, `Socket`, `String` or `Array` without having to rewind it at any
