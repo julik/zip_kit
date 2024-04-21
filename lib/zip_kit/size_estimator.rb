@@ -24,7 +24,7 @@ class ZipKit::SizeEstimator
   #
   # @param kwargs_for_streamer_new Any options to pass to Streamer, see {Streamer#initialize}
   # @return [Integer] the size of the resulting archive, in bytes
-  # @yieldparam [SizeEstimator] the estimator
+  # @yieldparam estimator[SizeEstimator] the estimator
   def self.estimate(**kwargs_for_streamer_new)
     streamer = ZipKit::Streamer.new(ZipKit::NullWriter, **kwargs_for_streamer_new)
     estimator = new(streamer)
