@@ -14,9 +14,10 @@ point. Usable for creating very large ZIP archives for immediate sending out to 
 large ZIP archives without memory inflation.
 
 The gem handled all the zipping needs for WeTransfer for half a decade, with hundreds of millions
-of correct ZIP files generated. It is widely compatible with a large number of unarchiving end-user applications,
-and this compatibility has been well-tested.
+of correct ZIP files generated. It is compatible with most end-user applications for opening archives.
 
+The files output with zip_kit will be valid [OCF containers](https://www.w3.org/TR/epub-33/#sec-container-zip),
+the library can be used to generate JAR files, EPUBs, OpenOffice/Office documents etc.
 
 ## How does it work? How is it different from Rubyzip?
 
