@@ -1,3 +1,7 @@
+## 6.3.1
+
+* Include `RailsStreaming` in a Rails loader callback, so that ActionController does not need to be in the namespace.
+
 ## 6.3.0
 
 * Include `RailsStreaming` automatically via a Railtie. It is not really necessary to force people to manage it manually.
