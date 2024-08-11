@@ -1892,7 +1892,7 @@ end, T.untyped)
     # _@param_ `kwargs_for_streamer_new` — Any options to pass to Streamer, see {Streamer#initialize}
     # 
     # _@return_ — the size of the resulting archive, in bytes
-    sig { params(kwargs_for_streamer_new: T.untyped, blk: T.proc.params(the: SizeEstimator).void).returns(Integer) }
+    sig { params(kwargs_for_streamer_new: T.untyped, blk: T.proc.params(estimator: SizeEstimator).void).returns(Integer) }
     def self.estimate(**kwargs_for_streamer_new, &blk); end
 
     # Add a fake entry to the archive, to see how big it is going to be in the end.
