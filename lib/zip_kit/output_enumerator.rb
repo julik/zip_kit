@@ -112,6 +112,17 @@ class ZipKit::OutputEnumerator
   # but are of a file format built "on top" of ZIPs - such as ODTs, [pkpass files](https://developer.apple.com/documentation/walletpasses/building_a_pass)
   # and ePubs.
   #
+  # More value, however, is in the "technical" headers this method will provide. It will take the following steps to make sure streaming works correctly.
+  #
+  # * `Last-Modified` will be set to "now" so that the response is considered "fresh" by `Rack::ETag`. This is done so that `Rack::ETag` won't try to
+  #      calculate a lax ETag value and thus won't start buffering your response out of nowhere
+  # * `Content-Encoding` will be set to `identity`. This is so that proxies or the Rack middleware that applies compression to the response (like gzip)
+  #      is not going to try to compress your response. It also tells the receiving browsers (or downstream proxies) that they should not attempt to
+  #      open or uncompress the response before saving it or passing it onwards.
+  # * `X-Accel-Buffering` will be set to 'no` - this tells both nginx and the Google Cloud load balancer that the response should not be buffered
+  #
+  # These header values are known to get as close as possible to guaranteeing streaming on most environments where Ruby web applications may be hosted.
+  #
   # @return [Hash]
   def self.streaming_http_headers
     _headers = {
