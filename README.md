@@ -21,6 +21,11 @@ the library can be used to generate JAR files, EPUBs, OpenOffice/Office document
 
 ## How does it work? How is it different from Rubyzip?
 
+zip_kit outputs the metadata of the ZIP file as it becomes available. Same for the content of the ZIP
+entries. This allows nearly-unbuffered, streaming output. When reading ZIP files, zip_kit only reads
+the metadata and does so in an accelerated, efficient way - permitting ZIP unarchiving directly from
+a resource on HTTP (provided that the server supports HTTP ranges).
+
 Check out [the implementation details](IMPLEMENTATION_DETAILS.md) on the design of the library, and
 we have a separate [reference](RUBYZIP_DIFFERENCES.md) on why you might want to use ZipKit over
 Rubyzip and vice versa.
