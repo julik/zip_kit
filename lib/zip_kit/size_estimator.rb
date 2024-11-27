@@ -36,8 +36,11 @@ class ZipKit::SizeEstimator
   #
   # @param filename [String] the name of the file (filenames are variable-width in the ZIP)
   # @param size [Integer] size of the uncompressed entry
-  # @param use_data_descriptor[Boolean] whether the entry uses a postfix
-  # data descriptor to specify size
+  # @param use_data_descriptor[Boolean] whether there is going to be a data descriptor written
+  #                                     after the entry body, to specify size.
+  #                                     You must enable this if you are going to be
+  #                                     using {Streamer#write_stored_file} as otherwise your
+  #                                     estimated size is not going to be accurate
   # @return self
   def add_stored_entry(filename:, size:, use_data_descriptor: false)
     @streamer.add_stored_entry(filename: filename,
@@ -56,8 +59,11 @@ class ZipKit::SizeEstimator
   # @param filename [String] the name of the file (filenames are variable-width in the ZIP)
   # @param uncompressed_size [Integer] size of the uncompressed entry
   # @param compressed_size [Integer] size of the compressed entry
-  # @param use_data_descriptor[Boolean] whether the entry uses a postfix data
-  #                                     descriptor to specify size
+  # @param use_data_descriptor[Boolean] whether there is going to be a data descriptor written
+  #                                     after the entry body, to specify size.
+  #                                     You must enable this if you are going to be
+  #                                     using {Streamer#write_deflated_file} as otherwise your
+  #                                     estimated size is not going to be accurate
   # @return self
   def add_deflated_entry(filename:, uncompressed_size:, compressed_size:, use_data_descriptor: false)
     @streamer.add_deflated_entry(filename: filename,
