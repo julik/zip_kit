@@ -1897,13 +1897,11 @@ end, T.untyped)
 
     # Add a fake entry to the archive, to see how big it is going to be in the end.
     # 
-    # data descriptor to specify size
-    # 
     # _@param_ `filename` — the name of the file (filenames are variable-width in the ZIP)
     # 
     # _@param_ `size` — size of the uncompressed entry
     # 
-    # _@param_ `use_data_descriptor` — whether the entry uses a postfix
+    # _@param_ `use_data_descriptor` — whether there is going to be a data descriptor written after the entry body, to specify size. You must enable this if you are going to be using {Streamer#write_stored_file} as otherwise your estimated size is not going to be accurate
     # 
     # _@return_ — self
     sig { params(filename: String, size: Integer, use_data_descriptor: T::Boolean).returns(T.untyped) }
@@ -1917,7 +1915,7 @@ end, T.untyped)
     # 
     # _@param_ `compressed_size` — size of the compressed entry
     # 
-    # _@param_ `use_data_descriptor` — whether the entry uses a postfix data descriptor to specify size
+    # _@param_ `use_data_descriptor` — whether there is going to be a data descriptor written after the entry body, to specify size. You must enable this if you are going to be using {Streamer#write_deflated_file} as otherwise your estimated size is not going to be accurate
     # 
     # _@return_ — self
     sig do
@@ -2102,6 +2100,17 @@ end, T.untyped)
     # ones - for example, specific content types are needed for files which are, technically, ZIP files
     # but are of a file format built "on top" of ZIPs - such as ODTs, [pkpass files](https://developer.apple.com/documentation/walletpasses/building_a_pass)
     # and ePubs.
+    # 
+    # More value, however, is in the "technical" headers this method will provide. It will take the following steps to make sure streaming works correctly.
+    # 
+    # * `Last-Modified` will be set to "now" so that the response is considered "fresh" by `Rack::ETag`. This is done so that `Rack::ETag` won't try to
+    #      calculate a lax ETag value and thus won't start buffering your response out of nowhere
+    # * `Content-Encoding` will be set to `identity`. This is so that proxies or the Rack middleware that applies compression to the response (like gzip)
+    #      is not going to try to compress your response. It also tells the receiving browsers (or downstream proxies) that they should not attempt to
+    #      open or uncompress the response before saving it or passing it onwards.
+    # * `X-Accel-Buffering` will be set to 'no` - this tells both nginx and the Google Cloud load balancer that the response should not be buffered
+    # 
+    # These header values are known to get as close as possible to guaranteeing streaming on most environments where Ruby web applications may be hosted.
     sig { returns(T::Hash[T.untyped, T.untyped]) }
     def self.streaming_http_headers; end
 
