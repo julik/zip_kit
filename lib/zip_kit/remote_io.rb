@@ -74,7 +74,7 @@ class ZipKit::RemoteIO
   # @param range[Range] the HTTP range of data to fetch from remote
   # @return [String] the response body of the ranged request
   def request_range(range)
-    http = Net::HTTP.start(@uri.hostname, @uri.port)
+    http = Net::HTTP.start(@uri.hostname, @uri.port, use_ssl: @uri.scheme == "https")
     request = Net::HTTP::Get.new(@uri)
     request.range = range
     response = http.request(request)
@@ -91,7 +91,7 @@ class ZipKit::RemoteIO
   #
   # @return [Integer] the size of the remote resource, parsed either from Content-Length or Content-Range header
   def request_object_size
-    http = Net::HTTP.start(@uri.hostname, @uri.port)
+    http = Net::HTTP.start(@uri.hostname, @uri.port, use_ssl: @uri.scheme == "https")
     request = Net::HTTP::Get.new(@uri)
     request.range = 0..0
     response = http.request(request)
