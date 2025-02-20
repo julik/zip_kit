@@ -7,23 +7,35 @@ env:
   BUNDLE_PATH: vendor/bundle
 
 jobs:
-  test:
-    name: Tests and Lint
+  test_baseline_ruby:
+    name: Tests and Lint (Ruby 2.6)
     runs-on: ubuntu-22.04
-    strategy:
-      matrix:
-        ruby:
-          - '2.6'
-          - '3.4'
     steps:
       - name: Checkout
         uses: actions/checkout@v4
       - name: Setup Ruby
         uses: ruby/setup-ruby@v1
         with:
+          ruby-version: '2.6'
           ruby-version: ${{ matrix.ruby }}
           bundler-cache: true
       - name: "Tests"
         run: bundle exec rspec --backtrace --fail-fast
       - name: "Lint"
         run: bundle exec rake standard
+
+  test_newest_ruby:
+    name: Tests (Ruby 3.4)
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.4.1'
+          bundler-cache: true
+      - name: "Tests" # Make the test suite hard-crash on frozen string literal violations
+        env:
+          RUBYOPT: "--enable=frozen-string-literal --debug=frozen-string-literal"
+        run: "bundle exec rspec --backtrace --fail-fast"
