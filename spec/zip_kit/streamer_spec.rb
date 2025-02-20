@@ -273,7 +273,7 @@ describe ZipKit::Streamer do
 
       # Rubyzip does not properly set the encoding of the entries it reads
       expect(second_entry.gp_flags).to eq(2_048)
-      expect(second_entry.name).to eq("второй-файл.bin".dup.force_encoding(Encoding::BINARY))
+      expect(second_entry.name).to eq((+"второй-файл.bin").force_encoding(Encoding::BINARY))
     end
   end
 

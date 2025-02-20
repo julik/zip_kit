@@ -19,7 +19,7 @@ describe ZipKit::WriteAndTell do
       [12, 123, 0, 3].pack("C*")
     ]
 
-    buf = "превед".dup.force_encoding(Encoding::BINARY)
+    buf = (+"превед").force_encoding(Encoding::BINARY)
     writer = described_class.new(buf)
     strs.each { |s| writer << s }
     expect(writer.tell).to eq(79)
@@ -27,8 +27,8 @@ describe ZipKit::WriteAndTell do
   end
 
   it "does not change the encoding of the source string" do
-    str = "текста кусок".dup.force_encoding(Encoding::UTF_8)
-    buf = "превед".dup.force_encoding(Encoding::BINARY)
+    str = (+"текста кусок").force_encoding(Encoding::UTF_8)
+    buf = (+"превед").force_encoding(Encoding::BINARY)
     writer = described_class.new(buf)
     writer << str
     expect(buf.bytesize).to eq(35)
