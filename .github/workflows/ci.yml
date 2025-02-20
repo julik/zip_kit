@@ -8,7 +8,7 @@ env:
 
 jobs:
   test_baseline_ruby:
-    name: Tests and Lint (Ruby 2.6)
+    name: "Tests (Ruby 2.6 baseline)"
     runs-on: ubuntu-22.04
     steps:
       - name: Checkout
@@ -20,11 +20,9 @@ jobs:
           bundler-cache: true
       - name: "Tests"
         run: bundle exec rspec --backtrace --fail-fast
-      - name: "Lint"
-        run: bundle exec rake standard
 
   test_newest_ruby:
-    name: Tests (Ruby 3.4)
+    name: "Tests (Ruby 3.4 with frozen string literals)"
     runs-on: ubuntu-22.04
     steps:
       - name: Checkout
@@ -38,3 +36,17 @@ jobs:
         env:
           RUBYOPT: "--enable=frozen-string-literal --debug=frozen-string-literal"
         run: "bundle exec rspec --backtrace --fail-fast"
+
+  lint_baseline_ruby: # We need to use syntax appropriate for the minimum supported Ruby version
+    name: Lint (Ruby 2.6 syntax)
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '2.6'
+          bundler-cache: true
+      - name: "Lint"
+        run: bundle exec rake standard
