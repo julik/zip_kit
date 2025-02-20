@@ -138,7 +138,7 @@ describe ZipKit::FileReader do
 
       entry = entries.first
 
-      readback = ""
+      readback = +""
       reader = entry.extractor_from(zipfile)
       readback << reader.extract(10) until reader.eof?
 
