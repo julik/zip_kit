@@ -2,7 +2,7 @@ require_relative "../spec_helper"
 
 describe ZipKit::WriteAndTell do
   it "maintains the count of bytes written" do
-    adapter = described_class.new("")
+    adapter = described_class.new(+"")
     expect(adapter.tell).to be_zero
 
     adapter << "hello"
@@ -19,7 +19,7 @@ describe ZipKit::WriteAndTell do
       [12, 123, 0, 3].pack("C*")
     ]
 
-    buf = "превед".force_encoding(Encoding::BINARY)
+    buf = (+"превед").force_encoding(Encoding::BINARY)
     writer = described_class.new(buf)
     strs.each { |s| writer << s }
     expect(writer.tell).to eq(79)
@@ -27,8 +27,8 @@ describe ZipKit::WriteAndTell do
   end
 
   it "does not change the encoding of the source string" do
-    str = "текста кусок".force_encoding(Encoding::UTF_8)
-    buf = "превед".force_encoding(Encoding::BINARY)
+    str = (+"текста кусок").force_encoding(Encoding::UTF_8)
+    buf = (+"превед").force_encoding(Encoding::BINARY)
     writer = described_class.new(buf)
     writer << str
     expect(buf.bytesize).to eq(35)
@@ -60,7 +60,7 @@ describe ZipKit::WriteAndTell do
   end
 
   it "advances the internal pointer using advance_position_by" do
-    str = ""
+    str = +""
 
     adapter = described_class.new(str)
     expect(adapter.tell).to be_zero

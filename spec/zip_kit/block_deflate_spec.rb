@@ -100,7 +100,7 @@ describe ZipKit::BlockDeflate do
 
     it "does not write the end marker" do
       input_string = "compressible" * (1024 * 1024 * 10)
-      output_string = ""
+      output_string = +""
 
       described_class.deflate_in_blocks(StringIO.new(input_string), StringIO.new(output_string))
       expect(output_string).not_to be_empty
@@ -109,7 +109,7 @@ describe ZipKit::BlockDeflate do
 
     it "returns the number of bytes written" do
       input_string = "compressible" * (1024 * 1024 * 10)
-      output_string = ""
+      output_string = +""
 
       num_bytes = described_class.deflate_in_blocks(StringIO.new(input_string),
         StringIO.new(output_string))

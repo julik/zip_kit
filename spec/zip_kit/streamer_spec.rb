@@ -72,7 +72,7 @@ describe ZipKit::Streamer do
     expect(fake_writer).to receive(:write_central_directory_file_header)
     expect(fake_writer).to receive(:write_end_of_central_directory)
 
-    described_class.open("", writer: fake_writer) do |zip|
+    described_class.open(+"", writer: fake_writer) do |zip|
       zip.write_deflated_file("stored.txt") do |sink|
         sink << File.read(__dir__ + "/war-and-peace.txt")
       end
@@ -273,7 +273,7 @@ describe ZipKit::Streamer do
 
       # Rubyzip does not properly set the encoding of the entries it reads
       expect(second_entry.gp_flags).to eq(2_048)
-      expect(second_entry.name).to eq("второй-файл.bin".force_encoding(Encoding::BINARY))
+      expect(second_entry.name).to eq((+"второй-файл.bin").force_encoding(Encoding::BINARY))
     end
   end
 

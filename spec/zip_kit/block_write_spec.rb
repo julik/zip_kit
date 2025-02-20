@@ -33,7 +33,7 @@ describe ZipKit::BlockWrite do
   end
 
   it "can write in all possible encodings, even if the strings are frozen" do
-    accum_string = ""
+    accum_string = +""
     adapter = described_class.new { |s| accum_string << s }
 
     adapter << "hello"
@@ -57,7 +57,7 @@ describe ZipKit::BlockWrite do
 
   it "does not change the encoding of source strings" do
     hello = "hello".encode(Encoding::UTF_8)
-    accum_string = "".force_encoding(Encoding::BINARY)
+    accum_string = (+"").force_encoding(Encoding::BINARY)
     adapter = described_class.new { |s| accum_string << s }
     adapter << hello
     expect(accum_string.encoding).to eq(Encoding::BINARY)

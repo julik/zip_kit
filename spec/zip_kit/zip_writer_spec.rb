@@ -526,7 +526,7 @@ describe ZipKit::ZipWriter do
     end
 
     it "writes out the custom comment" do
-      buf = ""
+      buf = +""
       comment = "Ohai mate"
       subject.write_end_of_central_directory(io: buf,
         start_of_central_directory_location: 9_091_211,
