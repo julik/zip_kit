@@ -17,7 +17,6 @@ jobs:
         uses: ruby/setup-ruby@v1
         with:
           ruby-version: '2.6'
-          ruby-version: ${{ matrix.ruby }}
           bundler-cache: true
       - name: "Tests"
         run: bundle exec rspec --backtrace --fail-fast
