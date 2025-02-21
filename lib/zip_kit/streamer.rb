@@ -5,8 +5,12 @@ require "set"
 # Is used to write ZIP archives without having to read them back or to overwrite
 # data. It outputs into any object that supports `<<` or `write`, namely:
 #
-# An `Array`, `File`, `IO`, `Socket` and even `String` all can be output destinations
-# for the `Streamer`.
+# * `Array` - will contain binary strings
+# * `File` - data will be written to it as it gets generated
+# * `IO` (`Socket`, `StringIO`) - data gets written into it
+# , `IO`, `Socket` and even an unfrozen `String`...
+#
+# or anything else that responds to `#<<` or `#write`.
 #
 # You can also combine output through the `Streamer` with direct output to the destination,
 # all while preserving the correct offsets in the ZIP file structures. This allows usage
