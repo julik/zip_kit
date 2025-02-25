@@ -93,7 +93,7 @@ describe ZipKit::FileReader do
         def write_end_of_central_directory(**kwargs)
           # Pretend there has to be more data
           kwargs[:central_directory_size] = kwargs[:central_directory_size] + 64
-          super(**kwargs)
+          super
         end
       end
 

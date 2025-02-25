@@ -3,7 +3,7 @@ require_relative "../spec_helper"
 describe ZipKit::ZipWriter do
   class ByteReader < Struct.new(:io)
     def initialize(io)
-      super(io).tap { io.rewind }
+      super.tap { io.rewind }
     end
 
     def read_1b

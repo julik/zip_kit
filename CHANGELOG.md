@@ -1,3 +1,8 @@
+## 6.3.2
+
+* Make sure `rollback!` correctly works with `write_file` and the original exception gets re-raised from `write_file` if
+  closing the current entry happens in `Writable#close`
+
 ## 6.3.1
 
 * Include `RailsStreaming` in a Rails loader callback, so that ActionController does not need to be in the namespace.
