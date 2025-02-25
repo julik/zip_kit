@@ -486,6 +486,10 @@ class ZipKit::Streamer
   # is likely already on the wire. However, excluding the entry from the central directory of the ZIP
   # file will allow better-behaved ZIP unarchivers to extract the entries which did store correctly,
   # provided they read the ZIP from the central directory and not straight-ahead.
+  # Rolling back does not perform any writes.
+  #
+  # `rollback!` gets called for you if an exception is raised inside the block of `write_file`,
+  # `write_deflated_file` and `write_stored_file`.
   #
   # @example
   #     zip.add_stored_entry(filename: "data.bin", size: 4.megabytes, crc32: the_crc)
