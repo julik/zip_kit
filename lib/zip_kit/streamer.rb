@@ -8,7 +8,7 @@ require "set"
 # * `Array` - will contain binary strings
 # * `File` - data will be written to it as it gets generated
 # * `IO` (`Socket`, `StringIO`) - data gets written into it
-# , `IO`, `Socket` and even an unfrozen `String`...
+# * `String` - in binary encoding and unfrozen - also makes a decent output target
 #
 # or anything else that responds to `#<<` or `#write`.
 #
