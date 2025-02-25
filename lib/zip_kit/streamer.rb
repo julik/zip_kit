@@ -497,14 +497,17 @@ class ZipKit::Streamer
   #     end
   # @return [Integer] position in the output stream / ZIP archive
   def rollback!
-    removed_entry = @files.pop
-    return @out.tell unless removed_entry
+    @files.pop if @remove_last_file_at_rollback = false
 
+    # Recreate the path set from remaining entries (PathSet does not support cheap deletes yet)
     @path_set.clear
     @files.each do |e|
       @path_set.add_directory_or_file_path(e.filename) unless e.filler?
     end
-    @files << Filler.new(@out.tell - removed_entry.local_header_offset)
+
+    # Create filler for the truncated or unusable local file entry that did get written into the output
+    filler_size_bytes = @out.tell - @offset_before_last_local_file_header
+    @files << Filler.new(filler_size_bytes)
 
     @out.tell
   end
@@ -559,6 +562,12 @@ class ZipKit::Streamer
     unix_permissions:
   )
 
+    # Set state needed for proper rollback later. If write_local_file_header
+    # does manage to write _some_ bytes, but fails later (we write in tiny bits sometimes)
+    # we should be able to create a filler from this offset on when we 
+    @offset_before_last_local_file_header = @out.tell
+    @remove_last_file_at_rollback = false
+
     # Clean backslashes
     filename = remove_backslash(filename)
     raise UnknownMode, "Unknown compression mode #{storage_mode}" unless [STORED, DEFLATED].include?(storage_mode)
@@ -604,9 +613,11 @@ class ZipKit::Streamer
       mtime: e.mtime,
       filename: e.filename,
       storage_mode: e.storage_mode)
+
     e.bytes_used_for_local_header = @out.tell - e.local_header_offset
 
     @files << e
+    @remove_last_file_at_rollback = true
   end
 
   def remove_backslash(filename)

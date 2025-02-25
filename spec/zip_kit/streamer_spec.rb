@@ -640,25 +640,39 @@ describe ZipKit::Streamer do
     expect(per_filename["stored.txt"]).to eq("this is attempt 2")
   end
 
-  it "correctly rolls back if an exception is raised after the local entry has been written in write_file" do
+  it "correctly rolls back if an exception is raised from Writable#close when using write_file" do
     # A Unicode string will not be happy about binary writes
     # and will raise an exception. The exception won't be raised when
-    # starting the writes, but in `#close` of the Writable. If this is not handled correctly,
-    # the exception we will get raised won't be the original exception (Encoding::CompatibilityError that
-    # we need to see - to know what went wrong inside the writing block) but a duplicate zip entry exception.
+    # starting the writes, but in `#close` of the Writable with write_file. When the size of the byte
+    # stream is small, the decision whether to call write_stored_file or write_deflated_file is going to
+    # be deferred until the Writable gets close() called on it. In that situation a correct rollback
+    # must be performed.
+    # If this is not handled correctly, the exception we will get raised won't be the original exception
+    # (Encoding::CompatibilityError that we need to see - to know what went wrong inside the writing block)
+    # but a PathSet::Conflict duplicate zip entry exception. Also, the IO offsets will be out of whack.
     # To cause this, we need something that will raise during `Writable#close` - we will use a Unicode string
     # for that purpose. See https://github.com/julik/zip_kit/issues/15
-    uniсode_str_buf = "Ж"
-    described_class.open(uniсode_str_buf) do |zip|
-      4.times do
-        begin
-          zip.write_file("deflated.txt") do |sink|
-            sink.write("x")
-          end
-        rescue => e
-          expect(e).to be_kind_of(Encoding::CompatibilityError)
+    uniсode_str_buf = +"Ж"
+
+    zip = described_class.new(uniсode_str_buf)
+    4.times do
+      bytes_before_partial_write = uniсode_str_buf.bytesize
+      expect {
+        zip.write_file("deflated.txt") do |sink|
+          sink.write("x")
         end
-      end
+      }.to raise_error(Encoding::CompatibilityError) # Should not be a PathSet::Conflict
+
+      # Ensure there was a partial write
+      expect(uniсode_str_buf.bytesize - bytes_before_partial_write).to be > 0
     end
+
+    # We must force the string into binary so that the ZIP can be closed - we
+    # want to write out the EOCD since we want to make sure there is no byte offset
+    # mismatch (fillers have been correctly produced)
+    uniсode_str_buf.force_encoding(Encoding::BINARY)
+    expect {
+      zip.close
+    }.not_to raise_error # Offset validation should pass
   end
 end
