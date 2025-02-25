@@ -26,6 +26,7 @@ class ZipKit::Streamer::Heuristic < ZipKit::Streamer::Writable
     @bytes_deflated = 0
 
     @winner = nil
+    @started_closing = false
   end
 
   def <<(bytes)
@@ -40,6 +41,9 @@ class ZipKit::Streamer::Heuristic < ZipKit::Streamer::Writable
   end
 
   def close
+    return if @started_closing
+    @started_closing = true # started_closing because an exception may get raised inside close(), as we add an entry there
+
     decide unless @winner
     @winner.close
   end
@@ -47,6 +51,7 @@ class ZipKit::Streamer::Heuristic < ZipKit::Streamer::Writable
   private def decide
     # Finish and then close the deflater - it has likely buffered some data
     @bytes_deflated += @deflater.finish.bytesize until @deflater.finished?
+
     # If the deflated version is smaller than the stored one
     # - use deflate, otherwise stored
     ratio = @bytes_deflated / @buf.size.to_f
@@ -55,9 +60,12 @@ class ZipKit::Streamer::Heuristic < ZipKit::Streamer::Writable
     else
       @streamer.write_stored_file(@filename, **@write_file_options)
     end
+
     # Copy the buffered uncompressed data into the newly initialized writable
     @buf.rewind
     IO.copy_stream(@buf, @winner)
     @buf.truncate(0)
+  ensure
+    @deflater.close
   end
 end

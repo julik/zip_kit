@@ -5,8 +5,12 @@ require "set"
 # Is used to write ZIP archives without having to read them back or to overwrite
 # data. It outputs into any object that supports `<<` or `write`, namely:
 #
-# An `Array`, `File`, `IO`, `Socket` and even `String` all can be output destinations
-# for the `Streamer`.
+# * `Array` - will contain binary strings
+# * `File` - data will be written to it as it gets generated
+# * `IO` (`Socket`, `StringIO`) - data gets written into it
+# * `String` - in binary encoding and unfrozen - also makes a decent output target
+#
+# or anything else that responds to `#<<` or `#write`.
 #
 # You can also combine output through the `Streamer` with direct output to the destination,
 # all while preserving the correct offsets in the ZIP file structures. This allows usage
@@ -482,6 +486,10 @@ class ZipKit::Streamer
   # is likely already on the wire. However, excluding the entry from the central directory of the ZIP
   # file will allow better-behaved ZIP unarchivers to extract the entries which did store correctly,
   # provided they read the ZIP from the central directory and not straight-ahead.
+  # Rolling back does not perform any writes.
+  #
+  # `rollback!` gets called for you if an exception is raised inside the block of `write_file`,
+  # `write_deflated_file` and `write_stored_file`.
   #
   # @example
   #     zip.add_stored_entry(filename: "data.bin", size: 4.megabytes, crc32: the_crc)
@@ -493,14 +501,17 @@ class ZipKit::Streamer
   #     end
   # @return [Integer] position in the output stream / ZIP archive
   def rollback!
-    removed_entry = @files.pop
-    return @out.tell unless removed_entry
+    @files.pop if @remove_last_file_at_rollback
 
+    # Recreate the path set from remaining entries (PathSet does not support cheap deletes yet)
     @path_set.clear
     @files.each do |e|
       @path_set.add_directory_or_file_path(e.filename) unless e.filler?
     end
-    @files << Filler.new(@out.tell - removed_entry.local_header_offset)
+
+    # Create filler for the truncated or unusable local file entry that did get written into the output
+    filler_size_bytes = @out.tell - @offset_before_last_local_file_header
+    @files << Filler.new(filler_size_bytes)
 
     @out.tell
   end
@@ -554,6 +565,11 @@ class ZipKit::Streamer
     use_data_descriptor:,
     unix_permissions:
   )
+    # Set state needed for proper rollback later. If write_local_file_header
+    # does manage to write _some_ bytes, but fails later (we write in tiny bits sometimes)
+    # we should be able to create a filler from this offset on when we
+    @offset_before_last_local_file_header = @out.tell
+    @remove_last_file_at_rollback = false
 
     # Clean backslashes
     filename = remove_backslash(filename)
@@ -600,9 +616,11 @@ class ZipKit::Streamer
       mtime: e.mtime,
       filename: e.filename,
       storage_mode: e.storage_mode)
+
     e.bytes_used_for_local_header = @out.tell - e.local_header_offset
 
     @files << e
+    @remove_last_file_at_rollback = true
   end
 
   def remove_backslash(filename)
