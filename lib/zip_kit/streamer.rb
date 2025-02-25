@@ -497,7 +497,7 @@ class ZipKit::Streamer
   #     end
   # @return [Integer] position in the output stream / ZIP archive
   def rollback!
-    @files.pop if @remove_last_file_at_rollback = false
+    @files.pop if @remove_last_file_at_rollback
 
     # Recreate the path set from remaining entries (PathSet does not support cheap deletes yet)
     @path_set.clear
