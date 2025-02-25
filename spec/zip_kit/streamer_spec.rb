@@ -639,4 +639,26 @@ describe ZipKit::Streamer do
     expect(per_filename["deflated.txt"]).to eq("this is attempt 2")
     expect(per_filename["stored.txt"]).to eq("this is attempt 2")
   end
+
+  it "correctly rolls back if an exception is raised after the local entry has been written in write_file" do
+    # A Unicode string will not be happy about binary writes
+    # and will raise an exception. The exception won't be raised when
+    # starting the writes, but in `#close` of the Writable. If this is not handled correctly,
+    # the exception we will get raised won't be the original exception (Encoding::CompatibilityError that
+    # we need to see - to know what went wrong inside the writing block) but a duplicate zip entry exception.
+    # To cause this, we need something that will raise during `Writable#close` - we will use a Unicode string
+    # for that purpose. See https://github.com/julik/zip_kit/issues/15
+    uniсode_str_buf = "Ж"
+    described_class.open(uniсode_str_buf) do |zip|
+      4.times do
+        begin
+          zip.write_file("deflated.txt") do |sink|
+            sink.write("x")
+          end
+        rescue => e
+          expect(e).to be_kind_of(Encoding::CompatibilityError)
+        end
+      end
+    end
+  end
 end
