@@ -565,10 +565,9 @@ class ZipKit::Streamer
     use_data_descriptor:,
     unix_permissions:
   )
-
     # Set state needed for proper rollback later. If write_local_file_header
     # does manage to write _some_ bytes, but fails later (we write in tiny bits sometimes)
-    # we should be able to create a filler from this offset on when we 
+    # we should be able to create a filler from this offset on when we
     @offset_before_last_local_file_header = @out.tell
     @remove_last_file_at_rollback = false
 
