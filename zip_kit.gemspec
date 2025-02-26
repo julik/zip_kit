@@ -12,6 +12,11 @@ Gem::Specification.new do |spec|
   spec.description = "Stream out ZIP files from Ruby. Successor to zip_tricks."
   spec.homepage = "https://github.com/julik/zip_kit"
 
+  # The homepage link on rubygems.org only appears if you add homepage_uri. Just spec.homepage is not enough.
+  spec.metadata["homepage_uri"] = spec.homepage
+  spec.metadata["source_code_uri"] = spec.homepage
+  spec.metadata["changelog_uri"] = "#{spec.homepage}/blob/main/CHANGELOG.md"
+
   spec.required_ruby_version = ">= 2.6.0"
 
   spec.metadata["allowed_push_host"] = "https://rubygems.org"
