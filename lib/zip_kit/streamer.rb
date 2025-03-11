@@ -524,7 +524,7 @@ class ZipKit::Streamer
         yield(writable)
         writable.close
       rescue
-        writable.close
+        writable.release_resources_on_failure!
         rollback!
         raise
       end

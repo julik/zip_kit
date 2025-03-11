@@ -13,6 +13,8 @@ require "zlib"
 # on the Streamer passed into it once it knows which compression
 # method should be applied
 class ZipKit::Streamer::Heuristic < ZipKit::Streamer::Writable
+  include ZipKit::ZlibCleanup
+
   BYTES_WRITTEN_THRESHOLD = 128 * 1024
   MINIMUM_VIABLE_COMPRESSION = 0.75
 
@@ -46,6 +48,11 @@ class ZipKit::Streamer::Heuristic < ZipKit::Streamer::Writable
 
     decide unless @winner
     @winner.close
+  end
+
+  def release_resources_on_failure!
+    safely_dispose_of_incomplete_deflater(@deflater)
+    @winner&.release_resources_on_failure!
   end
 
   private def decide
