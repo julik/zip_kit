@@ -5,6 +5,7 @@
 # interchangeable with the StoredWriter in terms of interface.
 class ZipKit::Streamer::DeflatedWriter
   include ZipKit::WriteShovel
+  include ZipKit::ZlibCleanup
 
   # The amount of bytes we will buffer before computing the intermediate
   # CRC32 checksums. Benchmarks show that the optimum is 64KB (see
@@ -41,5 +42,9 @@ class ZipKit::Streamer::DeflatedWriter
     {crc32: @crc.to_i, compressed_size: @deflater.total_out, uncompressed_size: @deflater.total_in}
   ensure
     @deflater.close
+  end
+
+  def release_resources_on_failure!
+    safely_dispose_of_incomplete_deflater(@deflater)
   end
 end

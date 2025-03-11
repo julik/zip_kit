@@ -1,3 +1,9 @@
+* When rescuing a failed `write_file`, differentiate between `#close`
+  and `#release_resources_on_failure!`. Closing a Writable can still try
+  to do things to the Streamer output, it can try to write to the destination
+  IO which is no longer accepting writes and so on. What we do want is to
+  safely destroy the zlib deflaters.
+
 ## 6.3.2
 
 * Make sure `rollback!` correctly works with `write_file` and the original exception gets re-raised from `write_file` if

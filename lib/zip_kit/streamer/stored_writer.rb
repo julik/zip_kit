@@ -36,4 +36,8 @@ class ZipKit::Streamer::StoredWriter
     @crc.flush
     {crc32: @crc_compute.to_i, compressed_size: @io.tell, uncompressed_size: @io.tell}
   end
+
+  def release_resources_on_failure!
+    # Nothing to do
+  end
 end

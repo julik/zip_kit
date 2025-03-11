@@ -33,4 +33,10 @@ class ZipKit::Streamer::Writable
     @streamer.update_last_entry_and_write_data_descriptor(**@writer.finish)
     @closed = true
   end
+
+  def release_resources_on_failure!
+    return if @closed
+    @closed = true
+    @writer.release_resources_on_failure!
+  end
 end
