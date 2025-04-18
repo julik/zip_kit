@@ -18,11 +18,11 @@ class ZipKit::Streamer::Writable
 
   # Writes the given data to the output stream
   #
-  # @param d[String] the binary string to write (part of the uncompressed file)
+  # @param string[String] the string to write (part of the uncompressed file)
   # @return [self]
-  def <<(d)
+  def <<(string)
     raise "Trying to write to a closed Writable" if @closed
-    @writer << d
+    @writer << string.b
     self
   end
 
