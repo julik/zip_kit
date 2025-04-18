@@ -20,6 +20,19 @@ describe ZipKit::Streamer::Writable do
       subject.close
       expect { subject << "foo" }.to raise_error(/closed/)
     end
+
+    it "only passes binary strings to the target" do
+      fake_streamer = double
+      fake_deflater = Object.new
+      def fake_deflater.<<(data)
+        raise "data passed must be in binary" unless data.encoding == Encoding::BINARY
+      end
+
+      subject = described_class.new(fake_streamer, fake_deflater)
+      expect {
+        subject << "é"
+      }.not_to raise_error
+    end
   end
 
   describe "#close" do

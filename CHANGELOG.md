@@ -1,3 +1,6 @@
+## 6.3.3
+
+* Make sure `Writable#<<` converts the strings it is given into binary if they are not already in binary. This fixes an issue where `Heuristic` would suddenly start forwarding strings as-is to downstream callees.
 * When rescuing a failed `write_file`, differentiate between `#close`
   and `#release_resources_on_failure!`. Closing a Writable can still try
   to do things to the Streamer output, it can try to write to the destination
