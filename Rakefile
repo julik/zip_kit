@@ -15,6 +15,7 @@ RSpec::Core::RakeTask.new(:spec)
 
 task :generate_typedefs do
   `bundle exec sord rbi/zip_kit.rbi`
+  `bundle exec sord rbi/zip_kit.rbs`
 end
 
 task default: [:spec, :standard, :generate_typedefs]
