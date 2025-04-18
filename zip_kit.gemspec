@@ -43,7 +43,7 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency "benchmark-ips"
   spec.add_development_dependency "allocation_stats", "~> 0.1.5"
   spec.add_development_dependency "yard", "~> 0.9"
-  spec.add_development_dependency "standard", "1.28.5" # Very specific version of standard for 2.6 with _known_ settings
+  spec.add_development_dependency "standard"
   spec.add_development_dependency "magic_frozen_string_literal"
   spec.add_development_dependency "puma"
   spec.add_development_dependency "mutex_m" # Some deps use it but it is no longer in stdlib since 3.4
