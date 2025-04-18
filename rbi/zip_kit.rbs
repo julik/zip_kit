@@ -1,6 +1,5 @@
-# typed: strong
 module ZipKit
-  VERSION = T.let("6.3.3", T.untyped)
+  VERSION: untyped
 
   class Railtie < Rails::Railtie
   end
@@ -42,8 +41,7 @@ module ZipKit
   # one for directories and one for files. It will raise a `Conflict` exception if there are
   # files clobbering one another, or in case files collide with directories.
   class PathSet
-    sig { void }
-    def initialize; end
+    def initialize: () -> void
 
     # Adds a directory path to the set of known paths, including
     # all the directories that contain it. So, calling
@@ -51,8 +49,7 @@ module ZipKit
     # will add "dir", "dir/dir2", "dir/dir2/dir3".
     # 
     # _@param_ `path` — the path to the directory to add
-    sig { params(path: String).void }
-    def add_directory_path(path); end
+    def add_directory_path: (String path) -> void
 
     # Adds a file path to the set of known paths, including
     # all the directories that contain it. Once a file has been added,
@@ -64,34 +61,28 @@ module ZipKit
     # will add "dir" and "dir/dir2" as directories, "dir/dir2/dir3".
     # 
     # _@param_ `file_path` — the path to the directory to add
-    sig { params(file_path: String).void }
-    def add_file_path(file_path); end
+    def add_file_path: (String file_path) -> void
 
     # Tells whether a specific full path is already known to the PathSet.
     # Can be a path for a directory or for a file.
     # 
     # _@param_ `path_in_archive` — the path to check for inclusion
-    sig { params(path_in_archive: String).returns(T::Boolean) }
-    def include?(path_in_archive); end
+    def include?: (String path_in_archive) -> bool
 
     # Clears the contained sets
-    sig { void }
-    def clear; end
+    def clear: () -> void
 
     # sord omit - no YARD type given for "path_in_archive", using untyped
     # Adds the directory or file path to the path set
-    sig { params(path_in_archive: T.untyped).void }
-    def add_directory_or_file_path(path_in_archive); end
+    def add_directory_or_file_path: (untyped path_in_archive) -> void
 
     # sord omit - no YARD type given for "path", using untyped
     # sord omit - no YARD return type given, using untyped
-    sig { params(path: T.untyped).returns(T.untyped) }
-    def non_empty_path_components(path); end
+    def non_empty_path_components: (untyped path) -> untyped
 
     # sord omit - no YARD type given for "path", using untyped
     # sord omit - no YARD return type given, using untyped
-    sig { params(path: T.untyped).returns(T.untyped) }
-    def path_and_ancestors(path); end
+    def path_and_ancestors: (untyped path) -> untyped
 
     class Conflict < StandardError
     end
@@ -188,13 +179,13 @@ module ZipKit
   # Calling {Streamer#close} **will not** call `#close` on the underlying IO object.
   class Streamer
     include ZipKit::WriteShovel
-    STORED = T.let(0, T.untyped)
-    DEFLATED = T.let(8, T.untyped)
-    EntryBodySizeMismatch = T.let(Class.new(StandardError), T.untyped)
-    InvalidOutput = T.let(Class.new(ArgumentError), T.untyped)
-    Overflow = T.let(Class.new(StandardError), T.untyped)
-    UnknownMode = T.let(Class.new(StandardError), T.untyped)
-    OffsetOutOfSync = T.let(Class.new(StandardError), T.untyped)
+    STORED: untyped
+    DEFLATED: untyped
+    EntryBodySizeMismatch: untyped
+    InvalidOutput: untyped
+    Overflow: untyped
+    UnknownMode: untyped
+    OffsetOutOfSync: untyped
 
     # sord omit - no YARD return type given, using untyped
     # Creates a new Streamer on top of the given IO-ish object and yields it. Once the given block
@@ -204,8 +195,7 @@ module ZipKit
     # _@param_ `stream` — the destination IO for the ZIP (should respond to `tell` and `<<`)
     # 
     # _@param_ `kwargs_for_new` — keyword arguments for #initialize
-    sig { params(stream: IO, kwargs_for_new: T::Hash[T.untyped, T.untyped]).returns(T.untyped) }
-    def self.open(stream, **kwargs_for_new); end
+    def self.open: (IO stream, **::Hash[untyped, untyped] kwargs_for_new) -> untyped
 
     # sord duck - #<< looks like a duck type, replacing with untyped
     # Creates a new Streamer on top of the given IO-ish object.
@@ -215,16 +205,14 @@ module ZipKit
     # _@param_ `writer` — the object to be used as the writer. Defaults to an instance of ZipKit::ZipWriter, normally you won't need to override it
     # 
     # _@param_ `auto_rename_duplicate_filenames` — whether duplicate filenames, when encountered, should be suffixed with (1), (2) etc. Default value is `false` - if dupliate names are used an exception will be raised
-    sig { params(writable: T.untyped, writer: ZipKit::ZipWriter, auto_rename_duplicate_filenames: T::Boolean).void }
-    def initialize(writable, writer: create_writer, auto_rename_duplicate_filenames: false); end
+    def initialize: (untyped writable, ?writer: ZipKit::ZipWriter, ?auto_rename_duplicate_filenames: bool) -> void
 
     # Writes a part of a zip entry body (actual binary data of the entry) into the output stream.
     # 
     # _@param_ `binary_data` — a String in binary encoding
     # 
     # _@return_ — self
-    sig { params(binary_data: String).returns(T.untyped) }
-    def <<(binary_data); end
+    def <<: (String binary_data) -> untyped
 
     # Advances the internal IO pointer to keep the offsets of the ZIP file in
     # check. Use this if you are going to use accelerated writes to the socket
@@ -234,8 +222,7 @@ module ZipKit
     # _@param_ `num_bytes` — how many bytes are going to be written bypassing the Streamer
     # 
     # _@return_ — position in the output stream / ZIP archive
-    sig { params(num_bytes: Integer).returns(Integer) }
-    def simulate_write(num_bytes); end
+    def simulate_write: (Integer num_bytes) -> Integer
 
     # Writes out the local header for an entry (file in the ZIP) that is using
     # the deflated storage model (is compressed). Once this method is called,
@@ -260,18 +247,15 @@ module ZipKit
     # _@param_ `unix_permissions` — which UNIX permissions to set, normally the default should be used
     # 
     # _@return_ — the offset the output IO is at after writing the entry header
-    sig do
-      params(
-        filename: String,
-        modification_time: Time,
-        compressed_size: Integer,
-        uncompressed_size: Integer,
-        crc32: Integer,
-        unix_permissions: T.nilable(Integer),
-        use_data_descriptor: T::Boolean
-      ).returns(Integer)
-    end
-    def add_deflated_entry(filename:, modification_time: Time.now.utc, compressed_size: 0, uncompressed_size: 0, crc32: 0, unix_permissions: nil, use_data_descriptor: false); end
+    def add_deflated_entry: (
+                              filename: String,
+                              ?modification_time: Time,
+                              ?compressed_size: Integer,
+                              ?uncompressed_size: Integer,
+                              ?crc32: Integer,
+                              ?unix_permissions: Integer?,
+                              ?use_data_descriptor: bool
+                            ) -> Integer
 
     # Writes out the local header for an entry (file in the ZIP) that is using
     # the stored storage model (is stored as-is).
@@ -291,17 +275,14 @@ module ZipKit
     # _@param_ `unix_permissions` — which UNIX permissions to set, normally the default should be used
     # 
     # _@return_ — the offset the output IO is at after writing the entry header
-    sig do
-      params(
-        filename: String,
-        modification_time: Time,
-        size: Integer,
-        crc32: Integer,
-        unix_permissions: T.nilable(Integer),
-        use_data_descriptor: T::Boolean
-      ).returns(Integer)
-    end
-    def add_stored_entry(filename:, modification_time: Time.now.utc, size: 0, crc32: 0, unix_permissions: nil, use_data_descriptor: false); end
+    def add_stored_entry: (
+                            filename: String,
+                            ?modification_time: Time,
+                            ?size: Integer,
+                            ?crc32: Integer,
+                            ?unix_permissions: Integer?,
+                            ?use_data_descriptor: bool
+                          ) -> Integer
 
     # Adds an empty directory to the archive with a size of 0 and permissions of 755.
     # 
@@ -312,8 +293,7 @@ module ZipKit
     # _@param_ `unix_permissions` — which UNIX permissions to set, normally the default should be used
     # 
     # _@return_ — the offset the output IO is at after writing the entry header
-    sig { params(dirname: String, modification_time: Time, unix_permissions: T.nilable(Integer)).returns(Integer) }
-    def add_empty_directory(dirname:, modification_time: Time.now.utc, unix_permissions: nil); end
+    def add_empty_directory: (dirname: String, ?modification_time: Time, ?unix_permissions: Integer?) -> Integer
 
     # Opens the stream for a file stored in the archive, and yields a writer
     # for that file to the block.
@@ -357,15 +337,7 @@ module ZipKit
     # _@param_ `unix_permissions` — which UNIX permissions to set, normally the default should be used
     # 
     # _@return_ — without a block - the Writable sink which has to be closed manually
-    sig do
-      params(
-        filename: String,
-        modification_time: Time,
-        unix_permissions: T.nilable(Integer),
-        blk: T.proc.params(sink: ZipKit::Streamer::Writable).void
-      ).returns(ZipKit::Streamer::Writable)
-    end
-    def write_file(filename, modification_time: Time.now.utc, unix_permissions: nil, &blk); end
+    def write_file: (String filename, ?modification_time: Time, ?unix_permissions: Integer?) ?{ (ZipKit::Streamer::Writable sink) -> void } -> ZipKit::Streamer::Writable
 
     # Opens the stream for a stored file in the archive, and yields a writer
     # for that file to the block.
@@ -411,15 +383,7 @@ module ZipKit
     # _@param_ `unix_permissions` — which UNIX permissions to set, normally the default should be used
     # 
     # _@return_ — without a block - the Writable sink which has to be closed manually
-    sig do
-      params(
-        filename: String,
-        modification_time: Time,
-        unix_permissions: T.nilable(Integer),
-        blk: T.proc.params(sink: ZipKit::Streamer::Writable).void
-      ).returns(ZipKit::Streamer::Writable)
-    end
-    def write_stored_file(filename, modification_time: Time.now.utc, unix_permissions: nil, &blk); end
+    def write_stored_file: (String filename, ?modification_time: Time, ?unix_permissions: Integer?) ?{ (ZipKit::Streamer::Writable sink) -> void } -> ZipKit::Streamer::Writable
 
     # Opens the stream for a deflated file in the archive, and yields a writer
     # for that file to the block. Once the write completes, a data descriptor
@@ -467,15 +431,7 @@ module ZipKit
     # _@param_ `unix_permissions` — which UNIX permissions to set, normally the default should be used
     # 
     # _@return_ — without a block - the Writable sink which has to be closed manually
-    sig do
-      params(
-        filename: String,
-        modification_time: Time,
-        unix_permissions: T.nilable(Integer),
-        blk: T.proc.params(sink: ZipKit::Streamer::Writable).void
-      ).returns(ZipKit::Streamer::Writable)
-    end
-    def write_deflated_file(filename, modification_time: Time.now.utc, unix_permissions: nil, &blk); end
+    def write_deflated_file: (String filename, ?modification_time: Time, ?unix_permissions: Integer?) ?{ (ZipKit::Streamer::Writable sink) -> void } -> ZipKit::Streamer::Writable
 
     # Closes the archive. Writes the central directory, and switches the writer into
     # a state where it can no longer be written to.
@@ -483,16 +439,14 @@ module ZipKit
     # Once this method is called, the `Streamer` should be discarded (the ZIP archive is complete).
     # 
     # _@return_ — the offset the output IO is at after closing the archive
-    sig { returns(Integer) }
-    def close; end
+    def close: () -> Integer
 
     # Sets up the ZipWriter with wrappers if necessary. The method is called once, when the Streamer
     # gets instantiated - the Writer then gets reused. This method is primarily there so that you
     # can override it.
     # 
     # _@return_ — the writer to perform writes with
-    sig { returns(ZipKit::ZipWriter) }
-    def create_writer; end
+    def create_writer: () -> ZipKit::ZipWriter
 
     # Updates the last entry written with the CRC32 checksum and compressed/uncompressed
     # sizes. For stored entries, `compressed_size` and `uncompressed_size` are the same.
@@ -506,8 +460,7 @@ module ZipKit
     # _@param_ `uncompressed_size` — the size of the entry once uncompressed
     # 
     # _@return_ — the offset the output IO is at after writing the data descriptor
-    sig { params(crc32: Integer, compressed_size: Integer, uncompressed_size: Integer).returns(Integer) }
-    def update_last_entry_and_write_data_descriptor(crc32:, compressed_size:, uncompressed_size:); end
+    def update_last_entry_and_write_data_descriptor: (crc32: Integer, compressed_size: Integer, uncompressed_size: Integer) -> Integer
 
     # Removes the buffered local entry for the last file written. This can be used when rescuing from exceptions
     # when you want to skip the file that failed writing into the ZIP from getting written out into the
@@ -534,17 +487,14 @@ module ZipKit
     #   # and proceed to the next file
     # end
     # ```
-    sig { returns(Integer) }
-    def rollback!; end
+    def rollback!: () -> Integer
 
     # sord omit - no YARD type given for "writable", using untyped
     # sord omit - no YARD return type given, using untyped
-    sig { params(writable: T.untyped, block_to_pass_writable_to: T.untyped).returns(T.untyped) }
-    def yield_or_return_writable(writable, &block_to_pass_writable_to); end
+    def yield_or_return_writable: (untyped writable) -> untyped
 
     # sord omit - no YARD return type given, using untyped
-    sig { returns(T.untyped) }
-    def verify_offsets!; end
+    def verify_offsets!: () -> untyped
 
     # sord omit - no YARD type given for "filename:", using untyped
     # sord omit - no YARD type given for "modification_time:", using untyped
@@ -555,24 +505,20 @@ module ZipKit
     # sord omit - no YARD type given for "use_data_descriptor:", using untyped
     # sord omit - no YARD type given for "unix_permissions:", using untyped
     # sord omit - no YARD return type given, using untyped
-    sig do
-      params(
-        filename: T.untyped,
-        modification_time: T.untyped,
-        crc32: T.untyped,
-        storage_mode: T.untyped,
-        compressed_size: T.untyped,
-        uncompressed_size: T.untyped,
-        use_data_descriptor: T.untyped,
-        unix_permissions: T.untyped
-      ).returns(T.untyped)
-    end
-    def add_file_and_write_local_header(filename:, modification_time:, crc32:, storage_mode:, compressed_size:, uncompressed_size:, use_data_descriptor:, unix_permissions:); end
+    def add_file_and_write_local_header: (
+                                           filename: untyped,
+                                           modification_time: untyped,
+                                           crc32: untyped,
+                                           storage_mode: untyped,
+                                           compressed_size: untyped,
+                                           uncompressed_size: untyped,
+                                           use_data_descriptor: untyped,
+                                           unix_permissions: untyped
+                                         ) -> untyped
 
     # sord omit - no YARD type given for "filename", using untyped
     # sord omit - no YARD return type given, using untyped
-    sig { params(filename: T.untyped).returns(T.untyped) }
-    def remove_backslash(filename); end
+    def remove_backslash: (untyped filename) -> untyped
 
     # Writes the given data to the output stream. Allows the object to be used as
     # a target for `IO.copy_stream(from, to)`
@@ -580,18 +526,15 @@ module ZipKit
     # _@param_ `bytes` — the binary string to write (part of the uncompressed file)
     # 
     # _@return_ — the number of bytes written (will always be the bytesize of `bytes`)
-    sig { params(bytes: String).returns(Integer) }
-    def write(bytes); end
+    def write: (String bytes) -> Integer
 
     # Is used internally by Streamer to keep track of entries in the archive during writing.
     # Normally you will not have to use this class directly
     class Entry < Struct
-      sig { void }
-      def initialize; end
+      def initialize: () -> void
 
       # sord omit - no YARD return type given, using untyped
-      sig { returns(T.untyped) }
-      def total_bytes_used; end
+      def total_bytes_used: () -> untyped
 
       # sord omit - no YARD return type given, using untyped
       # Set the general purpose flags for the entry. We care about is the EFS
@@ -599,66 +542,51 @@ module ZipKit
       # bit so that the unarchiving application knows that the filename in the archive is UTF-8
       # encoded, and not some DOS default. For ASCII entries it does not matter.
       # Additionally, we care about bit 3 which toggles the use of the postfix data descriptor.
-      sig { returns(T.untyped) }
-      def gp_flags; end
+      def gp_flags: () -> untyped
 
-      sig { returns(T::Boolean) }
-      def filler?; end
+      def filler?: () -> bool
 
       # Returns the value of attribute filename
-      sig { returns(Object) }
-      attr_accessor :filename
+      attr_accessor filename: Object
 
       # Returns the value of attribute crc32
-      sig { returns(Object) }
-      attr_accessor :crc32
+      attr_accessor crc32: Object
 
       # Returns the value of attribute compressed_size
-      sig { returns(Object) }
-      attr_accessor :compressed_size
+      attr_accessor compressed_size: Object
 
       # Returns the value of attribute uncompressed_size
-      sig { returns(Object) }
-      attr_accessor :uncompressed_size
+      attr_accessor uncompressed_size: Object
 
       # Returns the value of attribute storage_mode
-      sig { returns(Object) }
-      attr_accessor :storage_mode
+      attr_accessor storage_mode: Object
 
       # Returns the value of attribute mtime
-      sig { returns(Object) }
-      attr_accessor :mtime
+      attr_accessor mtime: Object
 
       # Returns the value of attribute use_data_descriptor
-      sig { returns(Object) }
-      attr_accessor :use_data_descriptor
+      attr_accessor use_data_descriptor: Object
 
       # Returns the value of attribute local_header_offset
-      sig { returns(Object) }
-      attr_accessor :local_header_offset
+      attr_accessor local_header_offset: Object
 
       # Returns the value of attribute bytes_used_for_local_header
-      sig { returns(Object) }
-      attr_accessor :bytes_used_for_local_header
+      attr_accessor bytes_used_for_local_header: Object
 
       # Returns the value of attribute bytes_used_for_data_descriptor
-      sig { returns(Object) }
-      attr_accessor :bytes_used_for_data_descriptor
+      attr_accessor bytes_used_for_data_descriptor: Object
 
       # Returns the value of attribute unix_permissions
-      sig { returns(Object) }
-      attr_accessor :unix_permissions
+      attr_accessor unix_permissions: Object
     end
 
     # Is used internally by Streamer to keep track of entries in the archive during writing.
     # Normally you will not have to use this class directly
     class Filler < Struct
-      sig { returns(T::Boolean) }
-      def filler?; end
+      def filler?: () -> bool
 
       # Returns the value of attribute total_bytes_used
-      sig { returns(Object) }
-      attr_accessor :total_bytes_used
+      attr_accessor total_bytes_used: Object
     end
 
     # Gets yielded from the writing methods of the Streamer
@@ -673,24 +601,20 @@ module ZipKit
       # sord omit - no YARD type given for "writer", using untyped
       # Initializes a new Writable with the object it delegates the writes to.
       # Normally you would not need to use this method directly
-      sig { params(streamer: T.untyped, writer: T.untyped).void }
-      def initialize(streamer, writer); end
+      def initialize: (untyped streamer, untyped writer) -> void
 
       # Writes the given data to the output stream
       # 
       # _@param_ `string` — the string to write (part of the uncompressed file)
-      sig { params(string: String).returns(T.self_type) }
-      def <<(string); end
+      def <<: (String string) -> self
 
       # sord omit - no YARD return type given, using untyped
       # Flushes the writer and recovers the CRC32/size values. It then calls
       # `update_last_entry_and_write_data_descriptor` on the given Streamer.
-      sig { returns(T.untyped) }
-      def close; end
+      def close: () -> untyped
 
       # sord omit - no YARD return type given, using untyped
-      sig { returns(T.untyped) }
-      def release_resources_on_failure!; end
+      def release_resources_on_failure!: () -> untyped
 
       # Writes the given data to the output stream. Allows the object to be used as
       # a target for `IO.copy_stream(from, to)`
@@ -698,8 +622,7 @@ module ZipKit
       # _@param_ `bytes` — the binary string to write (part of the uncompressed file)
       # 
       # _@return_ — the number of bytes written (will always be the bytesize of `bytes`)
-      sig { params(bytes: String).returns(Integer) }
-      def write(bytes); end
+      def write: (String bytes) -> Integer
     end
 
     # Will be used to pick whether to store a file in the `stored` or
@@ -714,30 +637,25 @@ module ZipKit
     # method should be applied
     class Heuristic < ZipKit::Streamer::Writable
       include ZipKit::ZlibCleanup
-      BYTES_WRITTEN_THRESHOLD = T.let(128 * 1024, T.untyped)
-      MINIMUM_VIABLE_COMPRESSION = T.let(0.75, T.untyped)
+      BYTES_WRITTEN_THRESHOLD: untyped
+      MINIMUM_VIABLE_COMPRESSION: untyped
 
       # sord omit - no YARD type given for "streamer", using untyped
       # sord omit - no YARD type given for "filename", using untyped
       # sord omit - no YARD type given for "**write_file_options", using untyped
-      sig { params(streamer: T.untyped, filename: T.untyped, write_file_options: T.untyped).void }
-      def initialize(streamer, filename, **write_file_options); end
+      def initialize: (untyped streamer, untyped filename, **untyped write_file_options) -> void
 
       # sord infer - argument name in single @param inferred as "bytes"
-      sig { params(bytes: String).returns(T.self_type) }
-      def <<(bytes); end
+      def <<: (String bytes) -> self
 
       # sord omit - no YARD return type given, using untyped
-      sig { returns(T.untyped) }
-      def close; end
+      def close: () -> untyped
 
       # sord omit - no YARD return type given, using untyped
-      sig { returns(T.untyped) }
-      def release_resources_on_failure!; end
+      def release_resources_on_failure!: () -> untyped
 
       # sord omit - no YARD return type given, using untyped
-      sig { returns(T.untyped) }
-      def decide; end
+      def decide: () -> untyped
 
       # sord warn - "Zlib::Deflater?" does not appear to be a type
       # This method is used to flush and close the native zlib handles
@@ -748,8 +666,7 @@ module ZipKit
       # _@param_ `deflater` — the deflater to safely finish and close
       # 
       # _@return_ — void
-      sig { params(deflater: SORD_ERROR_ZlibDeflater).returns(T.untyped) }
-      def safely_dispose_of_incomplete_deflater(deflater); end
+      def safely_dispose_of_incomplete_deflater: (SORD_ERROR_ZlibDeflater deflater) -> untyped
     end
 
     # Sends writes to the given `io`, and also registers all the data passing
@@ -757,30 +674,26 @@ module ZipKit
     # interchangeable with the DeflatedWriter in terms of interface.
     class StoredWriter
       include ZipKit::WriteShovel
-      CRC32_BUFFER_SIZE = T.let(64 * 1024, T.untyped)
+      CRC32_BUFFER_SIZE: untyped
 
       # sord omit - no YARD type given for "io", using untyped
-      sig { params(io: T.untyped).void }
-      def initialize(io); end
+      def initialize: (untyped io) -> void
 
       # Writes the given data to the contained IO object.
       # 
       # _@param_ `data` — data to be written
       # 
       # _@return_ — self
-      sig { params(data: String).returns(T.untyped) }
-      def <<(data); end
+      def <<: (String data) -> untyped
 
       # Returns the amount of data written and the CRC32 checksum. The return value
       # can be directly used as the argument to {Streamer#update_last_entry_and_write_data_descriptor}
       # 
       # _@return_ — a hash of `{crc32, compressed_size, uncompressed_size}`
-      sig { returns(T::Hash[T.untyped, T.untyped]) }
-      def finish; end
+      def finish: () -> ::Hash[untyped, untyped]
 
       # sord omit - no YARD return type given, using untyped
-      sig { returns(T.untyped) }
-      def release_resources_on_failure!; end
+      def release_resources_on_failure!: () -> untyped
 
       # Writes the given data to the output stream. Allows the object to be used as
       # a target for `IO.copy_stream(from, to)`
@@ -788,8 +701,7 @@ module ZipKit
       # _@param_ `bytes` — the binary string to write (part of the uncompressed file)
       # 
       # _@return_ — the number of bytes written (will always be the bytesize of `bytes`)
-      sig { params(bytes: String).returns(Integer) }
-      def write(bytes); end
+      def write: (String bytes) -> Integer
     end
 
     # Sends writes to the given `io` compressed using a `Zlib::Deflate`. Also
@@ -798,11 +710,10 @@ module ZipKit
     class DeflatedWriter
       include ZipKit::WriteShovel
       include ZipKit::ZlibCleanup
-      CRC32_BUFFER_SIZE = T.let(64 * 1024, T.untyped)
+      CRC32_BUFFER_SIZE: untyped
 
       # sord omit - no YARD type given for "io", using untyped
-      sig { params(io: T.untyped).void }
-      def initialize(io); end
+      def initialize: (untyped io) -> void
 
       # Writes the given data into the deflater, and flushes the deflater
       # after having written more than FLUSH_EVERY_N_BYTES bytes of data
@@ -810,20 +721,17 @@ module ZipKit
       # _@param_ `data` — data to be written
       # 
       # _@return_ — self
-      sig { params(data: String).returns(T.untyped) }
-      def <<(data); end
+      def <<: (String data) -> untyped
 
       # Returns the amount of data received for writing, the amount of
       # compressed data written and the CRC32 checksum. The return value
       # can be directly used as the argument to {Streamer#update_last_entry_and_write_data_descriptor}
       # 
       # _@return_ — a hash of `{crc32, compressed_size, uncompressed_size}`
-      sig { returns(T::Hash[T.untyped, T.untyped]) }
-      def finish; end
+      def finish: () -> ::Hash[untyped, untyped]
 
       # sord omit - no YARD return type given, using untyped
-      sig { returns(T.untyped) }
-      def release_resources_on_failure!; end
+      def release_resources_on_failure!: () -> untyped
 
       # sord warn - "Zlib::Deflater?" does not appear to be a type
       # This method is used to flush and close the native zlib handles
@@ -834,8 +742,7 @@ module ZipKit
       # _@param_ `deflater` — the deflater to safely finish and close
       # 
       # _@return_ — void
-      sig { params(deflater: SORD_ERROR_ZlibDeflater).returns(T.untyped) }
-      def safely_dispose_of_incomplete_deflater(deflater); end
+      def safely_dispose_of_incomplete_deflater: (SORD_ERROR_ZlibDeflater deflater) -> untyped
 
       # Writes the given data to the output stream. Allows the object to be used as
       # a target for `IO.copy_stream(from, to)`
@@ -843,8 +750,7 @@ module ZipKit
       # _@param_ `bytes` — the binary string to write (part of the uncompressed file)
       # 
       # _@return_ — the number of bytes written (will always be the bytesize of `bytes`)
-      sig { params(bytes: String).returns(Integer) }
-      def write(bytes); end
+      def write: (String bytes) -> Integer
     end
   end
 
@@ -858,8 +764,7 @@ module ZipKit
   class RemoteIO
     # sord warn - URI wasn't able to be resolved to a constant in this project
     # _@param_ `url` — the HTTP/HTTPS URL of the object to be retrieved
-    sig { params(url: T.any(String, URI)).void }
-    def initialize(url); end
+    def initialize: ((String | URI) url) -> void
 
     # sord omit - no YARD return type given, using untyped
     # Emulates IO#seek
@@ -867,14 +772,12 @@ module ZipKit
     # _@param_ `offset` — absolute offset in the remote resource to seek to
     # 
     # _@param_ `mode` — The seek mode (only SEEK_SET is supported)
-    sig { params(offset: Integer, mode: Integer).returns(T.untyped) }
-    def seek(offset, mode = IO::SEEK_SET); end
+    def seek: (Integer offset, ?Integer mode) -> untyped
 
     # Emulates IO#size.
     # 
     # _@return_ — the size of the remote resource
-    sig { returns(Integer) }
-    def size; end
+    def size: () -> Integer
 
     # Emulates IO#read, but requires the number of bytes to read
     # The read will be limited to the
@@ -885,34 +788,29 @@ module ZipKit
     # _@param_ `n_bytes` — how many bytes to read, or `nil` to read all the way to the end
     # 
     # _@return_ — the read bytes
-    sig { params(n_bytes: T.nilable(Integer)).returns(String) }
-    def read(n_bytes = nil); end
+    def read: (?Integer? n_bytes) -> String
 
     # Returns the current pointer position within the IO
-    sig { returns(Integer) }
-    def tell; end
+    def tell: () -> Integer
 
     # Only used internally when reading the remote ZIP.
     # 
     # _@param_ `range` — the HTTP range of data to fetch from remote
     # 
     # _@return_ — the response body of the ranged request
-    sig { params(range: T::Range[T.untyped]).returns(String) }
-    def request_range(range); end
+    def request_range: (::Range[untyped] range) -> String
 
     # For working with S3 it is a better idea to perform a GET request for one byte, since doing a HEAD
     # request needs a different permission - and standard GET presigned URLs are not allowed to perform it
     # 
     # _@return_ — the size of the remote resource, parsed either from Content-Length or Content-Range header
-    sig { returns(Integer) }
-    def request_object_size; end
+    def request_object_size: () -> Integer
 
     # sord omit - no YARD type given for "a", using untyped
     # sord omit - no YARD type given for "b", using untyped
     # sord omit - no YARD type given for "c", using untyped
     # sord omit - no YARD return type given, using untyped
-    sig { params(a: T.untyped, b: T.untyped, c: T.untyped).returns(T.untyped) }
-    def clamp(a, b, c); end
+    def clamp: (untyped a, untyped b, untyped c) -> untyped
   end
 
   # A low-level ZIP file data writer. You can use it to write out various headers and central directory elements
@@ -940,26 +838,22 @@ module ZipKit
   # All methods of the writer accept anything that responds to `<<` as `io` argument - you can use
   # that to output to String objects, or to output to Arrays that you can later join together.
   class ZipWriter
-    FOUR_BYTE_MAX_UINT = T.let(0xFFFFFFFF, T.untyped)
-    TWO_BYTE_MAX_UINT = T.let(0xFFFF, T.untyped)
-    ZIP_KIT_COMMENT = T.let("Written using ZipKit %<version>s" % {version: ZipKit::VERSION}, T.untyped)
-    VERSION_MADE_BY = T.let(52, T.untyped)
-    VERSION_NEEDED_TO_EXTRACT = T.let(20, T.untyped)
-    VERSION_NEEDED_TO_EXTRACT_ZIP64 = T.let(45, T.untyped)
-    DEFAULT_FILE_UNIX_PERMISSIONS = T.let(0o644, T.untyped)
-    DEFAULT_DIRECTORY_UNIX_PERMISSIONS = T.let(0o755, T.untyped)
-    FILE_TYPE_FILE = T.let(0o10, T.untyped)
-    FILE_TYPE_DIRECTORY = T.let(0o04, T.untyped)
-    MADE_BY_SIGNATURE = T.let(begin
-  # A combination of the VERSION_MADE_BY low byte and the OS type high byte
-  os_type = 3 # UNIX
-  [VERSION_MADE_BY, os_type].pack("CC")
-end, T.untyped)
-    C_UINT4 = T.let("V", T.untyped)
-    C_UINT2 = T.let("v", T.untyped)
-    C_UINT8 = T.let("Q<", T.untyped)
-    C_CHAR = T.let("C", T.untyped)
-    C_INT4 = T.let("l<", T.untyped)
+    FOUR_BYTE_MAX_UINT: untyped
+    TWO_BYTE_MAX_UINT: untyped
+    ZIP_KIT_COMMENT: untyped
+    VERSION_MADE_BY: untyped
+    VERSION_NEEDED_TO_EXTRACT: untyped
+    VERSION_NEEDED_TO_EXTRACT_ZIP64: untyped
+    DEFAULT_FILE_UNIX_PERMISSIONS: untyped
+    DEFAULT_DIRECTORY_UNIX_PERMISSIONS: untyped
+    FILE_TYPE_FILE: untyped
+    FILE_TYPE_DIRECTORY: untyped
+    MADE_BY_SIGNATURE: untyped
+    C_UINT4: untyped
+    C_UINT2: untyped
+    C_UINT8: untyped
+    C_CHAR: untyped
+    C_INT4: untyped
 
     # sord duck - #<< looks like a duck type, replacing with untyped
     # Writes the local file header, that precedes the actual file _data_.
@@ -979,19 +873,16 @@ end, T.untyped)
     # _@param_ `gp_flags` — bit-packed general purpose flags
     # 
     # _@param_ `storage_mode` — 8 for deflated, 0 for stored...
-    sig do
-      params(
-        io: T.untyped,
-        filename: String,
-        compressed_size: Integer,
-        uncompressed_size: Integer,
-        crc32: Integer,
-        gp_flags: Integer,
-        mtime: Time,
-        storage_mode: Integer
-      ).void
-    end
-    def write_local_file_header(io:, filename:, compressed_size:, uncompressed_size:, crc32:, gp_flags:, mtime:, storage_mode:); end
+    def write_local_file_header: (
+                                   io: untyped,
+                                   filename: String,
+                                   compressed_size: Integer,
+                                   uncompressed_size: Integer,
+                                   crc32: Integer,
+                                   gp_flags: Integer,
+                                   mtime: Time,
+                                   storage_mode: Integer
+                                 ) -> void
 
     # sord duck - #<< looks like a duck type, replacing with untyped
     # sord omit - no YARD type given for "local_file_header_location:", using untyped
@@ -1014,21 +905,18 @@ end, T.untyped)
     # _@param_ `gp_flags` — bit-packed general purpose flags
     # 
     # _@param_ `unix_permissions` — the permissions for the file, or nil for the default to be used
-    sig do
-      params(
-        io: T.untyped,
-        local_file_header_location: T.untyped,
-        gp_flags: Integer,
-        storage_mode: T.untyped,
-        compressed_size: Integer,
-        uncompressed_size: Integer,
-        mtime: Time,
-        crc32: Integer,
-        filename: String,
-        unix_permissions: T.nilable(Integer)
-      ).void
-    end
-    def write_central_directory_file_header(io:, local_file_header_location:, gp_flags:, storage_mode:, compressed_size:, uncompressed_size:, mtime:, crc32:, filename:, unix_permissions: nil); end
+    def write_central_directory_file_header: (
+                                               io: untyped,
+                                               local_file_header_location: untyped,
+                                               gp_flags: Integer,
+                                               storage_mode: untyped,
+                                               compressed_size: Integer,
+                                               uncompressed_size: Integer,
+                                               mtime: Time,
+                                               crc32: Integer,
+                                               filename: String,
+                                               ?unix_permissions: Integer?
+                                             ) -> void
 
     # sord duck - #<< looks like a duck type, replacing with untyped
     # Writes the data descriptor following the file data for a file whose local file header
@@ -1042,15 +930,12 @@ end, T.untyped)
     # _@param_ `compressed_size` — The size of the compressed (or stored) data - how much space it uses in the ZIP
     # 
     # _@param_ `uncompressed_size` — The size of the file once extracted
-    sig do
-      params(
-        io: T.untyped,
-        compressed_size: Integer,
-        uncompressed_size: Integer,
-        crc32: Integer
-      ).void
-    end
-    def write_data_descriptor(io:, compressed_size:, uncompressed_size:, crc32:); end
+    def write_data_descriptor: (
+                                 io: untyped,
+                                 compressed_size: Integer,
+                                 uncompressed_size: Integer,
+                                 crc32: Integer
+                               ) -> void
 
     # sord duck - #<< looks like a duck type, replacing with untyped
     # Writes the "end of central directory record" (including the Zip6 salient bits if necessary)
@@ -1064,24 +949,20 @@ end, T.untyped)
     # _@param_ `num_files_in_archive` — How many files the archive contains
     # 
     # _@param_ `comment` — the comment for the archive (defaults to ZIP_KIT_COMMENT)
-    sig do
-      params(
-        io: T.untyped,
-        start_of_central_directory_location: Integer,
-        central_directory_size: Integer,
-        num_files_in_archive: Integer,
-        comment: String
-      ).void
-    end
-    def write_end_of_central_directory(io:, start_of_central_directory_location:, central_directory_size:, num_files_in_archive:, comment: ZIP_KIT_COMMENT); end
+    def write_end_of_central_directory: (
+                                          io: untyped,
+                                          start_of_central_directory_location: Integer,
+                                          central_directory_size: Integer,
+                                          num_files_in_archive: Integer,
+                                          ?comment: String
+                                        ) -> void
 
     # Writes the Zip64 extra field for the local file header. Will be used by `write_local_file_header` when any sizes given to it warrant that.
     # 
     # _@param_ `compressed_size` — The size of the compressed (or stored) data - how much space it uses in the ZIP
     # 
     # _@param_ `uncompressed_size` — The size of the file once extracted
-    sig { params(compressed_size: Integer, uncompressed_size: Integer).returns(String) }
-    def zip_64_extra_for_local_file_header(compressed_size:, uncompressed_size:); end
+    def zip_64_extra_for_local_file_header: (compressed_size: Integer, uncompressed_size: Integer) -> String
 
     # sord omit - no YARD type given for "mtime", using untyped
     # sord omit - no YARD return type given, using untyped
@@ -1092,8 +973,7 @@ end, T.untyped)
     # atime and ctime, whereas the one for the central directory can only take
     # the mtime - and refers the reader to the local header extra to obtain the
     # remaining times
-    sig { params(mtime: T.untyped).returns(T.untyped) }
-    def timestamp_extra_for_local_file_header(mtime); end
+    def timestamp_extra_for_local_file_header: (untyped mtime) -> untyped
 
     # Writes the Zip64 extra field for the central directory header.It differs from the extra used in the local file header because it
     # also contains the location of the local file header in the ZIP as an 8-byte int.
@@ -1103,18 +983,15 @@ end, T.untyped)
     # _@param_ `uncompressed_size` — The size of the file once extracted
     # 
     # _@param_ `local_file_header_location` — Byte offset of the start of the local file header from the beginning of the ZIP archive
-    sig { params(compressed_size: Integer, uncompressed_size: Integer, local_file_header_location: Integer).returns(String) }
-    def zip_64_extra_for_central_directory_file_header(compressed_size:, uncompressed_size:, local_file_header_location:); end
+    def zip_64_extra_for_central_directory_file_header: (compressed_size: Integer, uncompressed_size: Integer, local_file_header_location: Integer) -> String
 
     # sord omit - no YARD type given for "t", using untyped
     # sord omit - no YARD return type given, using untyped
-    sig { params(t: T.untyped).returns(T.untyped) }
-    def to_binary_dos_time(t); end
+    def to_binary_dos_time: (untyped t) -> untyped
 
     # sord omit - no YARD type given for "t", using untyped
     # sord omit - no YARD return type given, using untyped
-    sig { params(t: T.untyped).returns(T.untyped) }
-    def to_binary_dos_date(t); end
+    def to_binary_dos_date: (untyped t) -> untyped
 
     # sord omit - no YARD type given for "values_to_packspecs", using untyped
     # sord omit - no YARD return type given, using untyped
@@ -1129,14 +1006,12 @@ end, T.untyped)
     # This might seem like a "clever optimisation" but the issue is that `pack` needs an array allocated per call, and
     # we output very verbosely - value-by-value. This might be quite a few array allocs. Using something like this
     # helps us save the array allocs
-    sig { params(values_to_packspecs: T.untyped).returns(T.untyped) }
-    def pack_array(values_to_packspecs); end
+    def pack_array: (untyped values_to_packspecs) -> untyped
 
     # sord omit - no YARD type given for "unix_permissions_int", using untyped
     # sord omit - no YARD type given for "file_type_int", using untyped
     # sord omit - no YARD return type given, using untyped
-    sig { params(unix_permissions_int: T.untyped, file_type_int: T.untyped).returns(T.untyped) }
-    def generate_external_attrs(unix_permissions_int, file_type_int); end
+    def generate_external_attrs: (untyped unix_permissions_int, untyped file_type_int) -> untyped
   end
 
   # Acts as a converter between callers which send data to the `#<<` method (such as all the ZipKit
@@ -1161,14 +1036,12 @@ end, T.untyped)
     # Creates a new BlockWrite.
     # 
     # _@param_ `block` — The block that will be called when this object receives the `<<` message
-    sig { params(block: T.proc.params(bytes: String).void).void }
-    def initialize(&block); end
+    def initialize: () ?{ (String bytes) -> void } -> void
 
     # Sends a string through to the block stored in the BlockWrite.
     # 
     # _@param_ `buf` — the string to write. Note that a zero-length String will not be forwarded to the block, as it has special meaning when used with chunked encoding (it indicates the end of the stream).
-    sig { params(buf: String).returns(ZipKit::BlockWrite) }
-    def <<(buf); end
+    def <<: (String buf) -> ZipKit::BlockWrite
 
     # Writes the given data to the output stream. Allows the object to be used as
     # a target for `IO.copy_stream(from, to)`
@@ -1176,8 +1049,7 @@ end, T.untyped)
     # _@param_ `bytes` — the binary string to write (part of the uncompressed file)
     # 
     # _@return_ — the number of bytes written (will always be the bytesize of `bytes`)
-    sig { params(bytes: String).returns(Integer) }
-    def write(bytes); end
+    def write: (String bytes) -> Integer
   end
 
   # A very barebones ZIP file reader. Is made for maximum interoperability, but at the same
@@ -1240,55 +1112,21 @@ end, T.untyped)
   # the actual entry data. This is less efficient than central directory parsing since
   # it involves a much larger number of reads (1 read from the IO per entry in the ZIP).
   class FileReader
-    ReadError = T.let(Class.new(StandardError), T.untyped)
-    UnsupportedFeature = T.let(Class.new(StandardError), T.untyped)
-    InvalidStructure = T.let(Class.new(ReadError), T.untyped)
-    LocalHeaderPending = T.let(Class.new(StandardError) do
-  def message
-    "The compressed data offset is not available (local header has not been read)"
-  end
-end, T.untyped)
-    MissingEOCD = T.let(Class.new(StandardError) do
-  def message
-    "Could not find the EOCD signature in the buffer - maybe a malformed ZIP file"
-  end
-end, T.untyped)
-    C_UINT4 = T.let("V", T.untyped)
-    C_UINT2 = T.let("v", T.untyped)
-    C_UINT8 = T.let("Q<", T.untyped)
-    MAX_END_OF_CENTRAL_DIRECTORY_RECORD_SIZE = T.let(4 + # Offset of the start of central directory
-4 + # Size of the central directory
-2 + # Number of files in the cdir
-4 + # End-of-central-directory signature
-2 + # Number of this disk
-2 + # Number of disk with the start of cdir
-2 + # Number of files in the cdir of this disk
-2 + # The comment size
-0xFFFF, T.untyped)
-    MAX_LOCAL_HEADER_SIZE = T.let(4 + # signature
-2 + # Version needed to extract
-2 + # gp flags
-2 + # storage mode
-2 + # dos time
-2 + # dos date
-4 + # CRC32
-4 + # Comp size
-4 + # Uncomp size
-2 + # Filename size
-2 + # Extra fields size
-0xFFFF + # Maximum filename size
-0xFFFF, T.untyped)
-    SIZE_OF_USABLE_EOCD_RECORD = T.let(4 + # Signature
-2 + # Number of this disk
-2 + # Number of the disk with the EOCD record
-2 + # Number of entries in the central directory of this disk
-2 + # Number of entries in the central directory total
-4 + # Size of the central directory
-4, T.untyped)
+    ReadError: untyped
+    UnsupportedFeature: untyped
+    InvalidStructure: untyped
+    LocalHeaderPending: untyped
+    MissingEOCD: untyped
+    C_UINT4: untyped
+    C_UINT2: untyped
+    C_UINT8: untyped
+    MAX_END_OF_CENTRAL_DIRECTORY_RECORD_SIZE: untyped
+    MAX_LOCAL_HEADER_SIZE: untyped
+    SIZE_OF_USABLE_EOCD_RECORD: untyped
 
     # sord duck - #tell looks like a duck type, replacing with untyped
     # sord duck - #seek looks like a duck type, replacing with untyped
-    # sord duck - #read looks like a duck type, replacing with untyped
+    # sord duck - #read looks like a duck type with an equivalent RBS interface, replacing with _Reader
     # sord duck - #size looks like a duck type, replacing with untyped
     # Parse an IO handle to a ZIP archive into an array of Entry objects.
     # 
@@ -1297,11 +1135,10 @@ end, T.untyped)
     # _@param_ `read_local_headers` — whether the local headers must be read upfront. When reading a locally available ZIP file this option will not have much use since the small reads from the file handle are not going to be that important. However, if you are using remote reads to decipher a ZIP file located on an HTTP server, the operation _must_ perform an HTTP request for _each entry in the ZIP file_ to determine where the actual file data starts. This, for a ZIP archive of 1000 files, will incur 1000 extra HTTP requests - which you might not want to perform upfront, or - at least - not want to perform _at once_. When the option is set to `false`, you will be getting instances of `LazyEntry` instead of `Entry`. Those objects will raise an exception when you attempt to access their compressed data offset in the ZIP (since the reads have not been performed yet). As a rule, this option can be left in it's default setting (`true`) unless you want to _only_ read the central directory, or you need to limit the number of HTTP requests.
     # 
     # _@return_ — an array of entries within the ZIP being parsed
-    sig { params(io: T.untyped, read_local_headers: T::Boolean).returns(T::Array[ZipEntry]) }
-    def read_zip_structure(io:, read_local_headers: true); end
+    def read_zip_structure: (io: (untyped | _Reader), ?read_local_headers: bool) -> ::Array[ZipEntry]
 
     # sord duck - #tell looks like a duck type, replacing with untyped
-    # sord duck - #read looks like a duck type, replacing with untyped
+    # sord duck - #read looks like a duck type with an equivalent RBS interface, replacing with _Reader
     # sord duck - #seek looks like a duck type, replacing with untyped
     # sord omit - no YARD return type given, using untyped
     # Sometimes you might encounter truncated ZIP files, which do not contain
@@ -1319,10 +1156,9 @@ end, T.untyped)
     # recovered before hitting EOF
     # 
     # _@param_ `io` — the IO-ish object to read the local file
-    sig { params(io: T.untyped).returns(T.untyped) }
-    def read_zip_straight_ahead(io:); end
+    def read_zip_straight_ahead: (io: (untyped | _Reader)) -> untyped
 
-    # sord duck - #read looks like a duck type, replacing with untyped
+    # sord duck - #read looks like a duck type with an equivalent RBS interface, replacing with _Reader
     # Parse the local header entry and get the offset in the IO at which the
     # actual compressed data of the file starts within the ZIP.
     # The method will eager-read the entire local header for the file
@@ -1336,11 +1172,10 @@ end, T.untyped)
     # _@param_ `io` — an IO-ish object the ZIP file can be read from
     # 
     # _@return_ — the parsed local header entry and
-    sig { params(io: T.untyped).returns(T::Array[T.any(ZipEntry, Integer)]) }
-    def read_local_file_header(io:); end
+    def read_local_file_header: (io: _Reader) -> ::Array[(ZipEntry | Integer)]
 
     # sord duck - #seek looks like a duck type, replacing with untyped
-    # sord duck - #read looks like a duck type, replacing with untyped
+    # sord duck - #read looks like a duck type with an equivalent RBS interface, replacing with _Reader
     # sord omit - no YARD return type given, using untyped
     # Get the offset in the IO at which the actual compressed data of the file
     # starts within the ZIP. The method will eager-read the entire local header
@@ -1355,8 +1190,7 @@ end, T.untyped)
     # _@param_ `io` — an IO-ish object the ZIP file can be read from
     # 
     # _@param_ `local_file_header_offset` — absolute offset (0-based) where the
-    sig { params(io: T.untyped, local_file_header_offset: Integer).returns(T.untyped) }
-    def get_compressed_data_offset(io:, local_file_header_offset:); end
+    def get_compressed_data_offset: (io: (untyped | _Reader), local_file_header_offset: Integer) -> untyped
 
     # Parse an IO handle to a ZIP archive into an array of Entry objects, reading from the end
     # of the IO object.
@@ -1366,8 +1200,7 @@ end, T.untyped)
     # _@return_ — an array of entries within the ZIP being parsed
     # 
     # _@see_ `#read_zip_structure`
-    sig { params(options: T::Hash[T.untyped, T.untyped]).returns(T::Array[ZipEntry]) }
-    def self.read_zip_structure(**options); end
+    def self.read_zip_structure: (**::Hash[untyped, untyped] options) -> ::Array[ZipEntry]
 
     # Parse an IO handle to a ZIP archive into an array of Entry objects, reading from the start of
     # the file and parsing local file headers one-by-one
@@ -1377,85 +1210,70 @@ end, T.untyped)
     # _@return_ — an array of entries within the ZIP being parsed
     # 
     # _@see_ `#read_zip_straight_ahead`
-    sig { params(options: T::Hash[T.untyped, T.untyped]).returns(T::Array[ZipEntry]) }
-    def self.read_zip_straight_ahead(**options); end
+    def self.read_zip_straight_ahead: (**::Hash[untyped, untyped] options) -> ::Array[ZipEntry]
 
     # sord omit - no YARD type given for "entries", using untyped
     # sord omit - no YARD type given for "io", using untyped
     # sord omit - no YARD return type given, using untyped
-    sig { params(entries: T.untyped, io: T.untyped).returns(T.untyped) }
-    def read_local_headers(entries, io); end
+    def read_local_headers: (untyped entries, untyped io) -> untyped
 
     # sord omit - no YARD type given for "io", using untyped
     # sord omit - no YARD return type given, using untyped
-    sig { params(io: T.untyped).returns(T.untyped) }
-    def skip_ahead_2(io); end
+    def skip_ahead_2: (untyped io) -> untyped
 
     # sord omit - no YARD type given for "io", using untyped
     # sord omit - no YARD return type given, using untyped
-    sig { params(io: T.untyped).returns(T.untyped) }
-    def skip_ahead_4(io); end
+    def skip_ahead_4: (untyped io) -> untyped
 
     # sord omit - no YARD type given for "io", using untyped
     # sord omit - no YARD return type given, using untyped
-    sig { params(io: T.untyped).returns(T.untyped) }
-    def skip_ahead_8(io); end
+    def skip_ahead_8: (untyped io) -> untyped
 
     # sord omit - no YARD type given for "io", using untyped
     # sord omit - no YARD type given for "absolute_pos", using untyped
     # sord omit - no YARD return type given, using untyped
-    sig { params(io: T.untyped, absolute_pos: T.untyped).returns(T.untyped) }
-    def seek(io, absolute_pos); end
+    def seek: (untyped io, untyped absolute_pos) -> untyped
 
     # sord omit - no YARD type given for "io", using untyped
     # sord omit - no YARD type given for "signature_magic_number", using untyped
     # sord omit - no YARD return type given, using untyped
-    sig { params(io: T.untyped, signature_magic_number: T.untyped).returns(T.untyped) }
-    def assert_signature(io, signature_magic_number); end
+    def assert_signature: (untyped io, untyped signature_magic_number) -> untyped
 
     # sord omit - no YARD type given for "io", using untyped
     # sord omit - no YARD type given for "n", using untyped
     # sord omit - no YARD return type given, using untyped
-    sig { params(io: T.untyped, n: T.untyped).returns(T.untyped) }
-    def skip_ahead_n(io, n); end
+    def skip_ahead_n: (untyped io, untyped n) -> untyped
 
     # sord omit - no YARD type given for "io", using untyped
     # sord omit - no YARD type given for "n_bytes", using untyped
     # sord omit - no YARD return type given, using untyped
-    sig { params(io: T.untyped, n_bytes: T.untyped).returns(T.untyped) }
-    def read_n(io, n_bytes); end
+    def read_n: (untyped io, untyped n_bytes) -> untyped
 
     # sord omit - no YARD type given for "io", using untyped
     # sord omit - no YARD return type given, using untyped
-    sig { params(io: T.untyped).returns(T.untyped) }
-    def read_2b(io); end
+    def read_2b: (untyped io) -> untyped
 
     # sord omit - no YARD type given for "io", using untyped
     # sord omit - no YARD return type given, using untyped
-    sig { params(io: T.untyped).returns(T.untyped) }
-    def read_4b(io); end
+    def read_4b: (untyped io) -> untyped
 
     # sord omit - no YARD type given for "io", using untyped
     # sord omit - no YARD return type given, using untyped
-    sig { params(io: T.untyped).returns(T.untyped) }
-    def read_8b(io); end
+    def read_8b: (untyped io) -> untyped
 
     # sord omit - no YARD type given for "io", using untyped
     # sord omit - no YARD return type given, using untyped
-    sig { params(io: T.untyped).returns(T.untyped) }
-    def read_cdir_entry(io); end
+    def read_cdir_entry: (untyped io) -> untyped
 
     # sord omit - no YARD type given for "file_io", using untyped
     # sord omit - no YARD type given for "zip_file_size", using untyped
     # sord omit - no YARD return type given, using untyped
-    sig { params(file_io: T.untyped, zip_file_size: T.untyped).returns(T.untyped) }
-    def get_eocd_offset(file_io, zip_file_size); end
+    def get_eocd_offset: (untyped file_io, untyped zip_file_size) -> untyped
 
     # sord omit - no YARD type given for "of_substring", using untyped
     # sord omit - no YARD type given for "in_string", using untyped
     # sord omit - no YARD return type given, using untyped
-    sig { params(of_substring: T.untyped, in_string: T.untyped).returns(T.untyped) }
-    def all_indices_of_substr_in_str(of_substring, in_string); end
+    def all_indices_of_substr_in_str: (untyped of_substring, untyped in_string) -> untyped
 
     # sord omit - no YARD type given for "in_str", using untyped
     # sord omit - no YARD return type given, using untyped
@@ -1466,8 +1284,7 @@ end, T.untyped)
     # at the end. To do so, we first find all indices of the signature in the trailer
     # string, and then check whether the bytestring starting at the signature and
     # ending at the end of string satisfies that given pattern.
-    sig { params(in_str: T.untyped).returns(T.untyped) }
-    def locate_eocd_signature(in_str); end
+    def locate_eocd_signature: (untyped in_str) -> untyped
 
     # sord omit - no YARD type given for "file_io", using untyped
     # sord omit - no YARD type given for "eocd_offset", using untyped
@@ -1475,65 +1292,54 @@ end, T.untyped)
     # Find the Zip64 EOCD locator segment offset. Do this by seeking backwards from the
     # EOCD record in the archive by fixed offsets
     #          get_zip64_eocd_location is too high. [15.17/15]
-    sig { params(file_io: T.untyped, eocd_offset: T.untyped).returns(T.untyped) }
-    def get_zip64_eocd_location(file_io, eocd_offset); end
+    def get_zip64_eocd_location: (untyped file_io, untyped eocd_offset) -> untyped
 
     # sord omit - no YARD type given for "io", using untyped
     # sord omit - no YARD type given for "zip64_end_of_cdir_location", using untyped
     # sord omit - no YARD return type given, using untyped
     # num_files_and_central_directory_offset_zip64 is too high. [21.12/15]
-    sig { params(io: T.untyped, zip64_end_of_cdir_location: T.untyped).returns(T.untyped) }
-    def num_files_and_central_directory_offset_zip64(io, zip64_end_of_cdir_location); end
+    def num_files_and_central_directory_offset_zip64: (untyped io, untyped zip64_end_of_cdir_location) -> untyped
 
     # sord omit - no YARD type given for "file_io", using untyped
     # sord omit - no YARD type given for "eocd_offset", using untyped
     # sord omit - no YARD return type given, using untyped
     # Start of the central directory offset
-    sig { params(file_io: T.untyped, eocd_offset: T.untyped).returns(T.untyped) }
-    def num_files_and_central_directory_offset(file_io, eocd_offset); end
+    def num_files_and_central_directory_offset: (untyped file_io, untyped eocd_offset) -> untyped
 
     # sord omit - no YARD return type given, using untyped
     # Is provided as a stub to be overridden in a subclass if you need it. Will report
     # during various stages of reading. The log message is contained in the return value
     # of `yield` in the method (the log messages are lazy-evaluated).
-    sig { returns(T.untyped) }
-    def log; end
+    def log: () -> untyped
 
     # sord omit - no YARD type given for "extra_fields_str", using untyped
     # sord omit - no YARD return type given, using untyped
-    sig { params(extra_fields_str: T.untyped).returns(T.untyped) }
-    def parse_out_extra_fields(extra_fields_str); end
+    def parse_out_extra_fields: (untyped extra_fields_str) -> untyped
 
     # Rubocop: convention: Missing top-level class documentation comment.
     class StoredReader
       # sord omit - no YARD type given for "from_io", using untyped
       # sord omit - no YARD type given for "compressed_data_size", using untyped
-      sig { params(from_io: T.untyped, compressed_data_size: T.untyped).void }
-      def initialize(from_io, compressed_data_size); end
+      def initialize: (untyped from_io, untyped compressed_data_size) -> void
 
       # sord omit - no YARD type given for "n_bytes", using untyped
       # sord omit - no YARD return type given, using untyped
-      sig { params(n_bytes: T.untyped).returns(T.untyped) }
-      def extract(n_bytes = nil); end
+      def extract: (?untyped n_bytes) -> untyped
 
-      sig { returns(T::Boolean) }
-      def eof?; end
+      def eof?: () -> bool
     end
 
     # Rubocop: convention: Missing top-level class documentation comment.
     class InflatingReader
       # sord omit - no YARD type given for "from_io", using untyped
       # sord omit - no YARD type given for "compressed_data_size", using untyped
-      sig { params(from_io: T.untyped, compressed_data_size: T.untyped).void }
-      def initialize(from_io, compressed_data_size); end
+      def initialize: (untyped from_io, untyped compressed_data_size) -> void
 
       # sord omit - no YARD type given for "n_bytes", using untyped
       # sord omit - no YARD return type given, using untyped
-      sig { params(n_bytes: T.untyped).returns(T.untyped) }
-      def extract(n_bytes = nil); end
+      def extract: (?untyped n_bytes) -> untyped
 
-      sig { returns(T::Boolean) }
-      def eof?; end
+      def eof?: () -> bool
     end
 
     # Represents a file within the ZIP archive being read. This is different from
@@ -1547,22 +1353,18 @@ end, T.untyped)
       #   outfile << reader.extract(512 * 1024) until reader.eof?
       # 
       # _@return_ — the reader for the data
-      sig { params(from_io: T.untyped).returns(T.any(StoredReader, InflatingReader)) }
-      def extractor_from(from_io); end
+      def extractor_from: (untyped from_io) -> (StoredReader | InflatingReader)
 
       # _@return_ — at what offset you should start reading
       # for the compressed data in your original IO object
-      sig { returns(Integer) }
-      def compressed_data_offset; end
+      def compressed_data_offset: () -> Integer
 
       # Tells whether the compressed data offset is already known for this entry
-      sig { returns(T::Boolean) }
-      def known_offset?; end
+      def known_offset?: () -> bool
 
       # Tells whether the entry uses a data descriptor (this is defined
       # by bit 3 in the GP flags).
-      sig { returns(T::Boolean) }
-      def uses_data_descriptor?; end
+      def uses_data_descriptor?: () -> bool
 
       # sord infer - inferred type of parameter "offset" as Integer using getter's return type
       # sord omit - no YARD return type given, using untyped
@@ -1572,69 +1374,53 @@ end, T.untyped)
       # 
       #     entry.compressed_data_offset = reader.get_compressed_data_offset(io: file,
       #            local_file_header_offset: entry.local_header_offset)
-      sig { params(offset: Integer).returns(T.untyped) }
-      def compressed_data_offset=(offset); end
+      def compressed_data_offset=: (Integer offset) -> untyped
 
       # _@return_ — bit-packed version signature of the program that made the archive
-      sig { returns(Integer) }
-      attr_accessor :made_by
+      attr_accessor made_by: Integer
 
       # _@return_ — ZIP version support needed to extract this file
-      sig { returns(Integer) }
-      attr_accessor :version_needed_to_extract
+      attr_accessor version_needed_to_extract: Integer
 
       # _@return_ — bit-packed general purpose flags
-      sig { returns(Integer) }
-      attr_accessor :gp_flags
+      attr_accessor gp_flags: Integer
 
       # _@return_ — Storage mode (0 for stored, 8 for deflate)
-      sig { returns(Integer) }
-      attr_accessor :storage_mode
+      attr_accessor storage_mode: Integer
 
       # _@return_ — the bit-packed DOS time
-      sig { returns(Integer) }
-      attr_accessor :dos_time
+      attr_accessor dos_time: Integer
 
       # _@return_ — the bit-packed DOS date
-      sig { returns(Integer) }
-      attr_accessor :dos_date
+      attr_accessor dos_date: Integer
 
       # _@return_ — the CRC32 checksum of this file
-      sig { returns(Integer) }
-      attr_accessor :crc32
+      attr_accessor crc32: Integer
 
       # _@return_ — size of compressed file data in the ZIP
-      sig { returns(Integer) }
-      attr_accessor :compressed_size
+      attr_accessor compressed_size: Integer
 
       # _@return_ — size of the file once uncompressed
-      sig { returns(Integer) }
-      attr_accessor :uncompressed_size
+      attr_accessor uncompressed_size: Integer
 
       # _@return_ — the filename
-      sig { returns(String) }
-      attr_accessor :filename
+      attr_accessor filename: String
 
       # _@return_ — disk number where this file starts
-      sig { returns(Integer) }
-      attr_accessor :disk_number_start
+      attr_accessor disk_number_start: Integer
 
       # _@return_ — internal attributes of the file
-      sig { returns(Integer) }
-      attr_accessor :internal_attrs
+      attr_accessor internal_attrs: Integer
 
       # _@return_ — external attributes of the file
-      sig { returns(Integer) }
-      attr_accessor :external_attrs
+      attr_accessor external_attrs: Integer
 
       # _@return_ — at what offset the local file header starts
       # in your original IO object
-      sig { returns(Integer) }
-      attr_accessor :local_file_header_offset
+      attr_accessor local_file_header_offset: Integer
 
       # _@return_ — the file comment
-      sig { returns(String) }
-      attr_accessor :comment
+      attr_accessor comment: String
     end
   end
 
@@ -1643,8 +1429,7 @@ end, T.untyped)
   # estimating the size of a ZIP)
   module NullWriter
     # _@param_ `_` — the data to write
-    sig { params(_: String).returns(T.self_type) }
-    def self.<<(_); end
+    def self.<<: (String _) -> self
   end
 
   # Alows reading the central directory of a remote ZIP file without
@@ -1665,44 +1450,34 @@ end, T.untyped)
     # _@param_ `options_for_zip_reader` — any additional options to give to
     # 
     # _@return_ — metadata about the
-    sig { params(uri: String, reader_class: Class, options_for_zip_reader: T::Hash[T.untyped, T.untyped]).returns(T::Array[ZipKit::FileReader::ZipEntry]) }
-    def self.files_within_zip_at(uri, reader_class: ZipKit::FileReader, **options_for_zip_reader); end
+    def self.files_within_zip_at: (String uri, ?reader_class: Class, **::Hash[untyped, untyped] options_for_zip_reader) -> ::Array[ZipKit::FileReader::ZipEntry]
   end
 
   # A simple stateful class for keeping track of a CRC32 value through multiple writes
   class StreamCRC32
     include ZipKit::WriteShovel
-    STRINGS_HAVE_CAPACITY_SUPPORT = T.let(begin
-  String.new("", capacity: 1)
-  true
-rescue ArgumentError
-  false
-end, T.untyped)
-    CRC_BUF_SIZE = T.let(1024 * 512, T.untyped)
+    STRINGS_HAVE_CAPACITY_SUPPORT: untyped
+    CRC_BUF_SIZE: untyped
 
     # Compute a CRC32 value from an IO object. The object should respond to `read` and `eof?`
     # 
     # _@param_ `io` — the IO to read the data from
     # 
     # _@return_ — the computed CRC32 value
-    sig { params(io: IO).returns(Integer) }
-    def self.from_io(io); end
+    def self.from_io: (IO io) -> Integer
 
     # Creates a new streaming CRC32 calculator
-    sig { void }
-    def initialize; end
+    def initialize: () -> void
 
     # Append data to the CRC32. Updates the contained CRC32 value in place.
     # 
     # _@param_ `blob` — the string to compute the CRC32 from
-    sig { params(blob: String).returns(T.self_type) }
-    def <<(blob); end
+    def <<: (String blob) -> self
 
     # Returns the CRC32 value computed so far
     # 
     # _@return_ — the updated CRC32 value for all the blobs so far
-    sig { returns(Integer) }
-    def to_i; end
+    def to_i: () -> Integer
 
     # Appends a known CRC32 value to the current one, and combines the
     # contained CRC32 value in-place.
@@ -1712,8 +1487,7 @@ end, T.untyped)
     # _@param_ `blob_size` — the size of the daata the `crc32` is computed from
     # 
     # _@return_ — the updated CRC32 value for all the blobs so far
-    sig { params(crc32: Integer, blob_size: Integer).returns(Integer) }
-    def append(crc32, blob_size); end
+    def append: (Integer crc32, Integer blob_size) -> Integer
 
     # Writes the given data to the output stream. Allows the object to be used as
     # a target for `IO.copy_stream(from, to)`
@@ -1721,8 +1495,7 @@ end, T.untyped)
     # _@param_ `bytes` — the binary string to write (part of the uncompressed file)
     # 
     # _@return_ — the number of bytes written (will always be the bytesize of `bytes`)
-    sig { params(bytes: String).returns(Integer) }
-    def write(bytes); end
+    def write: (String bytes) -> Integer
   end
 
   # Some operations (such as CRC32) benefit when they are performed
@@ -1756,8 +1529,7 @@ end, T.untyped)
     # _@param_ `writable` — An object that responds to `#<<` with a String as argument
     # 
     # _@param_ `buffer_size` — How many bytes to buffer
-    sig { params(writable: T.untyped, buffer_size: Integer).void }
-    def initialize(writable, buffer_size); end
+    def initialize: (untyped writable, Integer buffer_size) -> void
 
     # Appends the given data to the write buffer, and flushes the buffer into the
     # writable if the buffer size exceeds the `buffer_size` given at initialization
@@ -1765,14 +1537,12 @@ end, T.untyped)
     # _@param_ `string` — data to be written
     # 
     # _@return_ — self
-    sig { params(string: String).returns(T.untyped) }
-    def <<(string); end
+    def <<: (String string) -> untyped
 
     # Explicitly flushes the buffer if it contains anything
     # 
     # _@return_ — self
-    sig { returns(T.untyped) }
-    def flush; end
+    def flush: () -> untyped
   end
 
   # A lot of objects in ZipKit accept bytes that may be sent
@@ -1791,8 +1561,7 @@ end, T.untyped)
     # _@param_ `bytes` — the binary string to write (part of the uncompressed file)
     # 
     # _@return_ — the number of bytes written (will always be the bytesize of `bytes`)
-    sig { params(bytes: String).returns(Integer) }
-    def write(bytes); end
+    def write: (String bytes) -> Integer
   end
 
   module ZlibCleanup
@@ -1805,8 +1574,7 @@ end, T.untyped)
     # _@param_ `deflater` — the deflater to safely finish and close
     # 
     # _@return_ — void
-    sig { params(deflater: SORD_ERROR_ZlibDeflater).returns(T.untyped) }
-    def safely_dispose_of_incomplete_deflater(deflater); end
+    def safely_dispose_of_incomplete_deflater: (SORD_ERROR_ZlibDeflater deflater) -> untyped
   end
 
   # Permits Deflate compression in independent blocks. The workflow is as follows:
@@ -1854,9 +1622,9 @@ end, T.untyped)
   # 
   #     compressed_string = ZipKit::BlockDeflate.deflate_chunk(big_string)
   class BlockDeflate
-    DEFAULT_BLOCKSIZE = T.let(1_024 * 1024 * 5, T.untyped)
-    END_MARKER = T.let([3, 0].pack("C*"), T.untyped)
-    VALID_COMPRESSIONS = T.let((Zlib::DEFAULT_COMPRESSION..Zlib::BEST_COMPRESSION).to_a.freeze, T.untyped)
+    DEFAULT_BLOCKSIZE: untyped
+    END_MARKER: untyped
+    VALID_COMPRESSIONS: untyped
 
     # Write the end marker (\x3\x0) to the given IO.
     # 
@@ -1865,8 +1633,7 @@ end, T.untyped)
     # _@param_ `output_io` — the stream to write to (should respond to `:<<`)
     # 
     # _@return_ — number of bytes written to `output_io`
-    sig { params(output_io: IO).returns(Integer) }
-    def self.write_terminator(output_io); end
+    def self.write_terminator: (IO output_io) -> Integer
 
     # Compress a given binary string and flush the deflate stream at byte boundary.
     # The returned string can be spliced into another deflate stream.
@@ -1876,8 +1643,7 @@ end, T.untyped)
     # _@param_ `level` — Zlib compression level (defaults to `Zlib::DEFAULT_COMPRESSION`)
     # 
     # _@return_ — compressed bytes
-    sig { params(bytes: String, level: Integer).returns(String) }
-    def self.deflate_chunk(bytes, level: Zlib::DEFAULT_COMPRESSION); end
+    def self.deflate_chunk: (String bytes, ?level: Integer) -> String
 
     # Compress the contents of input_io into output_io, in blocks
     # of block_size. Aligns the parts so that they can be concatenated later.
@@ -1898,15 +1664,12 @@ end, T.untyped)
     # _@param_ `block_size` — The block size to use (defaults to `DEFAULT_BLOCKSIZE`)
     # 
     # _@return_ — number of bytes written to `output_io`
-    sig do
-      params(
-        input_io: IO,
-        output_io: IO,
-        level: Integer,
-        block_size: Integer
-      ).returns(Integer)
-    end
-    def self.deflate_in_blocks_and_terminate(input_io, output_io, level: Zlib::DEFAULT_COMPRESSION, block_size: DEFAULT_BLOCKSIZE); end
+    def self.deflate_in_blocks_and_terminate: (
+                                                IO input_io,
+                                                IO output_io,
+                                                ?level: Integer,
+                                                ?block_size: Integer
+                                              ) -> Integer
 
     # Compress the contents of input_io into output_io, in blocks
     # of block_size. Align the parts so that they can be concatenated later.
@@ -1924,15 +1687,12 @@ end, T.untyped)
     # _@param_ `block_size` — The block size to use (defaults to `DEFAULT_BLOCKSIZE`)
     # 
     # _@return_ — number of bytes written to `output_io`
-    sig do
-      params(
-        input_io: IO,
-        output_io: IO,
-        level: Integer,
-        block_size: Integer
-      ).returns(Integer)
-    end
-    def self.deflate_in_blocks(input_io, output_io, level: Zlib::DEFAULT_COMPRESSION, block_size: DEFAULT_BLOCKSIZE); end
+    def self.deflate_in_blocks: (
+                                  IO input_io,
+                                  IO output_io,
+                                  ?level: Integer,
+                                  ?block_size: Integer
+                                ) -> Integer
   end
 
   # Helps to estimate archive sizes
@@ -1941,8 +1701,7 @@ end, T.untyped)
     # `estimate` instead an not use this method directly.
     # 
     # _@param_ `streamer`
-    sig { params(streamer: ZipKit::Streamer).void }
-    def initialize(streamer); end
+    def initialize: (ZipKit::Streamer streamer) -> void
 
     # Performs the estimate using fake archiving. It needs to know the sizes of the
     # entries upfront. Usage:
@@ -1956,8 +1715,7 @@ end, T.untyped)
     # _@param_ `kwargs_for_streamer_new` — Any options to pass to Streamer, see {Streamer#initialize}
     # 
     # _@return_ — the size of the resulting archive, in bytes
-    sig { params(kwargs_for_streamer_new: T.untyped, blk: T.proc.params(estimator: SizeEstimator).void).returns(Integer) }
-    def self.estimate(**kwargs_for_streamer_new, &blk); end
+    def self.estimate: (**untyped kwargs_for_streamer_new) ?{ (SizeEstimator estimator) -> void } -> Integer
 
     # Add a fake entry to the archive, to see how big it is going to be in the end.
     # 
@@ -1968,8 +1726,7 @@ end, T.untyped)
     # _@param_ `use_data_descriptor` — whether there is going to be a data descriptor written after the entry body, to specify size. You must enable this if you are going to be using {Streamer#write_stored_file} as otherwise your estimated size is not going to be accurate
     # 
     # _@return_ — self
-    sig { params(filename: String, size: Integer, use_data_descriptor: T::Boolean).returns(T.untyped) }
-    def add_stored_entry(filename:, size:, use_data_descriptor: false); end
+    def add_stored_entry: (filename: String, size: Integer, ?use_data_descriptor: bool) -> untyped
 
     # Add a fake entry to the archive, to see how big it is going to be in the end.
     # 
@@ -1982,23 +1739,19 @@ end, T.untyped)
     # _@param_ `use_data_descriptor` — whether there is going to be a data descriptor written after the entry body, to specify size. You must enable this if you are going to be using {Streamer#write_deflated_file} as otherwise your estimated size is not going to be accurate
     # 
     # _@return_ — self
-    sig do
-      params(
-        filename: String,
-        uncompressed_size: Integer,
-        compressed_size: Integer,
-        use_data_descriptor: T::Boolean
-      ).returns(T.untyped)
-    end
-    def add_deflated_entry(filename:, uncompressed_size:, compressed_size:, use_data_descriptor: false); end
+    def add_deflated_entry: (
+                              filename: String,
+                              uncompressed_size: Integer,
+                              compressed_size: Integer,
+                              ?use_data_descriptor: bool
+                            ) -> untyped
 
     # Add an empty directory to the archive.
     # 
     # _@param_ `dirname` — the name of the directory
     # 
     # _@return_ — self
-    sig { params(dirname: String).returns(T.untyped) }
-    def add_empty_directory_entry(dirname:); end
+    def add_empty_directory_entry: (dirname: String) -> untyped
   end
 
   # A tiny wrapper over any object that supports :<<.
@@ -2011,22 +1764,18 @@ end, T.untyped)
     include ZipKit::WriteShovel
 
     # sord omit - no YARD type given for "io", using untyped
-    sig { params(io: T.untyped).void }
-    def initialize(io); end
+    def initialize: (untyped io) -> void
 
     # sord omit - no YARD type given for "bytes", using untyped
     # sord omit - no YARD return type given, using untyped
-    sig { params(bytes: T.untyped).returns(T.untyped) }
-    def <<(bytes); end
+    def <<: (untyped bytes) -> untyped
 
     # sord omit - no YARD type given for "num_bytes", using untyped
     # sord omit - no YARD return type given, using untyped
-    sig { params(num_bytes: T.untyped).returns(T.untyped) }
-    def advance_position_by(num_bytes); end
+    def advance_position_by: (untyped num_bytes) -> untyped
 
     # sord omit - no YARD return type given, using untyped
-    sig { returns(T.untyped) }
-    def tell; end
+    def tell: () -> untyped
 
     # Writes the given data to the output stream. Allows the object to be used as
     # a target for `IO.copy_stream(from, to)`
@@ -2034,8 +1783,7 @@ end, T.untyped)
     # _@param_ `bytes` — the binary string to write (part of the uncompressed file)
     # 
     # _@return_ — the number of bytes written (will always be the bytesize of `bytes`)
-    sig { params(bytes: String).returns(Integer) }
-    def write(bytes); end
+    def write: (String bytes) -> Integer
   end
 
   # Should be included into a Rails controller for easy ZIP output from any action.
@@ -2066,16 +1814,12 @@ end, T.untyped)
     # _@param_ `output_enumerator_options` — options that will be passed to the OutputEnumerator - these include options for the Streamer. See {ZipKit::OutputEnumerator#initialize} for the full list of options.
     # 
     # _@return_ — always returns true
-    sig do
-      params(
-        filename: String,
-        type: String,
-        use_chunked_transfer_encoding: T::Boolean,
-        output_enumerator_options: T::Hash[T.untyped, T.untyped],
-        zip_streaming_blk: T.proc.params(zip: ZipKit::Streamer).void
-      ).returns(T::Boolean)
-    end
-    def zip_kit_stream(filename: "download.zip", type: "application/zip", use_chunked_transfer_encoding: false, **output_enumerator_options, &zip_streaming_blk); end
+    def zip_kit_stream: (
+                          ?filename: String,
+                          ?_type: String,
+                          ?use_chunked_transfer_encoding: bool,
+                          **::Hash[untyped, untyped] output_enumerator_options
+                        ) ?{ (ZipKit::Streamer zip) -> void } -> bool
   end
 
   # The output enumerator makes it possible to "pull" from a ZipKit streamer
@@ -2110,7 +1854,7 @@ end, T.untyped)
   # 
   # to bypass things like `Rack::ETag` and the nginx buffering.
   class OutputEnumerator
-    DEFAULT_WRITE_BUFFER_SIZE = T.let(64 * 1024, T.untyped)
+    DEFAULT_WRITE_BUFFER_SIZE: untyped
 
     # Creates a new OutputEnumerator enumerator. The enumerator can be read from using `each`,
     # and the creation of the ZIP is in lockstep with the caller calling `each` on the returned
@@ -2141,8 +1885,7 @@ end, T.untyped)
     # _@param_ `write_buffer_size` — By default all ZipKit writes are unbuffered. For output to sockets it is beneficial to bulkify those writes so that they are roughly sized to a socket buffer chunk. This object will bulkify writes for you in this way (so `each` will yield not on every call to `<<` from the Streamer but at block size boundaries or greater). Set the parameter to 0 for unbuffered writes.
     # 
     # _@param_ `blk` — a block that will receive the Streamer object when executing. The block will not be executed immediately but only once `each` is called on the OutputEnumerator
-    sig { params(write_buffer_size: Integer, streamer_options: T::Hash[T.untyped, T.untyped], blk: T.untyped).void }
-    def initialize(write_buffer_size: DEFAULT_WRITE_BUFFER_SIZE, **streamer_options, &blk); end
+    def initialize: (?write_buffer_size: Integer, **::Hash[untyped, untyped] streamer_options) -> void
 
     # sord omit - no YARD return type given, using untyped
     # Executes the block given to the constructor with a {ZipKit::Streamer}
@@ -2155,8 +1898,7 @@ end, T.untyped)
     #    since the write buffer will clear it after your block returns. If you expand this Enumerator
     #    eagerly into an Array you might notice that a lot of the segments of your ZIP output are
     #    empty - this means that you need to duplicate them.
-    sig { returns(T.untyped) }
-    def each; end
+    def each: () -> untyped
 
     # Returns a Hash of HTTP response headers you are likely to need to have your response stream correctly.
     # This is on the {ZipKit::OutputEnumerator} class since those headers are common, independent of the
@@ -2175,21 +1917,18 @@ end, T.untyped)
     # * `X-Accel-Buffering` will be set to 'no` - this tells both nginx and the Google Cloud load balancer that the response should not be buffered
     # 
     # These header values are known to get as close as possible to guaranteeing streaming on most environments where Ruby web applications may be hosted.
-    sig { returns(T::Hash[T.untyped, T.untyped]) }
-    def self.streaming_http_headers; end
+    def self.streaming_http_headers: () -> ::Hash[untyped, untyped]
 
     # Returns a Hash of HTTP response headers for this particular response. This used to contain "Content-Length" for
     # presized responses, but is now effectively a no-op.
     # 
     # _@see_ `[ZipKit::OutputEnumerator.streaming_http_headers]`
-    sig { returns(T::Hash[T.untyped, T.untyped]) }
-    def streaming_http_headers; end
+    def streaming_http_headers: () -> ::Hash[untyped, untyped]
 
     # Returns a tuple of `headers, body` - headers are a `Hash` and the body is
     # an object that can be used as a Rack response body. This method used to accept arguments
     # but will now just ignore them.
-    sig { returns(T::Array[T.untyped]) }
-    def to_headers_and_rack_response_body; end
+    def to_headers_and_rack_response_body: () -> ::Array[untyped]
   end
 
   # A body wrapper that emits chunked responses, creating valid
@@ -2200,19 +1939,17 @@ end, T.untyped)
   # considered "private" from the Rails standpoint. It is not that much code to
   # carry, so we copy it into our code.
   class RackChunkedBody
-    TERM = T.let("\r\n", T.untyped)
-    TAIL = T.let("0#{TERM}", T.untyped)
+    TERM: untyped
+    TAIL: untyped
 
-    # sord duck - #each looks like a duck type, replacing with untyped
+    # sord duck - #each looks like a duck type with an equivalent RBS interface, replacing with _Each[untyped]
     # _@param_ `body` — the enumerable that yields bytes, usually a `OutputEnumerator`
-    sig { params(body: T.untyped).void }
-    def initialize(body); end
+    def initialize: (_Each[untyped] body) -> void
 
     # sord omit - no YARD return type given, using untyped
     # For each string yielded by the response body, yield
     # the element in chunked encoding - and finish off with a terminator
-    sig { returns(T.untyped) }
-    def each; end
+    def each: () -> untyped
   end
 
   module UniquifyFilename
@@ -2228,8 +1965,7 @@ end, T.untyped)
     # _@param_ `while_included_in` — an object that stores the list of already used paths
     # 
     # _@return_ — the path as is, or with the suffix required to make it unique
-    sig { params(path: String, while_included_in: T.untyped).returns(String) }
-    def self.call(path, while_included_in); end
+    def self.call: (String path, untyped while_included_in) -> String
   end
 
   # Contains a file handle which can be closed once the response finishes sending.
@@ -2237,34 +1973,28 @@ end, T.untyped)
   # This class is deprecated and is going to be removed in zip_kit 7.x
   # @api deprecated
   class RackTempfileBody
-    TEMPFILE_NAME_PREFIX = T.let("zip-tricks-tf-body-", T.untyped)
+    TEMPFILE_NAME_PREFIX: untyped
 
     # sord omit - no YARD type given for "env", using untyped
-    # sord duck - #each looks like a duck type, replacing with untyped
+    # sord duck - #each looks like a duck type with an equivalent RBS interface, replacing with _Each[untyped]
     # _@param_ `body` — the enumerable that yields bytes, usually a `OutputEnumerator`. The `body` will be read in full immediately and closed.
-    sig { params(env: T.untyped, body: T.untyped).void }
-    def initialize(env, body); end
+    def initialize: (untyped env, _Each[untyped] body) -> void
 
     # Returns the size of the contained `Tempfile` so that a correct
     # Content-Length header can be set
-    sig { returns(Integer) }
-    def size; end
+    def size: () -> Integer
 
     # Returns the path to the `Tempfile`, so that Rack::Sendfile can send this response
     # using the downstream webserver
-    sig { returns(String) }
-    def to_path; end
+    def to_path: () -> String
 
     # Stream the file's contents if `Rack::Sendfile` isn't present.
-    sig { void }
-    def each; end
+    def each: () -> void
 
     # sord omit - no YARD return type given, using untyped
-    sig { returns(T.untyped) }
-    def flush; end
+    def flush: () -> untyped
 
     # sord omit - no YARD type given for :tempfile, using untyped
-    sig { returns(T.untyped) }
-    attr_reader :tempfile
+    attr_reader tempfile: untyped
   end
 end
