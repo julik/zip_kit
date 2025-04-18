@@ -1,6 +1,7 @@
 ## 6.3.3
 
-* Make sure `Writable#<<` converts the strings it is given into binary if they are not already in binary. This fixes an issue where `Heuristic` would suddenly start forwarding strings as-is to downstream callees.
+* Make sure `Writable#<<` converts the strings it is given into binary if they are not already in binary. This fixes an issue where `Heuristic` would suddenly start forwarding strings as-is to downstream callees. There is a lot of spots where the string-to-write gets forwarded and converting in every single one will be quite wasteful, but it can be handy to do in a few key places.
+* Make sure `WritableBuffer#<<` converts the strings it is given into binary if they are not already in binary. This helps prevent an issue where the receiving object the buffer flushes to is in a different encoding than binary (and all of our use cases assume bytes anyway, except for filenames).
 * When rescuing a failed `write_file`, differentiate between `#close`
   and `#release_resources_on_failure!`. Closing a Writable can still try
   to do things to the Streamer output, it can try to write to the destination

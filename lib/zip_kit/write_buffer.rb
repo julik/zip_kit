@@ -42,14 +42,14 @@ class ZipKit::WriteBuffer
   # Appends the given data to the write buffer, and flushes the buffer into the
   # writable if the buffer size exceeds the `buffer_size` given at initialization
   #
-  # @param data[String] data to be written
+  # @param string[String] data to be written
   # @return self
-  def <<(data)
-    if data.bytesize >= @buffer_size
-      flush unless @buf.empty? # <- this is were we can output less than @buffer_size
-      @writable << data
+  def <<(string)
+    if string.bytesize >= @buffer_size
+      flush # <- this is were we can output less than @buffer_size
+      @writable << string.b
     else
-      @buf << data
+      @buf << string.b
       flush if @buf.bytesize >= @buffer_size
     end
     self

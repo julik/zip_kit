@@ -7,6 +7,17 @@ describe ZipKit::WriteBuffer do
     expect(adapter << "a").to eq(adapter)
   end
 
+  it "performs appends to the buffer in binary encoding only" do
+    # The WriteBuffer reuses strings, so for a good reproduction
+    # we need the sink to be something realistic
+    sink = "å".b
+    buffer = described_class.new(sink, 1)
+
+    expect {
+      2.times { buffer << "é".encode(Encoding::UTF_8) }
+    }.not_to raise_error
+  end
+
   it "appends the written strings in one go for the set buffer size" do
     sink = double("Writable")
 
