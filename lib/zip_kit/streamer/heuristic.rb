@@ -23,7 +23,7 @@ class ZipKit::Streamer::Heuristic < ZipKit::Streamer::Writable
     @filename = filename
     @write_file_options = write_file_options
 
-    @buf = StringIO.new.binmode
+    @buf = +"".b # Just use a mutable String
     @deflater = ::Zlib::Deflate.new(Zlib::DEFAULT_COMPRESSION, -::Zlib::MAX_WBITS)
     @bytes_deflated = 0
 
@@ -37,7 +37,7 @@ class ZipKit::Streamer::Heuristic < ZipKit::Streamer::Writable
     else
       @buf << bytes
       @deflater.deflate(bytes) { |chunk| @bytes_deflated += chunk.bytesize }
-      decide if @buf.size > BYTES_WRITTEN_THRESHOLD
+      decide if @buf.bytesize > BYTES_WRITTEN_THRESHOLD
     end
     self
   end
@@ -61,7 +61,7 @@ class ZipKit::Streamer::Heuristic < ZipKit::Streamer::Writable
 
     # If the deflated version is smaller than the stored one
     # - use deflate, otherwise stored
-    ratio = @bytes_deflated / @buf.size.to_f
+    ratio = @bytes_deflated / @buf.bytesize.to_f
     @winner = if ratio <= MINIMUM_VIABLE_COMPRESSION
       @streamer.write_deflated_file(@filename, **@write_file_options)
     else
@@ -69,9 +69,8 @@ class ZipKit::Streamer::Heuristic < ZipKit::Streamer::Writable
     end
 
     # Copy the buffered uncompressed data into the newly initialized writable
-    @buf.rewind
-    IO.copy_stream(@buf, @winner)
-    @buf.truncate(0)
+    @winner << @buf
+    @buf.clear
   ensure
     @deflater.close
   end
