@@ -39,18 +39,22 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency "rspec", "~> 3"
   spec.add_development_dependency "rspec-mocks", "~> 3.10", ">= 3.10.2" # ruby 3 compatibility
   spec.add_development_dependency "complexity_assert"
-  spec.add_development_dependency "coderay"
   spec.add_development_dependency "benchmark-ips"
   spec.add_development_dependency "allocation_stats", "~> 0.1.5"
   spec.add_development_dependency "yard", "~> 0.9"
   spec.add_development_dependency "standard"
   spec.add_development_dependency "magic_frozen_string_literal"
   spec.add_development_dependency "puma"
-  spec.add_development_dependency "mutex_m" # Some deps use it but it is no longer in stdlib since 3.4
-  spec.add_development_dependency "bigdecimal" # Some deps use it but it is no longer in stdlib since 3.4
   spec.add_development_dependency "rails", "~> 5" # For testing RailsStreaming against an actual Rails controller
   spec.add_development_dependency "actionpack", "~> 5" # For testing RailsStreaming against an actual Rails controller
+  spec.add_development_dependency "sinatra" # We test streaming a ZIP out of an actual Sinatra app too
   spec.add_development_dependency "nokogiri", "~> 1", ">= 1.13" # Rails 5 does by mistake use an older Nokogiri otherwise
-  spec.add_development_dependency "sinatra"
   spec.add_development_dependency "sord"
+
+  # Some deps use stdlib gems which are no longer available in stdlib
+  spec.add_development_dependency "mutex_m"
+  spec.add_development_dependency "abbrev"
+  spec.add_development_dependency "ostruct"
+  spec.add_development_dependency "bigdecimal"
+  spec.add_development_dependency "benchmark"
 end
