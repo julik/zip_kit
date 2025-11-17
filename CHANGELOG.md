@@ -1,3 +1,7 @@
+## 6.3.4
+
+* Fix a bug whereby `rollback!` would cause an exception without any entries having been written yet (rollback on first entry).
+
 ## 6.3.3
 
 * Make sure `Writable#<<` converts the strings it is given into binary if they are not already in binary. This fixes an issue where `Heuristic` would suddenly start forwarding strings as-is to downstream callees. There is a lot of spots where the string-to-write gets forwarded and converting in every single one will be quite wasteful, but it can be handy to do in a few key places.

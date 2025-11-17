@@ -675,4 +675,80 @@ describe ZipKit::Streamer do
       zip.close
     }.not_to raise_error # Offset validation should pass
   end
+
+  it "handles rollback when first entry fails before header is written" do
+    # This test reproduces the issue described in https://github.com/julik/zip_kit/issues/26
+    # When the first entry fails to add (e.g., due to an invalid URL or other error
+    # before the local file header is written), rollback! should not fail with a TypeError.
+    # This can happen when using write_file with Heuristic, where an exception occurs
+    # in the block before the Heuristic decides which compression method to use and
+    # calls write_deflated_file/write_stored_file (which would set @offset_before_last_local_file_header).
+    zip = described_class.new(StringIO.new)
+
+    # Simulate a scenario where an exception occurs in the block passed to write_file
+    # before the Heuristic calls write_deflated_file or write_stored_file (which would
+    # set @offset_before_last_local_file_header). This happens when the exception
+    # occurs before close() is called on the Heuristic writable.
+    expect {
+      zip.write_file("test.txt") do |sink|
+        # Raise an error before any data is written, so the Heuristic hasn't decided
+        # which compression method to use yet, and no header has been written
+        raise "Invalid URL or other error"
+      end
+    }.to raise_error("Invalid URL or other error")
+
+    expect {
+      zip.rollback!
+    }.not_to raise_error
+
+    expect {
+      zip.close
+    }.not_to raise_error
+  end
+
+  it "handles rollback when second entry fails before header is written, preserving first entry" do
+    # This test reproduces the bug where rollback! uses stale values from a previous
+    # successful entry when a new entry fails before writing a header.
+    # When write_file fails before the Heuristic calls write_deflated_file/write_stored_file,
+    # rollback! should not affect the previous successful entry.
+    zip_file = ManagedTempfile.new("zipp")
+    zip = described_class.new(zip_file)
+
+    # First entry succeeds
+    zip.write_file("success.txt") do |sink|
+      sink << "successful content"
+    end
+
+    # Second entry fails before header is written (exception in Heuristic before decide)
+    expect {
+      zip.write_file("fail.txt") do |sink|
+        # Raise an error before any data is written, so the Heuristic hasn't decided
+        # which compression method to use yet, and no header has been written
+        raise "Invalid URL or other error"
+      end
+    }.to raise_error("Invalid URL or other error")
+
+    # rollback! should not affect the first entry
+    expect {
+      zip.rollback!
+    }.not_to raise_error
+
+    # Should be able to close successfully
+    expect {
+      zip.close
+    }.not_to raise_error
+
+    zip_file.flush
+
+    # Verify the final ZIP file contains only the first entry with correct content
+    per_filename = {}
+    Zip::File.open(zip_file.path) do |zipfile|
+      zipfile.each do |entry|
+        per_filename[entry.name] = entry.get_input_stream.read
+      end
+    end
+
+    expect(per_filename.size).to eq(1)
+    expect(per_filename["success.txt"]).to eq("successful content")
+  end
 end
