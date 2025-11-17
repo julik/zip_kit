@@ -1,6 +1,6 @@
 # typed: strong
 module ZipKit
-  VERSION = T.let("6.3.3", T.untyped)
+  VERSION = T.let("6.3.4", T.untyped)
 
   class Railtie < Rails::Railtie
   end

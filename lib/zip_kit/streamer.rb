@@ -273,6 +273,11 @@ class ZipKit::Streamer
   #    output (using `IO.copy_stream` is a good approach).
   # @return [ZipKit::Streamer::Writable] without a block - the Writable sink which has to be closed manually
   def write_file(filename, modification_time: Time.now.utc, unix_permissions: nil, &blk)
+    # Reset rollback state when starting a new entry attempt, so that if this entry
+    # fails before writing a header, rollback! won't use stale values from a previous entry
+    @offset_before_last_local_file_header = nil
+    @remove_last_file_at_rollback = false
+
     writable = ZipKit::Streamer::Heuristic.new(self, filename, modification_time: modification_time, unix_permissions: unix_permissions)
     yield_or_return_writable(writable, &blk)
   end
