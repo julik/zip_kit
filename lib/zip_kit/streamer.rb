@@ -510,8 +510,13 @@ class ZipKit::Streamer
     end
 
     # Create filler for the truncated or unusable local file entry that did get written into the output
-    filler_size_bytes = @out.tell - @offset_before_last_local_file_header
-    @files << Filler.new(filler_size_bytes)
+    # Only create a filler if a local file header was actually written (indicated by
+    # @offset_before_last_local_file_header being set). If it's nil, no header was written,
+    # so there's nothing to create a filler for.
+    if @offset_before_last_local_file_header
+      filler_size_bytes = @out.tell - @offset_before_last_local_file_header
+      @files << Filler.new(filler_size_bytes)
+    end
 
     @out.tell
   end
