@@ -751,4 +751,169 @@ describe ZipKit::Streamer do
     expect(per_filename.size).to eq(1)
     expect(per_filename["success.txt"]).to eq("successful content")
   end
+
+  describe "call sequence enforcement via state machine" do
+    it "raises on multiple close calls" do
+      zip = described_class.new(StringIO.new)
+      zip.close
+
+      expect { zip.close }
+        .to raise_error(ZipKit::Streamer::InvalidState, /already closed/)
+    end
+
+    it "prevents adding entry after close" do
+      zip = described_class.new(StringIO.new)
+      zip.close
+
+      expect { zip.write_stored_file("late.txt") }
+        .to raise_error(ZipKit::Streamer::InvalidState, /already closed/)
+    end
+
+    it "prevents add_stored_entry after close" do
+      zip = described_class.new(StringIO.new)
+      zip.close
+
+      expect { zip.add_stored_entry(filename: "late.txt", size: 0, crc32: 0) }
+        .to raise_error(ZipKit::Streamer::InvalidState, /already closed/)
+    end
+
+    it "allows sequential entries when properly closed" do
+      output = StringIO.new
+      described_class.open(output) do |zip|
+        zip.write_stored_file("a.txt") { |w| w << "a" }
+        zip.write_stored_file("b.txt") { |w| w << "b" }
+      end
+
+      entries = []
+      Zip::File.open_buffer(output.string) do |zipfile|
+        zipfile.each { |entry| entries << entry.name }
+      end
+      expect(entries).to eq(["a.txt", "b.txt"])
+    end
+
+    it "tracks state transitions correctly through entry lifecycle" do
+      zip = described_class.new(StringIO.new)
+
+      expect(zip.state_machine.state).to eq(:initial)
+
+      zip.add_stored_entry(filename: "test.txt", size: 5, crc32: 0)
+      expect(zip.state_machine.state).to eq(:entry_body)
+
+      zip << "hello"
+
+      # Next entry triggers transition
+      zip.add_stored_entry(filename: "test2.txt", size: 5, crc32: 0)
+      expect(zip.state_machine.state).to eq(:entry_body)
+
+      zip << "world"
+      zip.close
+      expect(zip.state_machine.state).to eq(:end_of_central_directory)
+    end
+
+    it "state remains INITIAL until Heuristic decides" do
+      zip = described_class.new(StringIO.new)
+
+      heuristic = zip.write_file("test.txt")
+      expect(zip.state_machine.state).to eq(:initial)
+
+      heuristic << "small"
+      # Still buffering, state unchanged
+
+      heuristic.close
+      # Now decided and wrote entry
+      expect(zip.state_machine.state).to eq(:data_descriptors)
+
+      zip.close
+    end
+
+    it "rollback on first entry keeps state in entry_body" do
+      output = StringIO.new
+      described_class.open(output) do |zip|
+        expect {
+          zip.write_stored_file("fail.txt") { raise "boom" }
+        }.to raise_error("boom")
+
+        # Stays in entry_body (no data descriptor written during rollback)
+        expect(zip.state_machine.state).to eq(:entry_body)
+
+        zip.write_stored_file("ok.txt") { |w| w << "ok" }
+      end
+
+      entries = []
+      Zip::File.open_buffer(output.string) do |zipfile|
+        zipfile.each { |entry| entries << entry.name }
+      end
+      expect(entries).to eq(["ok.txt"])
+    end
+
+    it "rollback creates filler and maintains correct central directory offsets" do
+      output = StringIO.new
+      described_class.open(output) do |zip|
+        zip.write_stored_file("before.txt") { |w| w << "before" }
+
+        expect {
+          zip.write_stored_file("fail.txt") do |w|
+            w << "x" * 1000
+            raise "boom"
+          end
+        }.to raise_error("boom")
+
+        zip.write_stored_file("after.txt") { |w| w << "after" }
+      end
+
+      # Verify the archive is valid and readable
+      per_filename = {}
+      Zip::File.open_buffer(output.string) do |zipfile|
+        zipfile.each do |entry|
+          per_filename[entry.name] = entry.get_input_stream.read
+        end
+      end
+
+      expect(per_filename.keys).to eq(["before.txt", "after.txt"])
+      expect(per_filename["before.txt"]).to eq("before")
+      expect(per_filename["after.txt"]).to eq("after")
+    end
+
+    it "no rollback needed if Heuristic fails before deciding" do
+      output = StringIO.new
+      described_class.open(output) do |zip|
+        expect {
+          zip.write_file("fail.txt") do |w|
+            w << "tiny" # Not enough to trigger decide
+            raise "boom"
+          end
+        }.to raise_error("boom")
+
+        # State is still INITIAL, no filler created
+        expect(zip.state_machine.state).to eq(:initial)
+
+        zip.write_stored_file("ok.txt") { |w| w << "ok" }
+      end
+
+      entries = []
+      Zip::File.open_buffer(output.string) do |zipfile|
+        zipfile.each { |entry| entries << entry.name }
+      end
+      expect(entries).to eq(["ok.txt"])
+    end
+
+    it "allows sequential add_stored_entry calls" do
+      output = StringIO.new
+      zip = described_class.new(output)
+
+      zip.add_stored_entry(filename: "a.txt", size: 1, crc32: Zlib.crc32("a"))
+      zip << "a"
+
+      zip.add_stored_entry(filename: "b.txt", size: 1, crc32: Zlib.crc32("b"))
+      zip << "b"
+
+      zip.close
+
+      entries = []
+      Zip::File.open_buffer(output.string) do |zipfile|
+        zipfile.each { |entry| entries << entry.name }
+      end
+      expect(entries).to eq(["a.txt", "b.txt"])
+    end
+  end
 end

@@ -92,6 +92,7 @@ class ZipKit::Streamer
   autoload :Entry, File.dirname(__FILE__) + "/streamer/entry.rb"
   autoload :Filler, File.dirname(__FILE__) + "/streamer/filler.rb"
   autoload :Heuristic, File.dirname(__FILE__) + "/streamer/heuristic.rb"
+  autoload :StateMachine, File.dirname(__FILE__) + "/streamer/state_machine.rb"
 
   include ZipKit::WriteShovel
 
@@ -100,6 +101,7 @@ class ZipKit::Streamer
 
   EntryBodySizeMismatch = Class.new(StandardError)
   InvalidOutput = Class.new(ArgumentError)
+  InvalidState = Class.new(StandardError)
   Overflow = Class.new(StandardError)
   UnknownMode = Class.new(StandardError)
   OffsetOutOfSync = Class.new(StandardError)
@@ -127,6 +129,9 @@ class ZipKit::Streamer
   # @param auto_rename_duplicate_filenames[Boolean] whether duplicate filenames, when encountered,
   #    should be suffixed with (1), (2) etc. Default value is `false` - if
   #    dupliate names are used an exception will be raised
+  # @return [ZipKit::Streamer::StateMachine] the state machine tracking ZIP output state
+  attr_reader :state_machine
+
   def initialize(writable, writer: create_writer, auto_rename_duplicate_filenames: false)
     raise InvalidOutput, "The writable must respond to #<< or #write" unless writable.respond_to?(:<<) || writable.respond_to?(:write)
 
@@ -135,6 +140,7 @@ class ZipKit::Streamer
     @path_set = ZipKit::PathSet.new
     @writer = writer
     @dedupe_filenames = auto_rename_duplicate_filenames
+    @state_machine = StateMachine.new
   end
 
   # Writes a part of a zip entry body (actual binary data of the entry) into the output stream.
@@ -273,11 +279,8 @@ class ZipKit::Streamer
   #    output (using `IO.copy_stream` is a good approach).
   # @return [ZipKit::Streamer::Writable] without a block - the Writable sink which has to be closed manually
   def write_file(filename, modification_time: Time.now.utc, unix_permissions: nil, &blk)
-    # Reset rollback state when starting a new entry attempt, so that if this entry
-    # fails before writing a header, rollback! won't use stale values from a previous entry
-    @offset_before_last_local_file_header = nil
-    @remove_last_file_at_rollback = false
-
+    # Heuristic buffers data, then calls write_stored_file or write_deflated_file
+    # State only changes when actual ZIP data is written to the stream
     writable = ZipKit::Streamer::Heuristic.new(self, filename, modification_time: modification_time, unix_permissions: unix_permissions)
     yield_or_return_writable(writable, &blk)
   end
@@ -406,8 +409,13 @@ class ZipKit::Streamer
   #
   # @return [Integer] the offset the output IO is at after closing the archive
   def close
+    raise_if_closed!
+
     # Make sure offsets are in order
     verify_offsets!
+
+    # Transition to central directory state
+    @state_machine.begin_central_directory(@out.tell)
 
     # Record the central directory offset, so that it can be written into the EOCD record
     cdir_starts_at = @out.tell
@@ -437,6 +445,9 @@ class ZipKit::Streamer
       start_of_central_directory_location: cdir_starts_at,
       central_directory_size: cdir_size,
       num_files_in_archive: @files.length)
+
+    # Finalize the state machine
+    @state_machine.finalize(@out.tell)
 
     # Clear the files so that GC will not have to trace all the way to here to deallocate them
     @files.clear
@@ -479,6 +490,9 @@ class ZipKit::Streamer
       uncompressed_size: last_entry.uncompressed_size)
     last_entry.bytes_used_for_data_descriptor = @out.tell - offset_before_data_descriptor
 
+    # Transition state machine to data_descriptors state
+    @state_machine.write_data_descriptor(@out.tell)
+
     @out.tell
   end
 
@@ -506,27 +520,58 @@ class ZipKit::Streamer
   #     end
   # @return [Integer] position in the output stream / ZIP archive
   def rollback!
-    @files.pop if @remove_last_file_at_rollback
+    state = @state_machine.state
 
-    # Recreate the path set from remaining entries (PathSet does not support cheap deletes yet)
-    @path_set.clear
-    @files.each do |e|
-      @path_set.add_directory_or_file_path(e.filename) unless e.filler?
-    end
+    # Only perform rollback if we are in entry-related states
+    # If state is still :initial (e.g., Heuristic failed before deciding), there's nothing to roll back
+    if state == StateMachine::ENTRY_BODY || state == StateMachine::LOCAL_HEADER
+      context = @state_machine.rollback(@out.tell)
 
-    # Create filler for the truncated or unusable local file entry that did get written into the output
-    # Only create a filler if a local file header was actually written (indicated by
-    # @offset_before_last_local_file_header being set). If it's nil, no header was written,
-    # so there's nothing to create a filler for.
-    if @offset_before_last_local_file_header
-      filler_size_bytes = @out.tell - @offset_before_last_local_file_header
-      @files << Filler.new(filler_size_bytes)
+      # Remove the failed entry from @files
+      if context[:current_entry]
+        @files.delete(context[:current_entry])
+      end
+
+      # Recreate the path set from remaining entries (PathSet does not support cheap deletes yet)
+      @path_set.clear
+      @files.each do |e|
+        @path_set.add_directory_or_file_path(e.filename) unless e.filler?
+      end
+
+      # Create filler to maintain correct offsets in central directory
+      if context[:bytes_written] > 0
+        @files << Filler.new(context[:bytes_written])
+      end
     end
 
     @out.tell
   end
 
   private
+
+  def raise_if_cannot_begin_entry!
+    return if @state_machine.can_begin_entry?
+
+    if @state_machine.state == StateMachine::LOCAL_HEADER
+      raise InvalidState,
+        "Cannot start new entry: local header was written but entry body not started. " \
+        "This is an internal error."
+    elsif @state_machine.in_entry?
+      entry_name = @state_machine.current_entry&.filename || "(unknown)"
+      raise InvalidState,
+        "Cannot start new entry while #{entry_name.inspect} is being written. " \
+        "Close the current entry first."
+    elsif @state_machine.closed?
+      raise InvalidState, "Cannot add entry: archive is already closed"
+    else
+      raise InvalidState, "Cannot add entry in state #{@state_machine.state}"
+    end
+  end
+
+  def raise_if_closed!
+    return unless @state_machine.closed?
+    raise InvalidState, "Archive is already closed"
+  end
 
   def yield_or_return_writable(writable, &block_to_pass_writable_to)
     if block_to_pass_writable_to
@@ -575,11 +620,7 @@ class ZipKit::Streamer
     use_data_descriptor:,
     unix_permissions:
   )
-    # Set state needed for proper rollback later. If write_local_file_header
-    # does manage to write _some_ bytes, but fails later (we write in tiny bits sometimes)
-    # we should be able to create a filler from this offset on when we
-    @offset_before_last_local_file_header = @out.tell
-    @remove_last_file_at_rollback = false
+    raise_if_cannot_begin_entry!
 
     # Clean backslashes
     filename = remove_backslash(filename)
@@ -618,6 +659,9 @@ class ZipKit::Streamer
       _bytes_used_for_data_descriptor = 0,
       unix_permissions)
 
+    # Record state machine transition for entry start
+    @state_machine.begin_entry(e, local_header_starts_at)
+
     @writer.write_local_file_header(io: @out,
       gp_flags: e.gp_flags,
       crc32: e.crc32,
@@ -630,7 +674,9 @@ class ZipKit::Streamer
     e.bytes_used_for_local_header = @out.tell - e.local_header_offset
 
     @files << e
-    @remove_last_file_at_rollback = true
+
+    # Transition to entry body state
+    @state_machine.begin_entry_body(@out.tell)
   end
 
   def remove_backslash(filename)
