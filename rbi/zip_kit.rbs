@@ -1561,12 +1561,10 @@ module ZipKit
 
     # sord omit - no YARD type given for "string", using untyped
     # sord omit - no YARD return type given, using untyped
-    # Without append_as_bytes we use String#<<, which is very cheap for a binary buffer
-    # and binary or ASCII-only strings. If a non-ASCII string gets appended to a buffer
-    # which only contains ASCII, Ruby changes the encoding of the buffer to the encoding
-    # of that string. Appending a string with an incompatible encoding raises, and in that
-    # case we append the bytes of the string instead. The buffer is forced back into binary
-    # before it is handed to the writable, see `flush`.
+    # Appends the bytes of the string without copying it. Without String#append_as_bytes (Ruby < 3.4)
+    # String#<< is used, which may change the encoding of the buffer or raise if the encodings are
+    # incompatible - in that case we append the bytes of the string instead. The buffer is forced
+    # back into binary before it is handed to the writable, see `flush`.
     def append_bytes: (untyped string) -> untyped
   end
 
