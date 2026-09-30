@@ -1763,6 +1763,8 @@ end, T.untyped)
   # to `<<`. Therefore, if you need to retain the output of the WriteBuffer in, say, an Array,
   # you might need to `.dup` the `String` it gives you.
   class WriteBuffer
+    APPEND_AS_BYTES = T.let(String.instance_methods.include?(:append_as_bytes), T.untyped)
+
     # sord duck - #<< looks like a duck type, replacing with untyped
     # Creates a new WriteBuffer bypassing into a given writable object
     # 

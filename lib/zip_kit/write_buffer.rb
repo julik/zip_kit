@@ -38,6 +38,10 @@
 # to `<<`. Therefore, if you need to retain the output of the WriteBuffer in, say, an Array,
 # you might need to `.dup` the `String` it gives you.
 class ZipKit::WriteBuffer
+  # String#append_as_bytes (Ruby 3.4+) appends the bytes of the string without any encoding
+  # negotiation, so the buffer always stays binary. Without it we use String#<<, see `append_bytes`.
+  APPEND_AS_BYTES = String.instance_methods.include?(:append_as_bytes)
+
   # Creates a new WriteBuffer bypassing into a given writable object
   #
   # @param writable[#<<] An object that responds to `#<<` with a String as argument
@@ -49,9 +53,6 @@ class ZipKit::WriteBuffer
     @buf = "".b
     @buffer_size = buffer_size
     @writable = writable
-    # String#append_as_bytes (Ruby 3.4+) appends the bytes of the string without any encoding
-    # negotiation, so the buffer always stays binary. Without it we use String#<<, see `append_bytes`.
-    @append_as_bytes = @buf.respond_to?(:append_as_bytes)
   end
 
   # Appends the given data to the write buffer, and flushes the buffer into the
@@ -67,7 +68,7 @@ class ZipKit::WriteBuffer
     # For the string being appended String#length is used, as it is O(1) for ASCII-only strings.
     # For a multibyte string String#length is less than its bytesize, which only means that we flush
     # a bit later than we could have.
-    if @append_as_bytes
+    if APPEND_AS_BYTES
       # With append_as_bytes the buffer always stays binary, so String#length is the same as
       # String#bytesize for it - and cheaper to call as it has a dedicated VM instruction.
       if @buf.length + string.length < @buffer_size

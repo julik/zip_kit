@@ -254,11 +254,7 @@ describe ZipKit::WriteBuffer do
   end
 
   context "without String#append_as_bytes (as on Ruby before 3.4)" do
-    before do
-      allow(described_class).to receive(:new).and_wrap_original do |original_new, *args|
-        original_new.call(*args).tap { |buffer| buffer.instance_variable_set(:@append_as_bytes, false) }
-      end
-    end
+    before { stub_const("ZipKit::WriteBuffer::APPEND_AS_BYTES", false) }
 
     it_behaves_like "a WriteBuffer"
   end

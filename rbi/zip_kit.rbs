@@ -1536,6 +1536,8 @@ module ZipKit
   # to `<<`. Therefore, if you need to retain the output of the WriteBuffer in, say, an Array,
   # you might need to `.dup` the `String` it gives you.
   class WriteBuffer
+    APPEND_AS_BYTES: untyped
+
     # sord duck - #<< looks like a duck type, replacing with untyped
     # Creates a new WriteBuffer bypassing into a given writable object
     # 
