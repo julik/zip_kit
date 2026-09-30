@@ -1781,16 +1781,22 @@ end, T.untyped)
     sig { params(string: String).returns(T.untyped) }
     def <<(string); end
 
-    # sord omit - no YARD type given for "string", using untyped
-    # sord omit - no YARD return type given, using untyped
-    sig { params(string: T.untyped).returns(T.untyped) }
-    def append_bytes(string); end
-
     # Explicitly flushes the buffer if it contains anything
     # 
     # _@return_ — self
     sig { returns(T.untyped) }
     def flush; end
+
+    # sord omit - no YARD type given for "string", using untyped
+    # sord omit - no YARD return type given, using untyped
+    # Without append_as_bytes we use String#<<, which is very cheap for a binary buffer
+    # and binary or ASCII-only strings. If a non-ASCII string gets appended to a buffer
+    # which only contains ASCII, Ruby changes the encoding of the buffer to the encoding
+    # of that string. Appending a string with an incompatible encoding raises, and in that
+    # case we append the bytes of the string instead. The buffer is forced back into binary
+    # before it is handed to the writable, see `flush`.
+    sig { params(string: T.untyped).returns(T.untyped) }
+    def append_bytes(string); end
   end
 
   # A lot of objects in ZipKit accept bytes that may be sent

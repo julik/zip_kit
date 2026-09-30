@@ -49,24 +49,27 @@ class ZipKit::WriteBuffer
     @buf = "".b
     @buffer_size = buffer_size
     @writable = writable
+    # String#append_as_bytes (Ruby 3.4+) appends the bytes of the string without any encoding
+    # negotiation, so the buffer always stays binary. Without it we use String#<<, see `append_bytes`.
+    @append_as_bytes = @buf.respond_to?(:append_as_bytes)
   end
 
-  if String.method_defined?(:append_as_bytes)
-    # Appends the given data to the write buffer, and flushes the buffer into the
-    # writable if the buffer size exceeds the `buffer_size` given at initialization
+  # Appends the given data to the write buffer, and flushes the buffer into the
+  # writable if the buffer size exceeds the `buffer_size` given at initialization
+  #
+  # @param string[String] data to be written
+  # @return self
+  def <<(string)
+    # Checking whether the buffer is going to overflow before appending (instead of checking
+    # whether it did overflow after appending) lets us pass large writes through without
+    # copying them into the buffer, at the cost of just one extra size check.
     #
-    # @param string[String] data to be written
-    # @return self
-    def <<(string)
-      # String#append_as_bytes (Ruby 3.4+) appends the bytes of the string without any encoding
-      # negotiation, so the buffer always stays binary. For a binary String, String#length is the same
-      # as String#bytesize, and it is cheaper to call as it has a dedicated VM instruction. For a
-      # multibyte string String#length is less than its bytesize, which only means that we flush
-      # a bit later than we could have - and it is O(1) for ASCII-only strings.
-      #
-      # Checking whether the buffer is going to overflow before appending (instead of checking
-      # whether it did overflow after appending) lets us pass large writes through without
-      # copying them into the buffer, at the cost of just one extra size check.
+    # For the string being appended String#length is used, as it is O(1) for ASCII-only strings.
+    # For a multibyte string String#length is less than its bytesize, which only means that we flush
+    # a bit later than we could have.
+    if @append_as_bytes
+      # With append_as_bytes the buffer always stays binary, so String#length is the same as
+      # String#bytesize for it - and cheaper to call as it has a dedicated VM instruction.
       if @buf.length + string.length < @buffer_size
         @buf.append_as_bytes(string)
       elsif string.bytesize >= @buffer_size
@@ -78,49 +81,19 @@ class ZipKit::WriteBuffer
         @buf.append_as_bytes(string)
         flush if @buf.length >= @buffer_size
       end
-      self
+    elsif @buf.bytesize + string.length < @buffer_size
+      # Without append_as_bytes the buffer may have become UTF-8 (see `append_bytes`),
+      # so String#length is not O(1) for it and we need bytesize.
+      append_bytes(string)
+    elsif string.bytesize >= @buffer_size
+      flush
+      @writable << string.b
+    else
+      flush if @buf.bytesize + string.bytesize > @buffer_size
+      append_bytes(string)
+      flush if @buf.bytesize >= @buffer_size
     end
-  else
-    # Appends the given data to the write buffer, and flushes the buffer into the
-    # writable if the buffer size exceeds the `buffer_size` given at initialization
-    #
-    # @param string[String] data to be written
-    # @return self
-    def <<(string)
-      # Without append_as_bytes we use String#<<, which is very cheap for a binary buffer
-      # and binary or ASCII-only strings. If a non-ASCII string gets appended to a buffer
-      # which only contains ASCII, Ruby changes the encoding of the buffer to the encoding
-      # of that string. Appending a string with an incompatible encoding raises, and in that
-      # case we append the bytes of the string instead. The buffer is forced back into binary
-      # before it is handed to the writable, see `flush`.
-      #
-      # Since the buffer may have become UTF-8, String#length is not O(1) for it
-      # and we use bytesize. For the string being appended String#length is fine, see above.
-      if @buf.bytesize + string.length < @buffer_size
-        begin
-          @buf << string
-        rescue Encoding::CompatibilityError
-          @buf.force_encoding(Encoding::BINARY)
-          @buf << string.b
-        end
-      elsif string.bytesize >= @buffer_size
-        flush
-        # String#b does not copy the bytes of a large String, the new String shares them
-        @writable << string.b
-      else
-        flush if @buf.bytesize + string.bytesize > @buffer_size
-        append_bytes(string)
-        flush if @buf.bytesize >= @buffer_size
-      end
-      self
-    end
-
-    private def append_bytes(string)
-      @buf << string
-    rescue Encoding::CompatibilityError
-      @buf.force_encoding(Encoding::BINARY)
-      @buf << string.b
-    end
+    self
   end
 
   # Explicitly flushes the buffer if it contains anything
@@ -137,4 +110,19 @@ class ZipKit::WriteBuffer
 
   # `flush!` was renamed to `flush` but we preserve this method for backwards compatibility
   alias_method :flush!, :flush
+
+  private
+
+  # Without append_as_bytes we use String#<<, which is very cheap for a binary buffer
+  # and binary or ASCII-only strings. If a non-ASCII string gets appended to a buffer
+  # which only contains ASCII, Ruby changes the encoding of the buffer to the encoding
+  # of that string. Appending a string with an incompatible encoding raises, and in that
+  # case we append the bytes of the string instead. The buffer is forced back into binary
+  # before it is handed to the writable, see `flush`.
+  def append_bytes(string)
+    @buf << string
+  rescue Encoding::CompatibilityError
+    @buf.force_encoding(Encoding::BINARY)
+    @buf << string.b
+  end
 end
