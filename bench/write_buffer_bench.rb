@@ -154,3 +154,30 @@ Benchmark.ips do |x|
   end
   x.compare!
 end
+
+__END__
+
+Apple M1 Pro, macOS 15.7
+
+ruby 3.4.1 (2024-12-25 revision 48d4efcb85) +PRISM [arm64-darwin24], without YJIT
+920000 tiny writes (5189483 bytes, 5.6 bytes per write on average)
+
+Comparison:
+Naive String buffer, tiny writes into CRC32:       12.1 i/s
+WriteBuffer, tiny writes into CRC32:       12.0 i/s - 1.01x  slower
+WriteBuffer (6.3.2), tiny writes into CRC32:       10.3 i/s - 1.17x  slower
+WriteBuffer (6.3.4, String#b), tiny writes into CRC32:        8.0 i/s - 1.51x  slower
+
+Comparison:
+Naive String buffer, tiny writes into write_deflated_file:        7.6 i/s
+WriteBuffer, tiny writes into write_deflated_file:        7.4 i/s - 1.02x  slower
+WriteBuffer (6.3.2), tiny writes into write_deflated_file:        6.8 i/s - 1.12x  slower
+WriteBuffer (6.3.4, String#b), tiny writes into write_deflated_file:        5.7 i/s - 1.33x  slower
+No buffer, tiny writes into write_deflated_file:        1.8 i/s - 4.18x  slower
+
+Comparison:
+WriteBuffer (6.3.2), 64 writes of 1MB into CRC32:      464.4 i/s
+WriteBuffer (6.3.4, String#b), 64 writes of 1MB into CRC32:      463.0 i/s - same-ish: difference falls within error
+WriteBuffer, 64 writes of 1MB into CRC32:      462.9 i/s - same-ish: difference falls within error
+Naive String buffer, 64 writes of 1MB into CRC32:      121.5 i/s - 3.82x  slower
+
