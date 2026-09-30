@@ -1,5 +1,7 @@
 ## Unreleased
 
+## 6.3.5
+
 * Make `WriteBuffer#<<` much faster for lots of tiny writes, like the XML fragments written by libraries such as caxlsx. Strings are no longer copied with `String#b` before being appended: on Ruby 3.4+ `String#append_as_bytes` is used, on older Rubies the string is converted only if Ruby refuses to append it. Mixing binary strings and non-ASCII strings still works, and the writable still always receives binary strings.
 * `WriteBuffer` now flushes before a write would make the buffer exceed its size (instead of after), so that it never outputs chunks larger than the buffer size, and writes which are larger than the buffer size are still passed through without getting copied.
 * `WriteBuffer` no longer preallocates (and immediately discards) a zero-filled String of twice its buffer size, which makes writing ZIPs with lots of small files faster.
