@@ -1737,10 +1737,23 @@ end, T.untyped)
   # lots of very small writes, and some degree of speedup (about 20%) can be achieved
   # with a buffer of a few KB.
   # 
-  # Note that there is no guarantee that the write buffer is going to flush at or above
-  # the given `buffer_size`, because for writes which exceed the buffer size it will
-  # first `flush` and then write through the oversized chunk, without buffering it. This
-  # helps conserve memory. Also note that the buffer will *not* duplicate strings for you
+  # The WriteBuffer is also useful in front of a `write_file` / `write_deflated_file` writable
+  # if you are going to be appending lots of tiny strings (like XML fragments) to it. Every write
+  # into a writable goes through Zlib separately, so coalescing those writes into bigger chunks
+  # is much faster.
+  # 
+  # All strings appended to the WriteBuffer are appended as bytes, and the buffer String
+  # given to the writable is always in binary encoding (`Encoding::BINARY`). You can therefore mix
+  # binary strings and strings in other encodings (for instance UTF-8 with non-ASCII characters)
+  # without getting an `Encoding::CompatibilityError`. No intermediate copies of the strings
+  # you append (like `String#b` would create) are made.
+  # 
+  # Note that there is no guarantee that the write buffer is going to flush at exactly
+  # the given `buffer_size`. The buffer gets flushed when the next write would make it exceed
+  # `buffer_size`, so the chunks it outputs are usually a bit smaller than that (strings with
+  # multibyte characters can make it go slightly over). For writes of `buffer_size` or larger
+  # it will first `flush` and then write through the oversized chunk, without buffering it.
+  # This helps conserve memory. Also note that the buffer will *not* duplicate strings for you
   # and *will* yield the same buffer String over and over, so if you are storing it in an
   # Array you might need to duplicate it.
   # 
