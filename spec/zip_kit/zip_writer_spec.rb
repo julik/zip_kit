@@ -628,4 +628,16 @@ describe ZipKit::ZipWriter do
       expect(br.read_8b).to eq(5) # Number of entries in the central directories of all disks
     end
   end
+
+  it "can be used in a process which did not load StringIO beforehand" do
+    lib_path = File.expand_path("../../lib", __dir__)
+    script = <<~RUBY
+      File.open(File::NULL, "wb") do |f|
+        ZipKit::Streamer.open(f) { |zip| zip.write_stored_file("a.txt") { |sink| sink << "x" } }
+      end
+      print "ok"
+    RUBY
+    output = IO.popen([RbConfig.ruby, "--disable-gems", "-I", lib_path, "-rzip_kit", "-e", script], err: [:child, :out], &:read)
+    expect(output).to eq("ok")
+  end
 end

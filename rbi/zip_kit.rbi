@@ -1737,10 +1737,23 @@ end, T.untyped)
   # lots of very small writes, and some degree of speedup (about 20%) can be achieved
   # with a buffer of a few KB.
   # 
-  # Note that there is no guarantee that the write buffer is going to flush at or above
-  # the given `buffer_size`, because for writes which exceed the buffer size it will
-  # first `flush` and then write through the oversized chunk, without buffering it. This
-  # helps conserve memory. Also note that the buffer will *not* duplicate strings for you
+  # The WriteBuffer is also useful in front of a `write_file` / `write_deflated_file` writable
+  # if you are going to be appending lots of tiny strings (like XML fragments) to it. Every write
+  # into a writable goes through Zlib separately, so coalescing those writes into bigger chunks
+  # is much faster.
+  # 
+  # All strings appended to the WriteBuffer are appended as bytes, and the buffer String
+  # given to the writable is always in binary encoding (`Encoding::BINARY`). You can therefore mix
+  # binary strings and strings in other encodings (for instance UTF-8 with non-ASCII characters)
+  # without getting an `Encoding::CompatibilityError`. No intermediate copies of the strings
+  # you append (like `String#b` would create) are made.
+  # 
+  # Note that there is no guarantee that the write buffer is going to flush at exactly
+  # the given `buffer_size`. The buffer gets flushed when the next write would make it exceed
+  # `buffer_size`, so the chunks it outputs are usually a bit smaller than that (strings with
+  # multibyte characters can make it go slightly over). For writes of `buffer_size` or larger
+  # it will first `flush` and then write through the oversized chunk, without buffering it.
+  # This helps conserve memory. Also note that the buffer will *not* duplicate strings for you
   # and *will* yield the same buffer String over and over, so if you are storing it in an
   # Array you might need to duplicate it.
   # 
@@ -1750,6 +1763,8 @@ end, T.untyped)
   # to `<<`. Therefore, if you need to retain the output of the WriteBuffer in, say, an Array,
   # you might need to `.dup` the `String` it gives you.
   class WriteBuffer
+    APPEND_AS_BYTES = T.let(String.instance_methods.include?(:append_as_bytes), T.untyped)
+
     # sord duck - #<< looks like a duck type, replacing with untyped
     # Creates a new WriteBuffer bypassing into a given writable object
     # 
@@ -1773,6 +1788,15 @@ end, T.untyped)
     # _@return_ — self
     sig { returns(T.untyped) }
     def flush; end
+
+    # sord omit - no YARD type given for "string", using untyped
+    # sord omit - no YARD return type given, using untyped
+    # Appends the bytes of the string without copying it. Without String#append_as_bytes (Ruby < 3.4)
+    # String#<< is used, which may change the encoding of the buffer or raise if the encodings are
+    # incompatible - in that case we append the bytes of the string instead. The buffer is forced
+    # back into binary before it is handed to the writable, see `flush`.
+    sig { params(string: T.untyped).returns(T.untyped) }
+    def append_bytes(string); end
   end
 
   # A lot of objects in ZipKit accept bytes that may be sent
