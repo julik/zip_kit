@@ -1781,6 +1781,11 @@ end, T.untyped)
     sig { params(string: String).returns(T.untyped) }
     def <<(string); end
 
+    # sord omit - no YARD type given for "string", using untyped
+    # sord omit - no YARD return type given, using untyped
+    sig { params(string: T.untyped).returns(T.untyped) }
+    def append_bytes(string); end
+
     # Explicitly flushes the buffer if it contains anything
     # 
     # _@return_ — self

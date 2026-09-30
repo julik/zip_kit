@@ -1552,6 +1552,10 @@ module ZipKit
     # _@return_ — self
     def <<: (String string) -> untyped
 
+    # sord omit - no YARD type given for "string", using untyped
+    # sord omit - no YARD return type given, using untyped
+    def append_bytes: (untyped string) -> untyped
+
     # Explicitly flushes the buffer if it contains anything
     # 
     # _@return_ — self

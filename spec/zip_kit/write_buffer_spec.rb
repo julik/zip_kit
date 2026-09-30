@@ -85,6 +85,23 @@ describe ZipKit::WriteBuffer do
     expect(large_utf8.encoding).to eq(Encoding::UTF_8)
   end
 
+  it "passes writes of exactly the buffer size through without buffering them" do
+    received = []
+    sink = Object.new
+    sink.define_singleton_method(:<<) do |str|
+      received << [str.object_id, str.dup]
+      self
+    end
+    subject = described_class.new(sink, 4)
+    internal_buffer_id = subject.instance_variable_get(:@buf).object_id
+
+    subject << "abcd" << "efgh" << "ijkl"
+    subject.flush
+
+    expect(received.map(&:last)).to eq(["abcd", "efgh", "ijkl"])
+    expect(received.map(&:first)).not_to include(internal_buffer_id)
+  end
+
   it "coalesces lots of tiny UTF-8 writes into buffer-sized chunks" do
     accumulator = []
     subject = described_class.new(Duplicator.new(accumulator), 1024)
