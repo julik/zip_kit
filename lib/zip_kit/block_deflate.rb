@@ -47,7 +47,7 @@
 
 class ZipKit::BlockDeflate
   DEFAULT_BLOCKSIZE = 1_024 * 1024 * 5
-  END_MARKER = [3, 0].pack("C*")
+  END_MARKER = [3, 0].pack("C*").freeze
   # Zlib::NO_COMPRESSION..
   VALID_COMPRESSIONS = (Zlib::DEFAULT_COMPRESSION..Zlib::BEST_COMPRESSION).to_a.freeze
   # Write the end marker (\x3\x0) to the given IO.

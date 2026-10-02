@@ -29,7 +29,7 @@ require "stringio"
 class ZipKit::ZipWriter
   FOUR_BYTE_MAX_UINT = 0xFFFFFFFF
   TWO_BYTE_MAX_UINT = 0xFFFF
-  ZIP_KIT_COMMENT = "Written using ZipKit %<version>s" % {version: ZipKit::VERSION}
+  ZIP_KIT_COMMENT = ("Written using ZipKit %<version>s" % {version: ZipKit::VERSION}).freeze
   VERSION_MADE_BY = 52
   VERSION_NEEDED_TO_EXTRACT = 20
   VERSION_NEEDED_TO_EXTRACT_ZIP64 = 45
@@ -40,7 +40,7 @@ class ZipKit::ZipWriter
   MADE_BY_SIGNATURE = begin
     # A combination of the VERSION_MADE_BY low byte and the OS type high byte
     os_type = 3 # UNIX
-    [VERSION_MADE_BY, os_type].pack("CC")
+    [VERSION_MADE_BY, os_type].pack("CC").freeze
   end
 
   C_UINT4 = "V" # Encode a 4-byte unsigned little-endian uint
