@@ -412,11 +412,10 @@ class ZipKit::Streamer
     # Record the central directory offset, so that it can be written into the EOCD record
     cdir_starts_at = @out.tell
 
-    # Write out the central directory entries, one for each file
-    @files.each do |entry|
-      # Skip fillers which are standing in for broken/incomplete files
-      next if entry.filler?
-
+    # Write out the central directory entries, one for each file.
+    # Skip fillers which are standing in for broken/incomplete files
+    entries = @files.reject(&:filler?)
+    entries.each do |entry|
       @writer.write_central_directory_file_header(io: @out,
         local_file_header_location: entry.local_header_offset,
         gp_flags: entry.gp_flags,
@@ -436,7 +435,7 @@ class ZipKit::Streamer
     @writer.write_end_of_central_directory(io: @out,
       start_of_central_directory_location: cdir_starts_at,
       central_directory_size: cdir_size,
-      num_files_in_archive: @files.length)
+      num_files_in_archive: entries.length)
 
     # Clear the files so that GC will not have to trace all the way to here to deallocate them
     @files.clear
