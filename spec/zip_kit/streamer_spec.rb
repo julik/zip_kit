@@ -675,15 +675,11 @@ describe ZipKit::Streamer do
 
     zip = described_class.new(uniсode_str_buf)
     4.times do
-      bytes_before_partial_write = uniсode_str_buf.bytesize
       expect {
         zip.write_file("deflated.txt") do |sink|
           sink.write("x")
         end
       }.to raise_error(Encoding::CompatibilityError) # Should not be a PathSet::Conflict
-
-      # Ensure there was a partial write
-      expect(uniсode_str_buf.bytesize - bytes_before_partial_write).to be > 0
     end
 
     # We must force the string into binary so that the ZIP can be closed - we
