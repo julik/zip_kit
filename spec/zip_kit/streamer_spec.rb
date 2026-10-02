@@ -640,6 +640,25 @@ describe ZipKit::Streamer do
     expect(per_filename["stored.txt"]).to eq("this is attempt 2")
   end
 
+  it "does not count rolled back entries in the end of central directory record" do
+    out = +""
+    described_class.open(out) do |zip|
+      zip.write_stored_file("first.txt") { |sink| sink << "first" }
+      begin
+        zip.write_stored_file("failed.txt") do |sink|
+          sink << "partial"
+          raise "Oops"
+        end
+      rescue => e
+        expect(e.to_s).to match(/Oops/)
+      end
+      zip.write_deflated_file("second.txt") { |sink| sink << "second" }
+    end
+
+    entries = ZipKit::FileReader.read_zip_structure(io: StringIO.new(out))
+    expect(entries.map(&:filename)).to eq(["first.txt", "second.txt"])
+  end
+
   it "correctly rolls back if an exception is raised from Writable#close when using write_file" do
     # A Unicode string will not be happy about binary writes
     # and will raise an exception. The exception won't be raised when

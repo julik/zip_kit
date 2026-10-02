@@ -1,5 +1,7 @@
 ## Unreleased
 
+* Fix the end of central directory record counting entries discarded by `rollback!`, which made archives with a rolled back entry unreadable for readers which check the entry count (including `ZipKit::FileReader`).
+
 ## 6.3.5
 
 * Make `WriteBuffer#<<` much faster for lots of tiny writes, like the XML fragments written by libraries such as caxlsx. Strings are no longer copied with `String#b` before being appended: on Ruby 3.4+ `String#append_as_bytes` is used, on older Rubies the string is converted only if Ruby refuses to append it. Mixing binary strings and non-ASCII strings still works, and the writable still always receives binary strings.
