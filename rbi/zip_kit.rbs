@@ -1038,6 +1038,17 @@ module ZipKit
     # _@param_ `block` — The block that will be called when this object receives the `<<` message
     def initialize: () ?{ (String bytes) -> void } -> void
 
+    # sord omit - no YARD return type given, using untyped
+    # Make sure those methods raise outright. These are not created with define_method,
+    # because methods defined with a block can't be called from a non-main Ractor
+    def seek: () -> untyped
+
+    # sord omit - no YARD return type given, using untyped
+    def pos=: () -> untyped
+
+    # sord omit - no YARD return type given, using untyped
+    def to_s: () -> untyped
+
     # Sends a string through to the block stored in the BlockWrite.
     # 
     # _@param_ `buf` — the string to write. Note that a zero-length String will not be forwarded to the block, as it has special meaning when used with chunked encoding (it indicates the end of the stream).

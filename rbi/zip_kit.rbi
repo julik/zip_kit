@@ -1,6 +1,6 @@
 # typed: strong
 module ZipKit
-  VERSION = T.let("6.3.5", T.untyped)
+  VERSION = T.let("6.3.6", T.untyped)
 
   class Railtie < Rails::Railtie
   end
@@ -942,7 +942,7 @@ module ZipKit
   class ZipWriter
     FOUR_BYTE_MAX_UINT = T.let(0xFFFFFFFF, T.untyped)
     TWO_BYTE_MAX_UINT = T.let(0xFFFF, T.untyped)
-    ZIP_KIT_COMMENT = T.let("Written using ZipKit %<version>s" % {version: ZipKit::VERSION}, T.untyped)
+    ZIP_KIT_COMMENT = T.let(("Written using ZipKit %<version>s" % {version: ZipKit::VERSION}).freeze, T.untyped)
     VERSION_MADE_BY = T.let(52, T.untyped)
     VERSION_NEEDED_TO_EXTRACT = T.let(20, T.untyped)
     VERSION_NEEDED_TO_EXTRACT_ZIP64 = T.let(45, T.untyped)
@@ -953,7 +953,7 @@ module ZipKit
     MADE_BY_SIGNATURE = T.let(begin
   # A combination of the VERSION_MADE_BY low byte and the OS type high byte
   os_type = 3 # UNIX
-  [VERSION_MADE_BY, os_type].pack("CC")
+  [VERSION_MADE_BY, os_type].pack("CC").freeze
 end, T.untyped)
     C_UINT4 = T.let("V", T.untyped)
     C_UINT2 = T.let("v", T.untyped)
@@ -1163,6 +1163,20 @@ end, T.untyped)
     # _@param_ `block` — The block that will be called when this object receives the `<<` message
     sig { params(block: T.proc.params(bytes: String).void).void }
     def initialize(&block); end
+
+    # sord omit - no YARD return type given, using untyped
+    # Make sure those methods raise outright. These are not created with define_method,
+    # because methods defined with a block can't be called from a non-main Ractor
+    sig { returns(T.untyped) }
+    def seek; end
+
+    # sord omit - no YARD return type given, using untyped
+    sig { returns(T.untyped) }
+    def pos=; end
+
+    # sord omit - no YARD return type given, using untyped
+    sig { returns(T.untyped) }
+    def to_s; end
 
     # Sends a string through to the block stored in the BlockWrite.
     # 
@@ -1879,7 +1893,7 @@ end, T.untyped)
   #     compressed_string = ZipKit::BlockDeflate.deflate_chunk(big_string)
   class BlockDeflate
     DEFAULT_BLOCKSIZE = T.let(1_024 * 1024 * 5, T.untyped)
-    END_MARKER = T.let([3, 0].pack("C*"), T.untyped)
+    END_MARKER = T.let([3, 0].pack("C*").freeze, T.untyped)
     VALID_COMPRESSIONS = T.let((Zlib::DEFAULT_COMPRESSION..Zlib::BEST_COMPRESSION).to_a.freeze, T.untyped)
 
     # Write the end marker (\x3\x0) to the given IO.
@@ -2225,7 +2239,7 @@ end, T.untyped)
   # carry, so we copy it into our code.
   class RackChunkedBody
     TERM = T.let("\r\n", T.untyped)
-    TAIL = T.let("0#{TERM}", T.untyped)
+    TAIL = T.let("0\r\n", T.untyped)
 
     # sord duck - #each looks like a duck type, replacing with untyped
     # _@param_ `body` — the enumerable that yields bytes, usually a `OutputEnumerator`
