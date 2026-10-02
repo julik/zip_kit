@@ -267,6 +267,51 @@ describe ZipKit::FileReader do
         local_file_header_offset: 7)
       expect(compressed_data_offset).to eq(94)
     end
+
+    it "reads the offset for an entry whose name does not fit into the initial local header read" do
+      w = ZipKit::ZipWriter.new
+      out = StringIO.new
+      out << Random.new.bytes(7)
+      filename = "x" * 0xFFFF
+      w.write_local_file_header(io: out,
+        filename: filename,
+        compressed_size: 10,
+        uncompressed_size: 15,
+        crc32: 123,
+        gp_flags: 4,
+        mtime: Time.now,
+        storage_mode: 8)
+      out << "0123456789"
+
+      out.rewind
+
+      compressed_data_offset = subject.get_compressed_data_offset(io: out,
+        local_file_header_offset: 7)
+      expect(compressed_data_offset).to eq(7 + 30 + 0xFFFF + 9)
+
+      out.seek(7)
+      entry = subject.read_local_file_header(io: out)
+      expect(entry.filename.bytesize).to eq(0xFFFF)
+      expect(entry.compressed_data_offset).to eq(7 + 30 + 0xFFFF + 9)
+    end
+
+    it "raises a ReadError when the local header is truncated past the initial read" do
+      w = ZipKit::ZipWriter.new
+      out = StringIO.new
+      w.write_local_file_header(io: out,
+        filename: "x" * 8000,
+        compressed_size: 10,
+        uncompressed_size: 15,
+        crc32: 123,
+        gp_flags: 4,
+        mtime: Time.now,
+        storage_mode: 8)
+      truncated = StringIO.new(out.string.byteslice(0, 6000))
+
+      expect {
+        subject.read_local_file_header(io: truncated)
+      }.to raise_error(described_class::ReadError)
+    end
   end
 
   it "is able to latch to the EOCD location even if the signature for the EOCD record appears all over the ZIP" do
