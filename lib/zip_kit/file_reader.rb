@@ -310,19 +310,29 @@ class ZipKit::FileReader
 
     io_starting_at_local_header = StringIO.new(local_file_header_str_plus_headroom)
 
-    assert_signature(io_starting_at_local_header, 0x04034b50)
-    e = ZipEntry.new
-    e.version_needed_to_extract = read_2b(io_starting_at_local_header) # Version needed to extract
-    e.gp_flags = read_2b(io_starting_at_local_header) # gp flags
-    e.storage_mode = read_2b(io_starting_at_local_header) # storage mode
-    e.dos_time = read_2b(io_starting_at_local_header) # dos time
-    e.dos_date = read_2b(io_starting_at_local_header) # dos date
-    e.crc32 = read_4b(io_starting_at_local_header) # CRC32
-    e.compressed_size = read_4b(io_starting_at_local_header) # Comp size
-    e.uncompressed_size = read_4b(io_starting_at_local_header) # Uncomp size
+    signature,
+      version_needed_to_extract,
+      gp_flags,
+      storage_mode,
+      dos_time,
+      dos_date,
+      crc32,
+      compressed_size,
+      uncompressed_size,
+      filename_size,
+      extra_size = read_n(io_starting_at_local_header, SIZE_OF_LOCAL_HEADER_FIXED_FIELDS).unpack(LOCAL_HEADER_FIXED_FIELDS_UNPACKSPEC)
+    assert_signature_value(signature, 0x04034b50)
 
-    filename_size = read_2b(io_starting_at_local_header)
-    extra_size = read_2b(io_starting_at_local_header)
+    e = ZipEntry.new
+    e.version_needed_to_extract = version_needed_to_extract
+    e.gp_flags = gp_flags
+    e.storage_mode = storage_mode
+    e.dos_time = dos_time
+    e.dos_date = dos_date
+    e.crc32 = crc32
+    e.compressed_size = compressed_size
+    e.uncompressed_size = uncompressed_size
+
     e.filename = read_n(io_starting_at_local_header, filename_size)
     extra_fields_str = read_n(io_starting_at_local_header, extra_size)
 
@@ -431,7 +441,10 @@ class ZipKit::FileReader
   end
 
   def assert_signature(io, signature_magic_number)
-    readback = read_4b(io)
+    assert_signature_value(read_4b(io), signature_magic_number)
+  end
+
+  def assert_signature_value(readback, signature_magic_number)
     if readback != signature_magic_number
       expected = "0x0" + signature_magic_number.to_s(16)
       actual = "0x0" + readback.to_s(16)
@@ -475,24 +488,39 @@ class ZipKit::FileReader
 
   def read_cdir_entry(io)
     # read_cdir_entry is too high. [45.66/15]
-    assert_signature(io, 0x02014b50)
+    signature,
+      made_by,
+      version_needed_to_extract,
+      gp_flags,
+      storage_mode,
+      dos_time,
+      dos_date,
+      crc32,
+      compressed_size,
+      uncompressed_size,
+      filename_size,
+      extra_size,
+      comment_len,
+      disk_number_start,
+      internal_attrs,
+      external_attrs,
+      local_file_header_offset = read_n(io, SIZE_OF_CDIR_ENTRY_FIXED_FIELDS).unpack(CDIR_ENTRY_FIXED_FIELDS_UNPACKSPEC)
+    assert_signature_value(signature, 0x02014b50)
+
     ZipEntry.new.tap do |e|
-      e.made_by = read_2b(io)
-      e.version_needed_to_extract = read_2b(io)
-      e.gp_flags = read_2b(io)
-      e.storage_mode = read_2b(io)
-      e.dos_time = read_2b(io)
-      e.dos_date = read_2b(io)
-      e.crc32 = read_4b(io)
-      e.compressed_size = read_4b(io)
-      e.uncompressed_size = read_4b(io)
-      filename_size = read_2b(io)
-      extra_size = read_2b(io)
-      comment_len = read_2b(io)
-      e.disk_number_start = read_2b(io)
-      e.internal_attrs = read_2b(io)
-      e.external_attrs = read_4b(io)
-      e.local_file_header_offset = read_4b(io)
+      e.made_by = made_by
+      e.version_needed_to_extract = version_needed_to_extract
+      e.gp_flags = gp_flags
+      e.storage_mode = storage_mode
+      e.dos_time = dos_time
+      e.dos_date = dos_date
+      e.crc32 = crc32
+      e.compressed_size = compressed_size
+      e.uncompressed_size = uncompressed_size
+      e.disk_number_start = disk_number_start
+      e.internal_attrs = internal_attrs
+      e.external_attrs = external_attrs
+      e.local_file_header_offset = local_file_header_offset
       e.filename = read_n(io, filename_size)
 
       # Extra fields
@@ -660,6 +688,16 @@ class ZipKit::FileReader
   C_UINT2 = "v"
   C_UINT8 = "Q<"
 
+  # The fixed-size fields get unpacked in one go, instead of one `read` and `unpack` per field.
+  # Signature, version needed, gp flags, storage mode, DOS time and date, CRC32, both sizes and
+  # the filename and extra field lengths
+  LOCAL_HEADER_FIXED_FIELDS_UNPACKSPEC = "VvvvvvVVVvv"
+  SIZE_OF_LOCAL_HEADER_FIXED_FIELDS = 30
+  # Same as the local header, but with "made by" after the signature and the comment length,
+  # disk number, internal and external attributes and the local header offset at the end
+  CDIR_ENTRY_FIXED_FIELDS_UNPACKSPEC = "VvvvvvvVVVvvvvvVV"
+  SIZE_OF_CDIR_ENTRY_FIXED_FIELDS = 46
+
   # To prevent too many tiny reads, read the maximum possible size of end of
   # central directory record upfront (all the fixed fields + at most 0xFFFF
   # bytes of the archive comment)
@@ -716,6 +754,8 @@ class ZipKit::FileReader
   end
 
   private_constant :C_UINT4, :C_UINT2, :C_UINT8, :MAX_END_OF_CENTRAL_DIRECTORY_RECORD_SIZE,
+    :LOCAL_HEADER_FIXED_FIELDS_UNPACKSPEC, :SIZE_OF_LOCAL_HEADER_FIXED_FIELDS,
+    :CDIR_ENTRY_FIXED_FIELDS_UNPACKSPEC, :SIZE_OF_CDIR_ENTRY_FIXED_FIELDS,
     :MAX_LOCAL_HEADER_SIZE, :SIZE_OF_USABLE_EOCD_RECORD
 
   # Is provided as a stub to be overridden in a subclass if you need it. Will report
