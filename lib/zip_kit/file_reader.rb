@@ -303,9 +303,10 @@ class ZipKit::FileReader
   def read_local_file_header(io:)
     local_file_header_offset = io.tell
 
-    # Reading in bulk is cheaper - grab the maximum length of the local header,
-    # including any headroom for extra fields etc.
-    local_file_header_str_plus_headroom = io.read(MAX_LOCAL_HEADER_SIZE)
+    # Reading in bulk is cheaper - grab enough for most local headers, including
+    # some headroom for the filename and extra fields. Reading the maximum possible
+    # size (about 128KB) for every entry costs more than the parsing itself.
+    local_file_header_str_plus_headroom = io.read(LOCAL_HEADER_READ_SIZE)
     raise ReadError if local_file_header_str_plus_headroom.nil? # reached EOF
 
     io_starting_at_local_header = StringIO.new(local_file_header_str_plus_headroom)
@@ -322,6 +323,13 @@ class ZipKit::FileReader
       filename_size,
       extra_size = read_n(io_starting_at_local_header, SIZE_OF_LOCAL_HEADER_FIXED_FIELDS).unpack(LOCAL_HEADER_FIXED_FIELDS_UNPACKSPEC)
     assert_signature_value(signature, 0x04034b50)
+
+    # ...and if the filename and extras did not fit, read the rest
+    bytes_missing = SIZE_OF_LOCAL_HEADER_FIXED_FIELDS + filename_size + extra_size - local_file_header_str_plus_headroom.bytesize
+    if bytes_missing > 0 && (rest_of_local_header = io.read(bytes_missing))
+      io_starting_at_local_header = StringIO.new(local_file_header_str_plus_headroom + rest_of_local_header)
+      io_starting_at_local_header.seek(SIZE_OF_LOCAL_HEADER_FIXED_FIELDS)
+    end
 
     e = ZipEntry.new
     e.version_needed_to_extract = version_needed_to_extract
@@ -711,22 +719,9 @@ class ZipKit::FileReader
     2 + # The comment size
     0xFFFF # Maximum comment size
 
-  # To prevent too many tiny reads, read the maximum possible size of the local file header upfront.
-  # The maximum size is all the usual items, plus the maximum size
-  # of the filename (0xFFFF bytes) and the maximum size of the extras (0xFFFF bytes)
-  MAX_LOCAL_HEADER_SIZE = 4 + # signature
-    2 + # Version needed to extract
-    2 + # gp flags
-    2 + # storage mode
-    2 + # dos time
-    2 + # dos date
-    4 + # CRC32
-    4 + # Comp size
-    4 + # Uncomp size
-    2 + # Filename size
-    2 + # Extra fields size
-    0xFFFF + # Maximum filename size
-    0xFFFF # Maximum extra fields size
+  # How much to read upfront for a local file header. Filenames and extra fields rarely
+  # take more than a few hundred bytes, the rest gets read separately if needed
+  LOCAL_HEADER_READ_SIZE = 4 * 1024
 
   SIZE_OF_USABLE_EOCD_RECORD = 4 + # Signature
     2 + # Number of this disk
@@ -756,7 +751,7 @@ class ZipKit::FileReader
   private_constant :C_UINT4, :C_UINT2, :C_UINT8, :MAX_END_OF_CENTRAL_DIRECTORY_RECORD_SIZE,
     :LOCAL_HEADER_FIXED_FIELDS_UNPACKSPEC, :SIZE_OF_LOCAL_HEADER_FIXED_FIELDS,
     :CDIR_ENTRY_FIXED_FIELDS_UNPACKSPEC, :SIZE_OF_CDIR_ENTRY_FIXED_FIELDS,
-    :MAX_LOCAL_HEADER_SIZE, :SIZE_OF_USABLE_EOCD_RECORD
+    :LOCAL_HEADER_READ_SIZE, :SIZE_OF_USABLE_EOCD_RECORD
 
   # Is provided as a stub to be overridden in a subclass if you need it. Will report
   # during various stages of reading. The log message is contained in the return value
