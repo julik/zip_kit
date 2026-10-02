@@ -27,11 +27,18 @@ class ZipKit::BlockWrite
     @block = block
   end
 
-  # Make sure those methods raise outright
-  %i[seek pos= to_s].each do |m|
-    define_method(m) do |*_args|
-      raise "#{m} not supported - this IO adapter is non-rewindable"
-    end
+  # Make sure those methods raise outright. These are not created with define_method,
+  # because methods defined with a block can't be called from a non-main Ractor
+  def seek(*)
+    raise "seek not supported - this IO adapter is non-rewindable"
+  end
+
+  def pos=(*)
+    raise "pos= not supported - this IO adapter is non-rewindable"
+  end
+
+  def to_s(*)
+    raise "to_s not supported - this IO adapter is non-rewindable"
   end
 
   # Sends a string through to the block stored in the BlockWrite.

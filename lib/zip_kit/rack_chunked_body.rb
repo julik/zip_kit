@@ -9,7 +9,7 @@
 # carry, so we copy it into our code.
 class ZipKit::RackChunkedBody
   TERM = "\r\n"
-  TAIL = "0#{TERM}"
+  TAIL = "0\r\n"
 
   # @param body[#each] the enumerable that yields bytes, usually a `OutputEnumerator`
   def initialize(body)

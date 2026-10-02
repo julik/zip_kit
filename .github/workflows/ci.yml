@@ -37,6 +37,20 @@ jobs:
           RUBYOPT: "--enable=frozen-string-literal --debug=frozen-string-literal"
         run: "bundle exec rspec --backtrace --fail-fast"
 
+  test_ractors:
+    name: "Ractor tests (Ruby 4.0)"
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '4.0'
+          bundler-cache: true
+      - name: "Tests"
+        run: "bundle exec rspec --backtrace --fail-fast spec/zip_kit/ractor_spec.rb"
+
   lint_baseline_ruby: # We need to use syntax appropriate for the minimum supported Ruby version
     name: Lint (Ruby 2.6 syntax)
     runs-on: ubuntu-22.04

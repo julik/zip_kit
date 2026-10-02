@@ -1,6 +1,7 @@
 ## Unreleased
 
 * Fix the end of central directory record counting entries discarded by `rollback!`, which made archives with a rolled back entry unreadable for readers which check the entry count (including `ZipKit::FileReader`).
+* Make ZipKit usable from within Ractors: freeze the computed String constants in `ZipWriter`, `BlockDeflate` and `RackChunkedBody`, and stop defining the raising `BlockWrite` methods with `define_method`. Ractor tests run on Ruby 4.0 in CI.
 
 ## 6.3.5
 
