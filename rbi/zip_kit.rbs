@@ -1,5 +1,5 @@
 module ZipKit
-  VERSION: untyped
+  VERSION: String
 
   class Railtie < Rails::Railtie
   end

@@ -16,6 +16,14 @@ RSpec::Core::RakeTask.new(:spec)
 task :generate_typedefs do
   `bundle exec sord rbi/zip_kit.rbi`
   `bundle exec sord rbi/zip_kit.rbs`
+
+  # Sord inlines the VERSION literal, which would make every version bump produce a typedef diff
+  rbi_path = "rbi/zip_kit.rbi"
+  rbi = File.read(rbi_path).sub(/^(\s*)VERSION = T\.let\(.+\)$/, '\1VERSION = T.let(T.unsafe(nil), String)')
+  File.write(rbi_path, rbi)
+  rbs_path = "rbi/zip_kit.rbs"
+  rbs = File.read(rbs_path).sub(/^(\s*)VERSION: untyped$/, '\1VERSION: String')
+  File.write(rbs_path, rbs)
 end
 
 task default: [:spec, :standard, :generate_typedefs]
