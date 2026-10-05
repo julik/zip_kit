@@ -1077,7 +1077,7 @@ module ZipKit
       def append: ((Integer | String) value, String packspec) -> self
 
       # _@return_ — the packed values in binary encoding
-      def to_s: () -> String
+      def b: () -> String
     end
   end
 
