@@ -960,6 +960,7 @@ end, T.untyped)
     C_UINT8 = T.let("Q<", T.untyped)
     C_CHAR = T.let("C", T.untyped)
     C_INT4 = T.let("l<", T.untyped)
+    C_STR = T.let("a*", T.untyped)
 
     # sord duck - #<< looks like a duck type, replacing with untyped
     # Writes the local file header, that precedes the actual file _data_.
@@ -1116,27 +1117,28 @@ end, T.untyped)
     sig { params(t: T.untyped).returns(T.untyped) }
     def to_binary_dos_date(t); end
 
-    # sord omit - no YARD type given for "values_to_packspecs", using untyped
-    # sord omit - no YARD return type given, using untyped
-    # Unzips a given array of tuples of "numeric value, pack specifier" and then packs all the odd
-    # values using specifiers from all the even values. It is harder to explain than to show:
-    # 
-    #   pack_array([1, 'V', 2, 'v', 148, 'v]) #=> "\x01\x00\x00\x00\x02\x00\x94\x00"
-    # 
-    # will do the following two transforms:
-    # 
-    #  [1, 'V', 2, 'v', 148, 'v] -> [1,2,148], ['V','v','v'] -> [1,2,148].pack('Vvv') -> "\x01\x00\x00\x00\x02\x00\x94\x00".
-    # This might seem like a "clever optimisation" but the issue is that `pack` needs an array allocated per call, and
-    # we output very verbosely - value-by-value. This might be quite a few array allocs. Using something like this
-    # helps us save the array allocs
-    sig { params(values_to_packspecs: T.untyped).returns(T.untyped) }
-    def pack_array(values_to_packspecs); end
-
     # sord omit - no YARD type given for "unix_permissions_int", using untyped
     # sord omit - no YARD type given for "file_type_int", using untyped
     # sord omit - no YARD return type given, using untyped
     sig { params(unix_permissions_int: T.untyped, file_type_int: T.untyped).returns(T.untyped) }
     def generate_external_attrs(unix_permissions_int, file_type_int); end
+
+    # Collects values along with their packspecs, and packs them all with a single `Array#pack`.
+    # Packing value-by-value allocates an Array and a String per value, and the ZIP headers have lots of values.
+    class PackBuffer
+      sig { void }
+      def initialize; end
+
+      # _@param_ `value` — the value to pack
+      # 
+      # _@param_ `packspec` — the `Array#pack` directive for the value
+      sig { params(value: T.any(Integer, String), packspec: String).returns(T.self_type) }
+      def append(value, packspec); end
+
+      # _@return_ — the packed values in binary encoding
+      sig { returns(String) }
+      def b; end
+    end
   end
 
   # Acts as a converter between callers which send data to the `#<<` method (such as all the ZipKit
@@ -1270,6 +1272,10 @@ end, T.untyped)
     C_UINT4 = T.let("V", T.untyped)
     C_UINT2 = T.let("v", T.untyped)
     C_UINT8 = T.let("Q<", T.untyped)
+    LOCAL_HEADER_FIXED_FIELDS_UNPACKSPEC = T.let("VvvvvvVVVvv", T.untyped)
+    SIZE_OF_LOCAL_HEADER_FIXED_FIELDS = T.let(30, T.untyped)
+    CDIR_ENTRY_FIXED_FIELDS_UNPACKSPEC = T.let("VvvvvvvVVVvvvvvVV", T.untyped)
+    SIZE_OF_CDIR_ENTRY_FIXED_FIELDS = T.let(46, T.untyped)
     MAX_END_OF_CENTRAL_DIRECTORY_RECORD_SIZE = T.let(4 + # Offset of the start of central directory
 4 + # Size of the central directory
 2 + # Number of files in the cdir
@@ -1279,19 +1285,7 @@ end, T.untyped)
 2 + # Number of files in the cdir of this disk
 2 + # The comment size
 0xFFFF, T.untyped)
-    MAX_LOCAL_HEADER_SIZE = T.let(4 + # signature
-2 + # Version needed to extract
-2 + # gp flags
-2 + # storage mode
-2 + # dos time
-2 + # dos date
-4 + # CRC32
-4 + # Comp size
-4 + # Uncomp size
-2 + # Filename size
-2 + # Extra fields size
-0xFFFF + # Maximum filename size
-0xFFFF, T.untyped)
+    LOCAL_HEADER_READ_SIZE = T.let(4 * 1024, T.untyped)
     SIZE_OF_USABLE_EOCD_RECORD = T.let(4 + # Signature
 2 + # Number of this disk
 2 + # Number of the disk with the EOCD record
@@ -1426,6 +1420,12 @@ end, T.untyped)
     # sord omit - no YARD return type given, using untyped
     sig { params(io: T.untyped, signature_magic_number: T.untyped).returns(T.untyped) }
     def assert_signature(io, signature_magic_number); end
+
+    # sord omit - no YARD type given for "readback", using untyped
+    # sord omit - no YARD type given for "signature_magic_number", using untyped
+    # sord omit - no YARD return type given, using untyped
+    sig { params(readback: T.untyped, signature_magic_number: T.untyped).returns(T.untyped) }
+    def assert_signature_value(readback, signature_magic_number); end
 
     # sord omit - no YARD type given for "io", using untyped
     # sord omit - no YARD type given for "n", using untyped
