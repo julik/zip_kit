@@ -837,6 +837,9 @@ module ZipKit
   # 
   # All methods of the writer accept anything that responds to `<<` as `io` argument - you can use
   # that to output to String objects, or to output to Arrays that you can later join together.
+  # 
+  # The writer reuses its buffers for packing the records, so a single ZipWriter must not be used
+  # from multiple threads at the same time. Create a ZipWriter per thread (or per Streamer) instead.
   class ZipWriter
     FOUR_BYTE_MAX_UINT: untyped
     TWO_BYTE_MAX_UINT: untyped
@@ -854,6 +857,7 @@ module ZipKit
     C_UINT8: untyped
     C_CHAR: untyped
     C_INT4: untyped
+    C_STR: untyped
 
     # sord duck - #<< looks like a duck type, replacing with untyped
     # Writes the local file header, that precedes the actual file _data_.
@@ -985,6 +989,15 @@ module ZipKit
     # _@param_ `local_file_header_location` — Byte offset of the start of the local file header from the beginning of the ZIP archive
     def zip_64_extra_for_central_directory_file_header: (compressed_size: Integer, uncompressed_size: Integer, local_file_header_location: Integer) -> String
 
+    # sord omit - no YARD return type given, using untyped
+    # Records with variable-size extra fields need the extra fields packed separately first, since
+    # their size gets written before them. Both buffers get cleared before use, so that an exception
+    # raised halfway through a record does not leave stale values in for the next one.
+    def pack_buffer: () -> untyped
+
+    # sord omit - no YARD return type given, using untyped
+    def extra_fields_pack_buffer: () -> untyped
+
     # sord omit - no YARD type given for "t", using untyped
     # sord omit - no YARD return type given, using untyped
     def to_binary_dos_time: (untyped t) -> untyped
@@ -993,25 +1006,33 @@ module ZipKit
     # sord omit - no YARD return type given, using untyped
     def to_binary_dos_date: (untyped t) -> untyped
 
-    # sord omit - no YARD type given for "values_to_packspecs", using untyped
-    # sord omit - no YARD return type given, using untyped
-    # Unzips a given array of tuples of "numeric value, pack specifier" and then packs all the odd
-    # values using specifiers from all the even values. It is harder to explain than to show:
-    # 
-    #   pack_array([1, 'V', 2, 'v', 148, 'v]) #=> "\x01\x00\x00\x00\x02\x00\x94\x00"
-    # 
-    # will do the following two transforms:
-    # 
-    #  [1, 'V', 2, 'v', 148, 'v] -> [1,2,148], ['V','v','v'] -> [1,2,148].pack('Vvv') -> "\x01\x00\x00\x00\x02\x00\x94\x00".
-    # This might seem like a "clever optimisation" but the issue is that `pack` needs an array allocated per call, and
-    # we output very verbosely - value-by-value. This might be quite a few array allocs. Using something like this
-    # helps us save the array allocs
-    def pack_array: (untyped values_to_packspecs) -> untyped
-
     # sord omit - no YARD type given for "unix_permissions_int", using untyped
     # sord omit - no YARD type given for "file_type_int", using untyped
     # sord omit - no YARD return type given, using untyped
     def generate_external_attrs: (untyped unix_permissions_int, untyped file_type_int) -> untyped
+
+    # Collects values along with their packspecs, and packs them all with a single `Array#pack`.
+    # Packing value-by-value allocates an Array and a String per value, and the ZIP headers have lots of values.
+    # The buffer gets reused for every record, and does not retain the values once packed.
+    class PackBuffer
+      def initialize: () -> void
+
+      # _@param_ `value` — the value to pack
+      # 
+      # _@param_ `packspec` — the `Array#pack` directive for the value
+      def append: ((Integer | String) value, String packspec) -> self
+
+      # _@return_ — the packed values in binary encoding
+      def to_s: () -> String
+
+      # sord duck - #<< looks like a duck type, replacing with untyped
+      # Packs the values and writes them into the given IO in one go
+      # 
+      # _@param_ `io` — the destination
+      def write_to: (untyped io) -> void
+
+      def clear: () -> self
+    end
   end
 
   # Acts as a converter between callers which send data to the `#<<` method (such as all the ZipKit
@@ -1131,8 +1152,12 @@ module ZipKit
     C_UINT4: untyped
     C_UINT2: untyped
     C_UINT8: untyped
+    LOCAL_HEADER_FIXED_FIELDS_UNPACKSPEC: untyped
+    SIZE_OF_LOCAL_HEADER_FIXED_FIELDS: untyped
+    CDIR_ENTRY_FIXED_FIELDS_UNPACKSPEC: untyped
+    SIZE_OF_CDIR_ENTRY_FIXED_FIELDS: untyped
     MAX_END_OF_CENTRAL_DIRECTORY_RECORD_SIZE: untyped
-    MAX_LOCAL_HEADER_SIZE: untyped
+    LOCAL_HEADER_READ_SIZE: untyped
     SIZE_OF_USABLE_EOCD_RECORD: untyped
 
     # sord duck - #tell looks like a duck type, replacing with untyped
@@ -1249,6 +1274,11 @@ module ZipKit
     # sord omit - no YARD type given for "signature_magic_number", using untyped
     # sord omit - no YARD return type given, using untyped
     def assert_signature: (untyped io, untyped signature_magic_number) -> untyped
+
+    # sord omit - no YARD type given for "readback", using untyped
+    # sord omit - no YARD type given for "signature_magic_number", using untyped
+    # sord omit - no YARD return type given, using untyped
+    def assert_signature_value: (untyped readback, untyped signature_magic_number) -> untyped
 
     # sord omit - no YARD type given for "io", using untyped
     # sord omit - no YARD type given for "n", using untyped
