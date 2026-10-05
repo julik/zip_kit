@@ -1137,7 +1137,7 @@ end, T.untyped)
 
       # _@return_ — the packed values in binary encoding
       sig { returns(String) }
-      def to_s; end
+      def b; end
     end
   end
 

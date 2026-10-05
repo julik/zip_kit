@@ -68,7 +68,7 @@ class ZipKit::ZipWriter
     end
 
     # @return [String] the packed values in binary encoding
-    def to_s
+    def b
       @values.pack(@packspec)
     end
   end
@@ -139,7 +139,7 @@ class ZipKit::ZipWriter
     buf.append(filename, C_STR)
     # Contents of the extra fields (variable size)
     buf.append(extra_fields, C_STR)
-    io << buf.to_s
+    io << buf.b
   end
 
   # Writes the file header for the central directory, for a particular file in the archive. When writing out this data,
@@ -231,7 +231,7 @@ class ZipKit::ZipWriter
     buf.append(extra_fields, C_STR)
     # file comment (variable size)
     # (empty)
-    io << buf.to_s
+    io << buf.b
   end
 
   # Writes the data descriptor following the file data for a file whose local file header
@@ -262,7 +262,7 @@ class ZipKit::ZipWriter
     buf.append(compressed_size, size_packspec)
     # uncompressed size               4 bytes, or 8 bytes for ZIP64
     buf.append(uncompressed_size, size_packspec)
-    io << buf.to_s
+    io << buf.b
   end
 
   # Writes the "end of central directory record" (including the Zip6 salient bits if necessary)
@@ -355,7 +355,7 @@ class ZipKit::ZipWriter
     buf.append(comment.bytesize, C_UINT2)
     # .ZIP file comment       (variable size)
     buf.append(comment, C_STR)
-    io << buf.to_s
+    io << buf.b
   end
 
   private
@@ -375,7 +375,7 @@ class ZipKit::ZipWriter
     buf.append(uncompressed_size, C_UINT8)
     # 8 bytes    Size of compressed data
     buf.append(compressed_size, C_UINT8)
-    buf.to_s
+    buf.b
   end
 
   # Writes the extended timestamp information field for local headers.
@@ -426,7 +426,7 @@ class ZipKit::ZipWriter
     # Time#utc would convert the given Time to UTC in-place, and the DOS time fields
     # computed from it afterwards would then be in UTC instead of local time
     buf.append(mtime.to_i, C_INT4)
-    buf.to_s
+    buf.b
   end
 
   # Since we do not supply atime or ctime, the contents of the two extra fields (central dir and local header)
@@ -454,7 +454,7 @@ class ZipKit::ZipWriter
     buf.append(local_file_header_location, C_UINT8)
     # 4 bytes    Number of the disk on which this file starts
     buf.append(0, C_UINT4)
-    buf.to_s
+    buf.b
   end
 
   def to_binary_dos_time(t)
