@@ -410,7 +410,9 @@ class ZipKit::ZipWriter
       # encode a single byte
       flags,
       # Use a signed int, not the unsigned one used by the rest of the ZIP spec.
-      mtime.utc.to_i
+      # Time#utc would convert the given Time to UTC in-place, and the DOS time fields
+      # computed from it afterwards would then be in UTC instead of local time
+      mtime.to_i
     ].pack(TIMESTAMP_EXTRA_PACKSPEC)
   end
 
