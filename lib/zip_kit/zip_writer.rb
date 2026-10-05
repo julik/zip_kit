@@ -71,14 +71,6 @@ class ZipKit::ZipWriter
     def to_s
       @values.pack(@packspec)
     end
-
-    # Packs the values and writes them into the given IO in one go
-    #
-    # @param io[#<<] the destination
-    # @return [void]
-    def write_to(io)
-      io << to_s
-    end
   end
 
   private_constant :FOUR_BYTE_MAX_UINT,
@@ -147,7 +139,7 @@ class ZipKit::ZipWriter
     buf.append(filename, C_STR)
     # Contents of the extra fields (variable size)
     buf.append(extra_fields, C_STR)
-    buf.write_to(io)
+    io << buf.to_s
   end
 
   # Writes the file header for the central directory, for a particular file in the archive. When writing out this data,
@@ -239,7 +231,7 @@ class ZipKit::ZipWriter
     buf.append(extra_fields, C_STR)
     # file comment (variable size)
     # (empty)
-    buf.write_to(io)
+    io << buf.to_s
   end
 
   # Writes the data descriptor following the file data for a file whose local file header
@@ -270,7 +262,7 @@ class ZipKit::ZipWriter
     buf.append(compressed_size, size_packspec)
     # uncompressed size               4 bytes, or 8 bytes for ZIP64
     buf.append(uncompressed_size, size_packspec)
-    buf.write_to(io)
+    io << buf.to_s
   end
 
   # Writes the "end of central directory record" (including the Zip6 salient bits if necessary)
@@ -363,7 +355,7 @@ class ZipKit::ZipWriter
     buf.append(comment.bytesize, C_UINT2)
     # .ZIP file comment       (variable size)
     buf.append(comment, C_STR)
-    buf.write_to(io)
+    io << buf.to_s
   end
 
   private

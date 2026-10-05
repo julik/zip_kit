@@ -1011,12 +1011,6 @@ module ZipKit
 
       # _@return_ — the packed values in binary encoding
       def to_s: () -> String
-
-      # sord duck - #<< looks like a duck type, replacing with untyped
-      # Packs the values and writes them into the given IO in one go
-      # 
-      # _@param_ `io` — the destination
-      def write_to: (untyped io) -> void
     end
   end
 

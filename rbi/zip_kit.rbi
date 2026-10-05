@@ -1138,13 +1138,6 @@ end, T.untyped)
       # _@return_ — the packed values in binary encoding
       sig { returns(String) }
       def to_s; end
-
-      # sord duck - #<< looks like a duck type, replacing with untyped
-      # Packs the values and writes them into the given IO in one go
-      # 
-      # _@param_ `io` — the destination
-      sig { params(io: T.untyped).void }
-      def write_to(io); end
     end
   end
 
