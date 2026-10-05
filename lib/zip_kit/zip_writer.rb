@@ -26,9 +26,6 @@ require "stringio"
 #
 # All methods of the writer accept anything that responds to `<<` as `io` argument - you can use
 # that to output to String objects, or to output to Arrays that you can later join together.
-#
-# The writer reuses its buffers for packing the records, so a single ZipWriter must not be used
-# from multiple threads at the same time. Create a ZipWriter per thread (or per Streamer) instead.
 class ZipKit::ZipWriter
   FOUR_BYTE_MAX_UINT = 0xFFFFFFFF
   TWO_BYTE_MAX_UINT = 0xFFFF
@@ -55,7 +52,6 @@ class ZipKit::ZipWriter
 
   # Collects values along with their packspecs, and packs them all with a single `Array#pack`.
   # Packing value-by-value allocates an Array and a String per value, and the ZIP headers have lots of values.
-  # The buffer gets reused for every record, and does not retain the values once packed.
   class PackBuffer
     def initialize
       @values = []
@@ -74,8 +70,6 @@ class ZipKit::ZipWriter
     # @return [String] the packed values in binary encoding
     def to_s
       @values.pack(@packspec)
-    ensure
-      clear
     end
 
     # Packs the values and writes them into the given IO in one go
@@ -84,13 +78,6 @@ class ZipKit::ZipWriter
     # @return [void]
     def write_to(io)
       io << to_s
-    end
-
-    # @return [self]
-    def clear
-      @values.clear
-      @packspec.clear
-      self
     end
   end
 
@@ -132,7 +119,7 @@ class ZipKit::ZipWriter
       extra_fields = zip_64_extra_for_local_file_header(compressed_size: compressed_size, uncompressed_size: uncompressed_size) + extra_fields
     end
 
-    buf = pack_buffer
+    buf = PackBuffer.new
     # local file header signature     4 bytes  (0x04034b50)
     buf.append(0x04034b50, C_UINT4)
     # version needed to extract       2 bytes
@@ -207,7 +194,7 @@ class ZipKit::ZipWriter
       generate_external_attrs(unix_permissions, FILE_TYPE_FILE)
     end
 
-    buf = pack_buffer
+    buf = PackBuffer.new
     # central file header signature   4 bytes  (0x02014b50)
     buf.append(0x02014b50, C_UINT4)
     # version made by                 2 bytes
@@ -272,7 +259,7 @@ class ZipKit::ZipWriter
     requires_zip64 = compressed_size > FOUR_BYTE_MAX_UINT || uncompressed_size > FOUR_BYTE_MAX_UINT
     size_packspec = requires_zip64 ? C_UINT8 : C_UINT4
 
-    buf = pack_buffer
+    buf = PackBuffer.new
     # Although not originally assigned a signature, the value
     # 0x08074b50 has commonly been adopted as a signature value
     # for the data descriptor record.
@@ -302,7 +289,7 @@ class ZipKit::ZipWriter
       zip64_eocdr_offset > FOUR_BYTE_MAX_UINT ||
       num_files_in_archive > TWO_BYTE_MAX_UINT
 
-    buf = pack_buffer
+    buf = PackBuffer.new
 
     # Then, if zip64 is used
     if zip64_required
@@ -387,7 +374,7 @@ class ZipKit::ZipWriter
   # @param uncompressed_size[Integer]  The size of the file once extracted
   # @return [String]
   def zip_64_extra_for_local_file_header(compressed_size:, uncompressed_size:)
-    buf = extra_fields_pack_buffer
+    buf = PackBuffer.new
     # 2 bytes    Tag for this "extra" block type
     buf.append(0x0001, C_UINT2)
     # 2 bytes    Size of this "extra" block. For us it will always be 16 (2x8)
@@ -436,7 +423,7 @@ class ZipKit::ZipWriter
     #       bits 3-7        reserved for additional timestamps; not set
     flags = 0b00000001 # Set the lowest bit only, to indicate that only mtime is present
     # The atime and ctime can be omitted if not present
-    buf = extra_fields_pack_buffer
+    buf = PackBuffer.new
     # tag for this extra block type ("UT")
     buf.append(0x5455, C_UINT2)
     # the size of this block (1 byte used for the Flag + 3 longs used for the timestamp)
@@ -462,7 +449,7 @@ class ZipKit::ZipWriter
   # @param local_file_header_location[Integer] Byte offset of the start of the local file header from the beginning of the ZIP archive
   # @return [String]
   def zip_64_extra_for_central_directory_file_header(compressed_size:, uncompressed_size:, local_file_header_location:)
-    buf = extra_fields_pack_buffer
+    buf = PackBuffer.new
     # 2 bytes    Tag for this "extra" block type
     buf.append(0x0001, C_UINT2)
     # 2 bytes    Size of this "extra" block. For us it will always be 28
@@ -476,17 +463,6 @@ class ZipKit::ZipWriter
     # 4 bytes    Number of the disk on which this file starts
     buf.append(0, C_UINT4)
     buf.to_s
-  end
-
-  # Records with variable-size extra fields need the extra fields packed separately first, since
-  # their size gets written before them. Both buffers get cleared before use, so that an exception
-  # raised halfway through a record does not leave stale values in for the next one.
-  def pack_buffer
-    (@pack_buffer ||= PackBuffer.new).clear
-  end
-
-  def extra_fields_pack_buffer
-    (@extra_fields_pack_buffer ||= PackBuffer.new).clear
   end
 
   def to_binary_dos_time(t)

@@ -939,9 +939,6 @@ module ZipKit
   # 
   # All methods of the writer accept anything that responds to `<<` as `io` argument - you can use
   # that to output to String objects, or to output to Arrays that you can later join together.
-  # 
-  # The writer reuses its buffers for packing the records, so a single ZipWriter must not be used
-  # from multiple threads at the same time. Create a ZipWriter per thread (or per Streamer) instead.
   class ZipWriter
     FOUR_BYTE_MAX_UINT = T.let(0xFFFFFFFF, T.untyped)
     TWO_BYTE_MAX_UINT = T.let(0xFFFF, T.untyped)
@@ -1110,17 +1107,6 @@ end, T.untyped)
     sig { params(compressed_size: Integer, uncompressed_size: Integer, local_file_header_location: Integer).returns(String) }
     def zip_64_extra_for_central_directory_file_header(compressed_size:, uncompressed_size:, local_file_header_location:); end
 
-    # sord omit - no YARD return type given, using untyped
-    # Records with variable-size extra fields need the extra fields packed separately first, since
-    # their size gets written before them. Both buffers get cleared before use, so that an exception
-    # raised halfway through a record does not leave stale values in for the next one.
-    sig { returns(T.untyped) }
-    def pack_buffer; end
-
-    # sord omit - no YARD return type given, using untyped
-    sig { returns(T.untyped) }
-    def extra_fields_pack_buffer; end
-
     # sord omit - no YARD type given for "t", using untyped
     # sord omit - no YARD return type given, using untyped
     sig { params(t: T.untyped).returns(T.untyped) }
@@ -1139,7 +1125,6 @@ end, T.untyped)
 
     # Collects values along with their packspecs, and packs them all with a single `Array#pack`.
     # Packing value-by-value allocates an Array and a String per value, and the ZIP headers have lots of values.
-    # The buffer gets reused for every record, and does not retain the values once packed.
     class PackBuffer
       sig { void }
       def initialize; end
@@ -1160,9 +1145,6 @@ end, T.untyped)
       # _@param_ `io` — the destination
       sig { params(io: T.untyped).void }
       def write_to(io); end
-
-      sig { returns(T.self_type) }
-      def clear; end
     end
   end
 

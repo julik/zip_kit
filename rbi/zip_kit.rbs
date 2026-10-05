@@ -837,9 +837,6 @@ module ZipKit
   # 
   # All methods of the writer accept anything that responds to `<<` as `io` argument - you can use
   # that to output to String objects, or to output to Arrays that you can later join together.
-  # 
-  # The writer reuses its buffers for packing the records, so a single ZipWriter must not be used
-  # from multiple threads at the same time. Create a ZipWriter per thread (or per Streamer) instead.
   class ZipWriter
     FOUR_BYTE_MAX_UINT: untyped
     TWO_BYTE_MAX_UINT: untyped
@@ -989,15 +986,6 @@ module ZipKit
     # _@param_ `local_file_header_location` — Byte offset of the start of the local file header from the beginning of the ZIP archive
     def zip_64_extra_for_central_directory_file_header: (compressed_size: Integer, uncompressed_size: Integer, local_file_header_location: Integer) -> String
 
-    # sord omit - no YARD return type given, using untyped
-    # Records with variable-size extra fields need the extra fields packed separately first, since
-    # their size gets written before them. Both buffers get cleared before use, so that an exception
-    # raised halfway through a record does not leave stale values in for the next one.
-    def pack_buffer: () -> untyped
-
-    # sord omit - no YARD return type given, using untyped
-    def extra_fields_pack_buffer: () -> untyped
-
     # sord omit - no YARD type given for "t", using untyped
     # sord omit - no YARD return type given, using untyped
     def to_binary_dos_time: (untyped t) -> untyped
@@ -1013,7 +1001,6 @@ module ZipKit
 
     # Collects values along with their packspecs, and packs them all with a single `Array#pack`.
     # Packing value-by-value allocates an Array and a String per value, and the ZIP headers have lots of values.
-    # The buffer gets reused for every record, and does not retain the values once packed.
     class PackBuffer
       def initialize: () -> void
 
@@ -1030,8 +1017,6 @@ module ZipKit
       # 
       # _@param_ `io` — the destination
       def write_to: (untyped io) -> void
-
-      def clear: () -> self
     end
   end
 
