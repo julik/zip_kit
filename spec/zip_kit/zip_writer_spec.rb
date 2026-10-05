@@ -48,6 +48,29 @@ describe ZipKit::ZipWriter do
   end
 
   describe "#write_local_file_header" do
+    it "does not carry over values from a record which raised halfway through" do
+      header_args = {
+        gp_flags: 12,
+        crc32: 456,
+        compressed_size: 768,
+        uncompressed_size: 901,
+        mtime: Time.utc(2016, 7, 17, 13, 48),
+        filename: "foo.bin",
+        storage_mode: 8
+      }
+      from_fresh_writer = StringIO.new
+      ZipKit::ZipWriter.new.write_local_file_header(io: from_fresh_writer, **header_args)
+
+      subject = ZipKit::ZipWriter.new
+      out = StringIO.new
+      expect {
+        subject.write_local_file_header(io: out, **header_args, filename: nil)
+      }.to raise_error(NoMethodError) # raises after some of the fields have been appended
+      subject.write_local_file_header(io: out, **header_args)
+
+      expect(out.string).to eq(from_fresh_writer.string)
+    end
+
     it "writes the local file header for an entry that does not require Zip64" do
       buf = StringIO.new
       mtime = Time.utc(2016, 7, 17, 13, 48)
