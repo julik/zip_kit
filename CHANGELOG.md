@@ -1,5 +1,9 @@
 ## Unreleased
 
+* Add `Streamer.new(io, ocf: true)` for writing EPUB (OCF) and OpenDocument containers. The first entry must then be a stored `mimetype` file with its sizes in the local header, and `Streamer::OCFViolation` is raised otherwise. That entry is written without the extended timestamp extra field, which those formats forbid - before, they could not be produced with ZipKit at all. File names get checked against the OCF rules as well: valid UTF-8, no forbidden characters, segments of at most 255 bytes not ending with a `.`, and no two names in a directory which only differ by case or Unicode normalization.
+* Add `Streamer#write_mimetype_file` and `SizeEstimator#add_mimetype_entry`
+* Add the `extended_timestamp:` keyword argument to `ZipWriter#write_local_file_header` and `ZipWriter#write_central_directory_file_header`
+
 ## 6.3.6
 
 * Fix the end of central directory record counting entries discarded by `rollback!`, which made archives with a rolled back entry unreadable for readers which check the entry count (including `ZipKit::FileReader`).

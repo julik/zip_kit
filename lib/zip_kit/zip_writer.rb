@@ -72,8 +72,13 @@ class ZipKit::ZipWriter
   # @param mtime[Time]  the modification time to be recorded in the ZIP
   # @param gp_flags[Integer] bit-packed general purpose flags
   # @param storage_mode[Integer] 8 for deflated, 0 for stored...
+  # @param extended_timestamp[Boolean] whether to add the extended timestamp ("UT") extra field. The DOS date
+  #   and time get written regardless, but they carry local time with 2-second precision - which is why the
+  #   extra field is there by default. Some formats built on top of ZIP forbid extra fields on certain entries
+  #   though: EPUB (OCF) and OpenDocument require their `mimetype` entry to have none. Normally `Streamer`
+  #   decides this for you, see the `ocf:` option of {Streamer#initialize}
   # @return [void]
-  def write_local_file_header(io:, filename:, compressed_size:, uncompressed_size:, crc32:, gp_flags:, mtime:, storage_mode:)
+  def write_local_file_header(io:, filename:, compressed_size:, uncompressed_size:, crc32:, gp_flags:, mtime:, storage_mode:, extended_timestamp: true)
     requires_zip64 = compressed_size > FOUR_BYTE_MAX_UINT || uncompressed_size > FOUR_BYTE_MAX_UINT
 
     # local file header signature     4 bytes  (0x04034b50)
@@ -121,7 +126,7 @@ class ZipKit::ZipWriter
     if requires_zip64
       extra_fields << zip_64_extra_for_local_file_header(compressed_size: compressed_size, uncompressed_size: uncompressed_size)
     end
-    extra_fields << timestamp_extra_for_local_file_header(mtime)
+    extra_fields << timestamp_extra_for_local_file_header(mtime) if extended_timestamp
 
     # extra field length              2 bytes
     io << [extra_fields.size].pack(C_UINT2)
@@ -144,6 +149,8 @@ class ZipKit::ZipWriter
   # @param mtime[Time]  the modification time to be recorded in the ZIP
   # @param gp_flags[Integer] bit-packed general purpose flags
   # @param unix_permissions[Integer] the permissions for the file, or nil for the default to be used
+  # @param extended_timestamp[Boolean] whether to add the extended timestamp ("UT") extra field,
+  #   see {#write_local_file_header}
   # @return [void]
   def write_central_directory_file_header(io:,
     local_file_header_location:,
@@ -154,7 +161,8 @@ class ZipKit::ZipWriter
     mtime:,
     crc32:,
     filename:,
-    unix_permissions: nil)
+    unix_permissions: nil,
+    extended_timestamp: true)
     # At this point if the header begins somewhere beyound 0xFFFFFFFF we _have_ to record the offset
     # of the local file header as a zip64 extra field, so we give up, give in, you loose, love will always win...
     add_zip64 = (local_file_header_location > FOUR_BYTE_MAX_UINT) ||
@@ -203,7 +211,7 @@ class ZipKit::ZipWriter
         compressed_size: compressed_size,
         uncompressed_size: uncompressed_size)
     end
-    extra_fields << timestamp_extra_for_central_directory_entry(mtime)
+    extra_fields << timestamp_extra_for_central_directory_entry(mtime) if extended_timestamp
 
     # extra field length              2 bytes
     io << [extra_fields.size].pack(C_UINT2)

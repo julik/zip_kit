@@ -163,6 +163,69 @@ describe ZipKit::ZipWriter do
     end
   end
 
+  describe "with extended_timestamp: false" do
+    it "writes the local file header without any extra fields" do
+      buf = StringIO.new
+      subject.write_local_file_header(io: buf,
+        gp_flags: 0,
+        crc32: 456,
+        compressed_size: 20,
+        uncompressed_size: 20,
+        mtime: Time.utc(2016, 7, 17, 13, 48),
+        filename: "mimetype",
+        storage_mode: 0,
+        extended_timestamp: false)
+
+      br = ByteReader.new(buf)
+      br.read_n(26)
+      expect(br.read_2b).to eq(8) # filename size
+      expect(br.read_2b).to eq(0) # extra fields size
+      expect(br.read_n(8)).to eq("mimetype")
+      expect(buf.read).to eq("") # nothing after the filename
+    end
+
+    it "still writes the Zip64 extra field into the local file header when the entry needs it" do
+      buf = StringIO.new
+      subject.write_local_file_header(io: buf,
+        gp_flags: 0,
+        crc32: 456,
+        compressed_size: 0xFFFFFFFF + 1,
+        uncompressed_size: 0xFFFFFFFF + 1,
+        mtime: Time.utc(2016, 7, 17, 13, 48),
+        filename: "foo.bin",
+        storage_mode: 8,
+        extended_timestamp: false)
+
+      br = ByteReader.new(buf)
+      br.read_n(28)
+      expect(br.read_2b).to eq(20) # extra fields size, just the Zip64 one
+      br.read_n(7)
+      expect(br.read_2b).to eq(1) # Zip64 extra tag
+    end
+
+    it "writes the central directory file header without any extra fields" do
+      buf = StringIO.new
+      subject.write_central_directory_file_header(io: buf,
+        local_file_header_location: 0,
+        gp_flags: 0,
+        storage_mode: 0,
+        compressed_size: 20,
+        uncompressed_size: 20,
+        mtime: Time.utc(2016, 2, 2, 14, 0),
+        crc32: 89_765,
+        filename: "mimetype",
+        extended_timestamp: false)
+
+      br = ByteReader.new(buf)
+      br.read_n(28)
+      expect(br.read_2b).to eq(8) # filename length
+      expect(br.read_2b).to eq(0) # extra field length
+      br.read_n(14)
+      expect(br.read_n(8)).to eq("mimetype")
+      expect(buf.read).to eq("") # nothing after the filename
+    end
+  end
+
   describe "#write_data_descriptor" do
     it "writes 4-byte sizes into the data descriptor for standard file sizes" do
       buf = StringIO.new

@@ -85,6 +85,22 @@ require "set"
 #     zip.close
 #
 # Calling {Streamer#close} **will not** call `#close` on the underlying IO object.
+#
+# ## Writing EPUB and OpenDocument containers
+#
+# EPUB (via its Open Container Format, OCF) and OpenDocument are ZIP files with an extra rule: the
+# first entry must be a file called `mimetype`, stored without compression and with no extra fields
+# in its local header. Readers check this by looking at the raw bytes at fixed offsets: the media type
+# must start at byte 38 of the file. Pass `ocf: true` and write the `mimetype` file first:
+#
+#     ZipKit::Streamer.open(epub_file, ocf: true) do |zip|
+#       zip.write_mimetype_file("application/epub+zip")
+#       zip.write_file("META-INF/container.xml") { |sink| sink << container_xml }
+#       ...
+#     end
+#
+# With `ocf: true` the Streamer will raise {OCFViolation} if the first entry it is asked to write
+# would make the archive non-conformant, or if a file name is not allowed in such a container.
 class ZipKit::Streamer
   autoload :DeflatedWriter, File.dirname(__FILE__) + "/streamer/deflated_writer.rb"
   autoload :Writable, File.dirname(__FILE__) + "/streamer/writable.rb"
@@ -99,12 +115,28 @@ class ZipKit::Streamer
   DEFLATED = 8
 
   EntryBodySizeMismatch = Class.new(StandardError)
+  OCFViolation = Class.new(StandardError)
   InvalidOutput = Class.new(ArgumentError)
   Overflow = Class.new(StandardError)
   UnknownMode = Class.new(StandardError)
   OffsetOutOfSync = Class.new(StandardError)
 
-  private_constant :STORED, :DEFLATED
+  # Characters which may not appear in file names inside an OCF container, see
+  # https://www.w3.org/TR/epub-33/#sec-container-filenames - a trailing "." is not allowed either
+  OCF_FORBIDDEN_CHARACTERS = begin
+    ranges = [0x22, 0x2A, 0x3A, 0x3C, 0x3E, 0x3F, 0x5C, 0x7C].map { |c| [c, c] }
+    ranges << [0x00, 0x1F] # C0
+    ranges << [0x7F, 0x9F] # DEL and C1
+    ranges << [0xE000, 0xF8FF] # Private Use Area
+    ranges << [0xFDD0, 0xFDEF] # noncharacters
+    ranges << [0xFFF0, 0xFFFF] # Specials, includes the U+FFFE and U+FFFF noncharacters
+    ranges += (1..14).map { |plane| [plane * 0x10000 + 0xFFFE, plane * 0x10000 + 0xFFFF] } # noncharacters
+    ranges << [0xF0000, 0x10FFFF] # Supplementary Private Use Areas
+    Regexp.new("[" + ranges.map { |from, to| format("\\u{%X}-\\u{%X}", from, to) }.join + "]").freeze
+  end
+  OCF_MAX_FILENAME_BYTES = 255
+
+  private_constant :STORED, :DEFLATED, :OCF_FORBIDDEN_CHARACTERS, :OCF_MAX_FILENAME_BYTES
 
   # Creates a new Streamer on top of the given IO-ish object and yields it. Once the given block
   # returns, the Streamer will have it's `close` method called, which will write out the central
@@ -127,7 +159,14 @@ class ZipKit::Streamer
   # @param auto_rename_duplicate_filenames[Boolean] whether duplicate filenames, when encountered,
   #    should be suffixed with (1), (2) etc. Default value is `false` - if
   #    dupliate names are used an exception will be raised
-  def initialize(writable, writer: create_writer, auto_rename_duplicate_filenames: false)
+  # @param ocf[Boolean] whether the archive must be an OCF container (EPUB) or an OpenDocument package.
+  #    When set, the first entry must be a stored `mimetype` file without a data descriptor - use
+  #    {#write_mimetype_file} for it - and {OCFViolation} gets raised otherwise. That entry will be
+  #    written without the extended timestamp extra field, which those formats forbid. All file names
+  #    get checked against the OCF rules too: valid UTF-8, no forbidden characters, no names longer
+  #    than 255 bytes or ending with a ".", and no two names in a directory which only differ by case
+  #    or Unicode normalization.
+  def initialize(writable, writer: create_writer, auto_rename_duplicate_filenames: false, ocf: false)
     raise InvalidOutput, "The writable must respond to #<< or #write" unless writable.respond_to?(:<<) || writable.respond_to?(:write)
 
     @out = ZipKit::WriteAndTell.new(writable)
@@ -135,6 +174,8 @@ class ZipKit::Streamer
     @path_set = ZipKit::PathSet.new
     @writer = writer
     @dedupe_filenames = auto_rename_duplicate_filenames
+    @ocf = ocf
+    @ocf_folded_paths = {}
   end
 
   # Writes a part of a zip entry body (actual binary data of the entry) into the output stream.
@@ -208,6 +249,31 @@ class ZipKit::Streamer
       uncompressed_size: size,
       unix_permissions: unix_permissions,
       use_data_descriptor: use_data_descriptor)
+    @out.tell
+  end
+
+  # Writes the `mimetype` file which EPUB (OCF) and OpenDocument containers have to start with.
+  # The entry is stored, has no data descriptor and no extra fields, so that the media type
+  # ends up at byte 38 of the archive if this is the first entry.
+  #
+  # @param media_type[String] the media type, like "application/epub+zip"
+  # @param modification_time [Time] the modification time of the file in the archive
+  # @return [Integer] the offset the output IO is at after writing the entry
+  def write_mimetype_file(media_type, modification_time: Time.now.utc)
+    unless media_type.ascii_only? && media_type.match?(/\A[[:graph:]]+\z/)
+      raise OCFViolation, "The media type must be ASCII without whitespace or padding, but was #{media_type.inspect}"
+    end
+    media_type = media_type.b
+    add_file_and_write_local_header(filename: "mimetype",
+      modification_time: modification_time,
+      crc32: Zlib.crc32(media_type),
+      storage_mode: STORED,
+      compressed_size: media_type.bytesize,
+      uncompressed_size: media_type.bytesize,
+      unix_permissions: nil,
+      use_data_descriptor: false,
+      extended_timestamp: false)
+    @out << media_type
     @out.tell
   end
 
@@ -425,7 +491,8 @@ class ZipKit::Streamer
         mtime: entry.mtime,
         crc32: entry.crc32,
         filename: entry.filename,
-        unix_permissions: entry.unix_permissions)
+        unix_permissions: entry.unix_permissions,
+        extended_timestamp: entry.extended_timestamp)
     end
 
     # Record the central directory size, for the EOCDR
@@ -440,6 +507,7 @@ class ZipKit::Streamer
     # Clear the files so that GC will not have to trace all the way to here to deallocate them
     @files.clear
     @path_set.clear
+    @ocf_folded_paths.clear
 
     # and return the final offset
     @out.tell
@@ -509,8 +577,11 @@ class ZipKit::Streamer
 
     # Recreate the path set from remaining entries (PathSet does not support cheap deletes yet)
     @path_set.clear
+    @ocf_folded_paths.clear
     @files.each do |e|
-      @path_set.add_directory_or_file_path(e.filename) unless e.filler?
+      next if e.filler?
+      @path_set.add_directory_or_file_path(e.filename)
+      register_ocf_folded_path(e.filename) if @ocf
     end
 
     # Create filler for the truncated or unusable local file entry that did get written into the output
@@ -572,7 +643,8 @@ class ZipKit::Streamer
     compressed_size:,
     uncompressed_size:,
     use_data_descriptor:,
-    unix_permissions:
+    unix_permissions:,
+    extended_timestamp: true
   )
     # Set state needed for proper rollback later. If write_local_file_header
     # does manage to write _some_ bytes, but fails later (we write in tiny bits sometimes)
@@ -585,9 +657,20 @@ class ZipKit::Streamer
     raise UnknownMode, "Unknown compression mode #{storage_mode}" unless [STORED, DEFLATED].include?(storage_mode)
     raise Overflow, "Filename is too long" if filename.bytesize > 0xFFFF
 
+    # Going by the offset and not by the entries, since a rolled back `mimetype` leaves a filler behind
+    if @ocf && @out.tell.zero?
+      verify_ocf_mimetype_entry!(filename, storage_mode, use_data_descriptor)
+      extended_timestamp = false
+    elsif @ocf && (@files.empty? || @files.first.filler?)
+      raise OCFViolation, "The \"mimetype\" entry of an OCF container must start at offset 0, " \
+        "but #{@out.tell} bytes have already been output"
+    end
+
     # If we need to massage filenames to enforce uniqueness,
     # do so before we check for file/directory conflicts
     filename = ZipKit::UniquifyFilename.call(filename, @path_set) if @dedupe_filenames
+
+    verify_ocf_filename!(filename) if @ocf
 
     # Make sure there is no file/directory clobbering (conflicts), or - if deduping is disabled -
     # no duplicate filenames/paths
@@ -596,6 +679,7 @@ class ZipKit::Streamer
     else
       @path_set.add_file_path(filename)
     end
+    register_ocf_folded_path(filename) if @ocf
 
     if use_data_descriptor
       crc32 = 0
@@ -615,7 +699,8 @@ class ZipKit::Streamer
       _local_file_header_offset = local_header_starts_at,
       _bytes_used_for_local_header = 0,
       _bytes_used_for_data_descriptor = 0,
-      unix_permissions)
+      unix_permissions,
+      extended_timestamp)
 
     @writer.write_local_file_header(io: @out,
       gp_flags: e.gp_flags,
@@ -624,12 +709,69 @@ class ZipKit::Streamer
       uncompressed_size: e.uncompressed_size,
       mtime: e.mtime,
       filename: e.filename,
-      storage_mode: e.storage_mode)
+      storage_mode: e.storage_mode,
+      extended_timestamp: e.extended_timestamp)
 
     e.bytes_used_for_local_header = @out.tell - e.local_header_offset
 
     @files << e
     @remove_last_file_at_rollback = true
+  end
+
+  def verify_ocf_mimetype_entry!(filename, storage_mode, use_data_descriptor)
+    problem = if filename != "mimetype"
+      "it is #{filename.inspect}"
+    elsif storage_mode != STORED
+      "it is compressed"
+    elsif use_data_descriptor
+      "it uses a data descriptor (sizes are not known upfront)"
+    end
+    return unless problem
+
+    message = "The first entry of an OCF container must be a stored \"mimetype\" file without a data descriptor, " \
+      "but #{problem}. Use `write_mimetype_file` to write it."
+    raise OCFViolation, message
+  end
+
+  def verify_ocf_filename!(filename)
+    path = filename.dup.force_encoding(Encoding::UTF_8)
+    raise OCFViolation, "File names in an OCF container must be UTF-8, but #{filename.inspect} is not" unless path.valid_encoding?
+
+    path.chomp("/").split("/", -1).each do |name|
+      problem = if name.empty?
+        "has an empty path segment"
+      elsif name.bytesize > OCF_MAX_FILENAME_BYTES
+        "has a segment longer than #{OCF_MAX_FILENAME_BYTES} bytes"
+      elsif name.end_with?(".")
+        "has a segment ending with a \".\""
+      elsif (char = name[OCF_FORBIDDEN_CHARACTERS])
+        "contains the forbidden character U+%04X" % char.ord
+      end
+      raise OCFViolation, "The file name #{path.inspect} is not allowed in an OCF container: it #{problem}" if problem
+    end
+
+    each_ocf_folded_prefix(path) do |prefix, folded|
+      existing = @ocf_folded_paths[folded]
+      if existing && existing != prefix
+        raise OCFViolation, "The file name #{path.inspect} is not allowed in an OCF container: " \
+          "#{prefix.inspect} only differs from #{existing.inspect} by case or Unicode normalization"
+      end
+    end
+  end
+
+  def register_ocf_folded_path(filename)
+    each_ocf_folded_prefix(filename.dup.force_encoding(Encoding::UTF_8)) do |prefix, folded|
+      @ocf_folded_paths[folded] ||= prefix
+    end
+  end
+
+  # Directories have to be unique too, so "OEBPS/a.xhtml" and "oebps/b.xhtml" clash on "OEBPS"
+  def each_ocf_folded_prefix(path)
+    segments = path.chomp("/").split("/")
+    segments.each_index do |i|
+      prefix = segments[0..i].join("/")
+      yield(prefix, prefix.unicode_normalize(:nfc).downcase(:fold))
+    end
   end
 
   def remove_backslash(filename)

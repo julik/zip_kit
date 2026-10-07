@@ -4,7 +4,7 @@
 # Normally you will not have to use this class directly
 class ZipKit::Streamer::Entry < Struct.new(:filename, :crc32, :compressed_size,
   :uncompressed_size, :storage_mode, :mtime,
-  :use_data_descriptor, :local_header_offset, :bytes_used_for_local_header, :bytes_used_for_data_descriptor, :unix_permissions)
+  :use_data_descriptor, :local_header_offset, :bytes_used_for_local_header, :bytes_used_for_data_descriptor, :unix_permissions, :extended_timestamp)
   def initialize(*)
     super
     filename.force_encoding(Encoding::UTF_8)
