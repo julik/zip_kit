@@ -186,15 +186,44 @@ module ZipKit
   #     zip.close
   # 
   # Calling {Streamer#close} **will not** call `#close` on the underlying IO object.
+  # 
+  # ## Writing EPUB and OpenDocument containers
+  # 
+  # EPUB (via its Open Container Format, OCF) and OpenDocument are ZIP files with an extra rule: the
+  # first entry must be a file called `mimetype`, stored without compression and with no extra fields
+  # in its local header. Readers check this by looking at the raw bytes at fixed offsets: the media type
+  # must start at byte 38 of the file. Pass `ocf: true` and write the `mimetype` file first:
+  # 
+  #     ZipKit::Streamer.open(epub_file, ocf: true) do |zip|
+  #       zip.write_mimetype_file("application/epub+zip")
+  #       zip.write_file("META-INF/container.xml") { |sink| sink << container_xml }
+  #       ...
+  #     end
+  # 
+  # With `ocf: true` the Streamer will raise {OCFViolation} if the first entry it is asked to write
+  # would make the archive non-conformant, or if a file name is not allowed in such a container.
   class Streamer
     include ZipKit::WriteShovel
     STORED = T.let(0, T.untyped)
     DEFLATED = T.let(8, T.untyped)
     EntryBodySizeMismatch = T.let(Class.new(StandardError), T.untyped)
+    OCFViolation = T.let(Class.new(StandardError), T.untyped)
     InvalidOutput = T.let(Class.new(ArgumentError), T.untyped)
     Overflow = T.let(Class.new(StandardError), T.untyped)
     UnknownMode = T.let(Class.new(StandardError), T.untyped)
     OffsetOutOfSync = T.let(Class.new(StandardError), T.untyped)
+    OCF_FORBIDDEN_CHARACTERS = T.let(begin
+  ranges = [0x22, 0x2A, 0x3A, 0x3C, 0x3E, 0x3F, 0x5C, 0x7C].map { |c| [c, c] }
+  ranges << [0x00, 0x1F] # C0
+  ranges << [0x7F, 0x9F] # DEL and C1
+  ranges << [0xE000, 0xF8FF] # Private Use Area
+  ranges << [0xFDD0, 0xFDEF] # noncharacters
+  ranges << [0xFFF0, 0xFFFF] # Specials, includes the U+FFFE and U+FFFF noncharacters
+  ranges += (1..14).map { |plane| [plane * 0x10000 + 0xFFFE, plane * 0x10000 + 0xFFFF] } # noncharacters
+  ranges << [0xF0000, 0x10FFFF] # Supplementary Private Use Areas
+  Regexp.new("[" + ranges.map { |from, to| format("\\u{%X}-\\u{%X}", from, to) }.join + "]").freeze
+end, T.untyped)
+    OCF_MAX_FILENAME_BYTES = T.let(255, T.untyped)
 
     # sord omit - no YARD return type given, using untyped
     # Creates a new Streamer on top of the given IO-ish object and yields it. Once the given block
@@ -215,8 +244,17 @@ module ZipKit
     # _@param_ `writer` — the object to be used as the writer. Defaults to an instance of ZipKit::ZipWriter, normally you won't need to override it
     # 
     # _@param_ `auto_rename_duplicate_filenames` — whether duplicate filenames, when encountered, should be suffixed with (1), (2) etc. Default value is `false` - if dupliate names are used an exception will be raised
-    sig { params(writable: T.untyped, writer: ZipKit::ZipWriter, auto_rename_duplicate_filenames: T::Boolean).void }
-    def initialize(writable, writer: create_writer, auto_rename_duplicate_filenames: false); end
+    # 
+    # _@param_ `ocf` — whether the archive must be an OCF container (EPUB) or an OpenDocument package. When set, the first entry must be a stored `mimetype` file without a data descriptor - use {#write_mimetype_file} for it - and {OCFViolation} gets raised otherwise. That entry will be written without the extended timestamp extra field, which those formats forbid. All file names get checked against the OCF rules too: valid UTF-8, no forbidden characters, no names longer than 255 bytes or ending with a ".", and no two names in a directory which only differ by case or Unicode normalization.
+    sig do
+      params(
+        writable: T.untyped,
+        writer: ZipKit::ZipWriter,
+        auto_rename_duplicate_filenames: T::Boolean,
+        ocf: T::Boolean
+      ).void
+    end
+    def initialize(writable, writer: create_writer, auto_rename_duplicate_filenames: false, ocf: false); end
 
     # Writes a part of a zip entry body (actual binary data of the entry) into the output stream.
     # 
@@ -302,6 +340,18 @@ module ZipKit
       ).returns(Integer)
     end
     def add_stored_entry(filename:, modification_time: Time.now.utc, size: 0, crc32: 0, unix_permissions: nil, use_data_descriptor: false); end
+
+    # Writes the `mimetype` file which EPUB (OCF) and OpenDocument containers have to start with.
+    # The entry is stored, has no data descriptor and no extra fields, so that the media type
+    # ends up at byte 38 of the archive if this is the first entry.
+    # 
+    # _@param_ `media_type` — the media type, like "application/epub+zip"
+    # 
+    # _@param_ `modification_time` — the modification time of the file in the archive
+    # 
+    # _@return_ — the offset the output IO is at after writing the entry
+    sig { params(media_type: String, modification_time: Time).returns(Integer) }
+    def write_mimetype_file(media_type, modification_time: Time.now.utc); end
 
     # Adds an empty directory to the archive with a size of 0 and permissions of 755.
     # 
@@ -554,6 +604,7 @@ module ZipKit
     # sord omit - no YARD type given for "uncompressed_size:", using untyped
     # sord omit - no YARD type given for "use_data_descriptor:", using untyped
     # sord omit - no YARD type given for "unix_permissions:", using untyped
+    # sord omit - no YARD type given for "extended_timestamp:", using untyped
     # sord omit - no YARD return type given, using untyped
     sig do
       params(
@@ -564,10 +615,34 @@ module ZipKit
         compressed_size: T.untyped,
         uncompressed_size: T.untyped,
         use_data_descriptor: T.untyped,
-        unix_permissions: T.untyped
+        unix_permissions: T.untyped,
+        extended_timestamp: T.untyped
       ).returns(T.untyped)
     end
-    def add_file_and_write_local_header(filename:, modification_time:, crc32:, storage_mode:, compressed_size:, uncompressed_size:, use_data_descriptor:, unix_permissions:); end
+    def add_file_and_write_local_header(filename:, modification_time:, crc32:, storage_mode:, compressed_size:, uncompressed_size:, use_data_descriptor:, unix_permissions:, extended_timestamp: true); end
+
+    # sord omit - no YARD type given for "filename", using untyped
+    # sord omit - no YARD type given for "storage_mode", using untyped
+    # sord omit - no YARD type given for "use_data_descriptor", using untyped
+    # sord omit - no YARD return type given, using untyped
+    sig { params(filename: T.untyped, storage_mode: T.untyped, use_data_descriptor: T.untyped).returns(T.untyped) }
+    def verify_ocf_mimetype_entry!(filename, storage_mode, use_data_descriptor); end
+
+    # sord omit - no YARD type given for "filename", using untyped
+    # sord omit - no YARD return type given, using untyped
+    sig { params(filename: T.untyped).returns(T.untyped) }
+    def verify_ocf_filename!(filename); end
+
+    # sord omit - no YARD type given for "filename", using untyped
+    # sord omit - no YARD return type given, using untyped
+    sig { params(filename: T.untyped).returns(T.untyped) }
+    def register_ocf_folded_path(filename); end
+
+    # sord omit - no YARD type given for "path", using untyped
+    # sord omit - no YARD return type given, using untyped
+    # Directories have to be unique too, so "OEBPS/a.xhtml" and "oebps/b.xhtml" clash on "OEBPS"
+    sig { params(path: T.untyped).returns(T.untyped) }
+    def each_ocf_folded_prefix(path); end
 
     # sord omit - no YARD type given for "filename", using untyped
     # sord omit - no YARD return type given, using untyped
@@ -648,6 +723,10 @@ module ZipKit
       # Returns the value of attribute unix_permissions
       sig { returns(Object) }
       attr_accessor :unix_permissions
+
+      # Returns the value of attribute extended_timestamp
+      sig { returns(Object) }
+      attr_accessor :extended_timestamp
     end
 
     # Is used internally by Streamer to keep track of entries in the archive during writing.
@@ -979,6 +1058,8 @@ end, T.untyped)
     # _@param_ `gp_flags` — bit-packed general purpose flags
     # 
     # _@param_ `storage_mode` — 8 for deflated, 0 for stored...
+    # 
+    # _@param_ `extended_timestamp` — whether to add the extended timestamp ("UT") extra field. The DOS date and time get written regardless, but they carry local time with 2-second precision - which is why the extra field is there by default. Some formats built on top of ZIP forbid extra fields on certain entries though: EPUB (OCF) and OpenDocument require their `mimetype` entry to have none. Normally `Streamer` decides this for you, see the `ocf:` option of {Streamer#initialize}
     sig do
       params(
         io: T.untyped,
@@ -988,10 +1069,11 @@ end, T.untyped)
         crc32: Integer,
         gp_flags: Integer,
         mtime: Time,
-        storage_mode: Integer
+        storage_mode: Integer,
+        extended_timestamp: T::Boolean
       ).void
     end
-    def write_local_file_header(io:, filename:, compressed_size:, uncompressed_size:, crc32:, gp_flags:, mtime:, storage_mode:); end
+    def write_local_file_header(io:, filename:, compressed_size:, uncompressed_size:, crc32:, gp_flags:, mtime:, storage_mode:, extended_timestamp: true); end
 
     # sord duck - #<< looks like a duck type, replacing with untyped
     # sord omit - no YARD type given for "local_file_header_location:", using untyped
@@ -1014,6 +1096,8 @@ end, T.untyped)
     # _@param_ `gp_flags` — bit-packed general purpose flags
     # 
     # _@param_ `unix_permissions` — the permissions for the file, or nil for the default to be used
+    # 
+    # _@param_ `extended_timestamp` — whether to add the extended timestamp ("UT") extra field, see {#write_local_file_header}
     sig do
       params(
         io: T.untyped,
@@ -1025,10 +1109,11 @@ end, T.untyped)
         mtime: Time,
         crc32: Integer,
         filename: String,
-        unix_permissions: T.nilable(Integer)
+        unix_permissions: T.nilable(Integer),
+        extended_timestamp: T::Boolean
       ).void
     end
-    def write_central_directory_file_header(io:, local_file_header_location:, gp_flags:, storage_mode:, compressed_size:, uncompressed_size:, mtime:, crc32:, filename:, unix_permissions: nil); end
+    def write_central_directory_file_header(io:, local_file_header_location:, gp_flags:, storage_mode:, compressed_size:, uncompressed_size:, mtime:, crc32:, filename:, unix_permissions: nil, extended_timestamp: true); end
 
     # sord duck - #<< looks like a duck type, replacing with untyped
     # Writes the data descriptor following the file data for a file whose local file header
@@ -2029,6 +2114,15 @@ end, T.untyped)
       ).returns(T.untyped)
     end
     def add_deflated_entry(filename:, uncompressed_size:, compressed_size:, use_data_descriptor: false); end
+
+    # Add the `mimetype` entry an EPUB (OCF) or OpenDocument container starts with,
+    # see {Streamer#write_mimetype_file}.
+    # 
+    # _@param_ `media_type` — the media type, like "application/epub+zip"
+    # 
+    # _@return_ — self
+    sig { params(media_type: String).returns(T.untyped) }
+    def add_mimetype_entry(media_type:); end
 
     # Add an empty directory to the archive.
     # 

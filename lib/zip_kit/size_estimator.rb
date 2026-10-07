@@ -81,6 +81,16 @@ class ZipKit::SizeEstimator
     self
   end
 
+  # Add the `mimetype` entry an EPUB (OCF) or OpenDocument container starts with,
+  # see {Streamer#write_mimetype_file}.
+  #
+  # @param media_type [String] the media type, like "application/epub+zip"
+  # @return self
+  def add_mimetype_entry(media_type:)
+    @streamer.write_mimetype_file(media_type)
+    self
+  end
+
   # Add an empty directory to the archive.
   #
   # @param dirname [String] the name of the directory

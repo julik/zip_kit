@@ -228,6 +228,25 @@ end
 Check out the `examples/` directory at the root of the project. This will give you a good idea
 of various use cases the library supports.
 
+### Writing EPUB and OpenDocument files
+
+EPUB books (OCF containers) and OpenDocument files are ZIP archives which must start with a `mimetype`
+entry that is stored, has its sizes in the local header and has no extra fields - readers find the media type
+at byte 38 of the file. Pass `ocf: true` to make the Streamer enforce that, and write the entry with `write_mimetype_file`:
+
+```ruby
+ZipKit::Streamer.open(epub_file, ocf: true) do |zip|
+  zip.write_mimetype_file("application/epub+zip")
+  zip.write_file("META-INF/container.xml") { |sink| sink << container_xml }
+  zip.write_file("OEBPS/package.opf") { |sink| sink << package_opf }
+end
+```
+
+If the first entry would make the archive non-conformant, `ZipKit::Streamer::OCFViolation` gets raised
+before anything is written. The same happens for file names those formats do not allow: names which are not
+UTF-8, contain characters like `:`, `?` or `*`, have a segment longer than 255 bytes or ending with a `.`,
+or which only differ from another name in the same directory by case or Unicode normalization.
+
 ### Computing the CRC32 value of a large file
 
 `BlockCRC32` computes the CRC32 checksum of an IO in a streaming fashion.
