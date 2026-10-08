@@ -39,11 +39,14 @@ module ZipKit::RailsStreaming
       logger&.warn { "The downstream HTTP proxy/LB insists on HTTP/1.0 protocol, ZIP response will be buffered." }
     end
 
-    headers = ZipKit::OutputEnumerator.streaming_http_headers
-
     # Allow Rails headers to override ours. This is important if, for example, a content type gets
-    # set to something else than "application/zip"
-    response.headers.reverse_merge!(headers)
+    # set to something else than "application/zip". Before 7.1 Rails keeps the headers in a
+    # case-sensitive Hash with names like "Content-Type", so a reverse_merge! of our lowercase
+    # names would send some headers twice
+    present_header_names = response.headers.keys.map(&:downcase)
+    ZipKit::OutputEnumerator.streaming_http_headers.each_pair do |name, value|
+      response.headers[name] = value unless present_header_names.include?(name)
+    end
 
     # The output enumerator yields chunks of bytes generated from the Streamer,
     # with some buffering. See OutputEnumerator docs for more.
@@ -59,7 +62,7 @@ module ZipKit::RailsStreaming
     # some especially pesky Rack middleware that just would not cooperate. Those include
     # Rack::MiniProfiler and the above-mentioned Rack::ContentLength.
     if use_chunked_transfer_encoding
-      response.headers["Transfer-Encoding"] = "chunked"
+      response.headers["transfer-encoding"] = "chunked"
       rack_zip_body = ZipKit::RackChunkedBody.new(rack_zip_body)
     end
 

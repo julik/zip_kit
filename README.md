@@ -197,7 +197,7 @@ zip_body = ZipKit::OutputEnumerator.new do | zip |
 end
 
 hh = zip_body.streaming_http_headers
-hh["Content-Length"] = bytesize.to_s
+hh["content-length"] = bytesize.to_s
 
 [200, hh, zip_body]
 ```

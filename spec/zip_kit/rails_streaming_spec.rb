@@ -33,6 +33,10 @@ describe ZipKit::RailsStreaming do
     end
 
     class FakeController < ActionController::Base
+      class << self
+        attr_accessor :response_header_names
+      end
+
       # Make sure both Rack middlewares which are known to cause trouble
       # are used in this controller, so that we can ensure they get bypassed.
       # Use them in the same order Rails inserts them.
@@ -61,6 +65,7 @@ describe ZipKit::RailsStreaming do
         zip_kit_stream(type: "application/epub+zip") do |z|
           generator.generate_once(z)
         end
+        self.class.response_header_names = response.headers.keys
       end
     end
   end
@@ -76,6 +81,7 @@ describe ZipKit::RailsStreaming do
       "rack.input" => StringIO.new
     }
     status, headers, body = FakeController.action(:stream_zip).call(fake_rack_env)
+    headers = downcase_header_names(headers)
 
     ref_output_io = FakeZipGenerator.generate_reference
     out = readback_iterable(body)
@@ -84,9 +90,9 @@ describe ZipKit::RailsStreaming do
     expect(status).to eq(200)
     expect_correct_headers!(headers)
 
-    expect(headers["X-Accel-Buffering"]).to eq("no")
-    expect(headers["Transfer-Encoding"]).to be_nil
-    expect(headers["Content-Length"]).to be_kind_of(String)
+    expect(headers["x-accel-buffering"]).to eq("no")
+    expect(headers["transfer-encoding"]).to be_nil
+    expect(headers["content-length"]).to be_kind_of(String)
     # All the other methods have been excercised by reading out the iterable body
   end
 
@@ -101,6 +107,7 @@ describe ZipKit::RailsStreaming do
       "rack.input" => StringIO.new
     }
     status, headers, body = FakeController.action(:stream_zip_with_forced_chunking).call(fake_rack_env)
+    headers = downcase_header_names(headers)
 
     ref_output_io = FakeZipGenerator.generate_reference
     out = decode_chunked_encoding(readback_iterable(body))
@@ -109,9 +116,9 @@ describe ZipKit::RailsStreaming do
     expect(status).to eq(200)
     expect_correct_headers!(headers)
 
-    expect(headers["X-Accel-Buffering"]).to eq("no")
-    expect(headers["Transfer-Encoding"]).to eq("chunked")
-    expect(headers["Content-Length"]).to be_nil # Must be unset!
+    expect(headers["x-accel-buffering"]).to eq("no")
+    expect(headers["transfer-encoding"]).to eq("chunked")
+    expect(headers["content-length"]).to be_nil # Must be unset!
     expect(body).not_to respond_to(:to_path) # for Rack::Sendfile
   end
 
@@ -126,9 +133,31 @@ describe ZipKit::RailsStreaming do
       "rack.input" => StringIO.new
     }
     status, headers, _body = FakeController.action(:stream_zip_with_custom_content_type).call(fake_rack_env)
+    headers = downcase_header_names(headers)
 
     expect(status).to eq(200)
-    expect(headers["Content-Type"]).to eq("application/epub+zip")
+    expect(headers["content-type"]).to eq("application/epub+zip")
+  end
+
+  it "does not add headers Rails has already set under a differently cased name" do
+    fake_rack_env = {
+      "HTTP_VERSION" => "HTTP/1.1",
+      "REQUEST_METHOD" => "GET",
+      "SCRIPT_NAME" => "",
+      "PATH_INFO" => "/download",
+      "QUERY_STRING" => "",
+      "SERVER_NAME" => "host.example",
+      "rack.input" => StringIO.new
+    }
+    FakeController.action(:stream_zip_with_custom_content_type).call(fake_rack_env)
+
+    header_names = FakeController.response_header_names.map(&:downcase)
+    expect(header_names).to include("content-type", "x-accel-buffering")
+    expect(header_names).to eq(header_names.uniq)
+  end
+
+  def downcase_header_names(headers)
+    headers.to_h.transform_keys(&:downcase)
   end
 
   def readback_iterable(iterable)
@@ -139,11 +168,11 @@ describe ZipKit::RailsStreaming do
   end
 
   def expect_correct_headers!(headers)
-    expect(headers["Content-Type"]).to eq("application/zip")
-    expect(headers["ETag"]).to be_nil # if the ETag middleware activates it will generate a weak ETag
-    expect(headers["Last-Modified"]).to be_kind_of(String)
-    expect(headers["Content-Encoding"]).to eq("identity")
-    expect(headers["Cache-Control"]).to include("private")
-    expect(headers["X-Accel-Buffering"]).to eq("no")
+    expect(headers["content-type"]).to eq("application/zip")
+    expect(headers["etag"]).to be_nil # if the ETag middleware activates it will generate a weak ETag
+    expect(headers["last-modified"]).to be_kind_of(String)
+    expect(headers["content-encoding"]).to eq("identity")
+    expect(headers["cache-control"]).to include("private")
+    expect(headers["x-accel-buffering"]).to eq("no")
   end
 end
