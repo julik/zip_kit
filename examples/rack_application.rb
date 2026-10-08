@@ -56,7 +56,7 @@ class ZipDownload
     # and return the response, adding the Content-Length we have computed earlier
     [
       200,
-      {"Content-Length" => size.to_s, "Content-Disposition" => content_disposition},
+      {"content-length" => size.to_s, "content-disposition" => content_disposition},
       zip_response_body
     ]
   end

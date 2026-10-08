@@ -1,5 +1,9 @@
 ## Unreleased
 
+* Use lowercase names for the HTTP headers ZipKit produces, since Rack 3 requires them (`Rack::Lint` rejects uppercase header names). `OutputEnumerator.streaming_http_headers` now returns `"content-type"`, `"last-modified"`, `"content-encoding"` and `"x-accel-buffering"`. This is a breaking change if you look those headers up or override them in the returned Hash using the capitalised names: `headers["Content-Type"]` is now `nil`, and `headers["Content-Type"] = "application/epub+zip"` adds a second content type instead of replacing ours. Use the lowercase names instead. `zip_kit_stream` in Rails is not affected: it now merges our headers into the response regardless of case, so headers Rails sets itself (like the content type) still take precedence and do not get sent twice.
+
+## 6.4.0
+
 * Add `Streamer.new(io, ocf: true)` for writing EPUB (OCF) and OpenDocument containers. The first entry must then be a stored `mimetype` file with its sizes in the local header, and `Streamer::OCFViolation` is raised otherwise. That entry is written without the extended timestamp extra field, which those formats forbid - before, they could not be produced with ZipKit at all. File names get checked against the OCF rules as well: valid UTF-8, no forbidden characters, segments of at most 255 bytes not ending with a `.`, and no two names in a directory which only differ by case or Unicode normalization.
 * Add `Streamer#write_mimetype_file` and `SizeEstimator#add_mimetype_entry`
 * Add the `extended_timestamp:` keyword argument to `ZipWriter#write_local_file_header` and `ZipWriter#write_central_directory_file_header`

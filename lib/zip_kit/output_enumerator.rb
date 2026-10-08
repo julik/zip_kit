@@ -114,14 +114,17 @@ class ZipKit::OutputEnumerator
   #
   # More value, however, is in the "technical" headers this method will provide. It will take the following steps to make sure streaming works correctly.
   #
-  # * `Last-Modified` will be set to "now" so that the response is considered "fresh" by `Rack::ETag`. This is done so that `Rack::ETag` won't try to
+  # * `last-modified` will be set to "now" so that the response is considered "fresh" by `Rack::ETag`. This is done so that `Rack::ETag` won't try to
   #      calculate a lax ETag value and thus won't start buffering your response out of nowhere
-  # * `Content-Encoding` will be set to `identity`. This is so that proxies or the Rack middleware that applies compression to the response (like gzip)
+  # * `content-encoding` will be set to `identity`. This is so that proxies or the Rack middleware that applies compression to the response (like gzip)
   #      is not going to try to compress your response. It also tells the receiving browsers (or downstream proxies) that they should not attempt to
   #      open or uncompress the response before saving it or passing it onwards.
-  # * `X-Accel-Buffering` will be set to 'no` - this tells both nginx and the Google Cloud load balancer that the response should not be buffered
+  # * `x-accel-buffering` will be set to `no` - this tells both nginx and the Google Cloud load balancer that the response should not be buffered
   #
   # These header values are known to get as close as possible to guaranteeing streaming on most environments where Ruby web applications may be hosted.
+  #
+  # The header names are lowercase, as Rack 3 requires. If you look headers up in the returned Hash
+  # or add your own, use lowercase names too (`"content-type"`, not `"Content-Type"`).
   #
   # @return [Hash]
   def self.streaming_http_headers
@@ -130,16 +133,16 @@ class ZipKit::OutputEnumerator
       # https://github.com/rack/rack/issues/1619#issuecomment-606315714
       # Set this even when not streaming for consistency. The fact that there would be
       # a weak ETag generated would mean that the middleware buffers, so we have tests for that.
-      "Last-Modified" => Time.now.httpdate,
+      "last-modified" => Time.now.httpdate,
       # Make sure Rack::Deflater does not touch our response body either, see
       # https://github.com/felixbuenemann/xlsxtream/issues/14#issuecomment-529569548
-      "Content-Encoding" => "identity",
+      "content-encoding" => "identity",
       # Disable buffering for both nginx and Google Load Balancer, see
       # https://cloud.google.com/appengine/docs/flexible/how-requests-are-handled?tab=python#x-accel-buffering
-      "X-Accel-Buffering" => "no",
+      "x-accel-buffering" => "no",
       # Set the correct content type. This should be overridden if you need to
       # serve things such as EPubs and other derived ZIP formats.
-      "Content-Type" => "application/zip"
+      "content-type" => "application/zip"
     }
   end
 

@@ -36,13 +36,18 @@ describe ZipKit::OutputEnumerator do
   it "provides streaming headers on the object instance" do
     headers = described_class.new.streaming_http_headers
     expect(headers).to be_kind_of(Hash)
-    expect(headers["Content-Encoding"]).to eq("identity")
+    expect(headers["content-encoding"]).to eq("identity")
   end
 
   it "provides streaming headers on the class" do
     headers = described_class.streaming_http_headers
     expect(headers).to be_kind_of(Hash)
-    expect(headers["Content-Encoding"]).to eq("identity")
+    expect(headers["content-encoding"]).to eq("identity")
+  end
+
+  it "provides streaming headers with lowercase names, as Rack 3 requires" do
+    headers = described_class.streaming_http_headers
+    expect(headers.keys).to contain_exactly("last-modified", "content-encoding", "x-accel-buffering", "content-type")
   end
 
   it "returns parts of the ZIP file when called using an Enumerator" do
@@ -143,9 +148,9 @@ describe ZipKit::OutputEnumerator do
       end
     }
     headers, rack_body = enum.to_headers_and_rack_response_body(nil, anything: nil, content_length: nil)
-    expect(headers["Last-Modified"]).to be_kind_of(String)
-    expect(headers["Content-Length"]).to be_nil
-    expect(headers["Transfer-Encoding"]).to be_nil
+    expect(headers["last-modified"]).to be_kind_of(String)
+    expect(headers["content-length"]).to be_nil
+    expect(headers["transfer-encoding"]).to be_nil
 
     expect(rack_body).to eq(enum)
   end
