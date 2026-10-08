@@ -1,5 +1,7 @@
 ## Unreleased
 
+## 6.4.1
+
 * Use lowercase names for the HTTP headers ZipKit produces, since Rack 3 requires them (`Rack::Lint` rejects uppercase header names). `OutputEnumerator.streaming_http_headers` now returns `"content-type"`, `"last-modified"`, `"content-encoding"` and `"x-accel-buffering"`. This is a breaking change if you look those headers up or override them in the returned Hash using the capitalised names: `headers["Content-Type"]` is now `nil`, and `headers["Content-Type"] = "application/epub+zip"` adds a second content type instead of replacing ours. Use the lowercase names instead. `zip_kit_stream` in Rails is not affected: it now merges our headers into the response regardless of case, so headers Rails sets itself (like the content type) still take precedence and do not get sent twice.
 
 ## 6.4.0
