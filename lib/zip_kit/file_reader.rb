@@ -291,9 +291,8 @@ class ZipKit::FileReader
 
   # Parse the local header entry and get the offset in the IO at which the
   # actual compressed data of the file starts within the ZIP.
-  # The method will eager-read the entire local header for the file
-  # (the maximum size the local header may use), starting at the given offset,
-  # and will then compute its size. That size plus the local header offset
+  # The method will read the local header for the file, starting at the
+  # given offset, and will then compute its size. That size plus the local header offset
   # given will be the compressed data offset of the entry (read starting at
   # this offset to get the data).
   #
@@ -306,10 +305,10 @@ class ZipKit::FileReader
     # Reading in bulk is cheaper - grab enough for most local headers, including
     # some headroom for the filename and extra fields. Reading the maximum possible
     # size (about 128KB) for every entry costs more than the parsing itself.
-    local_file_header_str_plus_headroom = io.read(LOCAL_HEADER_READ_SIZE)
-    raise ReadError if local_file_header_str_plus_headroom.nil? # reached EOF
-
-    io_starting_at_local_header = StringIO.new(local_file_header_str_plus_headroom)
+    header = io.read(LOCAL_HEADER_READ_SIZE)
+    if header.nil? || header.bytesize < SIZE_OF_LOCAL_HEADER_FIXED_FIELDS
+      raise ReadError, "Expected to read at least #{SIZE_OF_LOCAL_HEADER_FIXED_FIELDS} bytes of the local file header, but the IO was at the end"
+    end
 
     signature,
       version_needed_to_extract,
@@ -321,15 +320,12 @@ class ZipKit::FileReader
       compressed_size,
       uncompressed_size,
       filename_size,
-      extra_size = read_n(io_starting_at_local_header, SIZE_OF_LOCAL_HEADER_FIXED_FIELDS).unpack(LOCAL_HEADER_FIXED_FIELDS_UNPACKSPEC)
+      extra_size = header.unpack(LOCAL_HEADER_FIXED_FIELDS_UNPACKSPEC)
     assert_signature_value(signature, 0x04034b50)
 
     # ...and if the filename and extras did not fit, read the rest
-    bytes_missing = SIZE_OF_LOCAL_HEADER_FIXED_FIELDS + filename_size + extra_size - local_file_header_str_plus_headroom.bytesize
-    if bytes_missing > 0 && (rest_of_local_header = io.read(bytes_missing))
-      io_starting_at_local_header = StringIO.new(local_file_header_str_plus_headroom + rest_of_local_header)
-      io_starting_at_local_header.seek(SIZE_OF_LOCAL_HEADER_FIXED_FIELDS)
-    end
+    size_of_header = SIZE_OF_LOCAL_HEADER_FIXED_FIELDS + filename_size + extra_size
+    header << read_n(io, size_of_header - header.bytesize) if header.bytesize < size_of_header
 
     e = ZipEntry.new
     e.version_needed_to_extract = version_needed_to_extract
@@ -341,8 +337,8 @@ class ZipKit::FileReader
     e.compressed_size = compressed_size
     e.uncompressed_size = uncompressed_size
 
-    e.filename = read_n(io_starting_at_local_header, filename_size)
-    extra_fields_str = read_n(io_starting_at_local_header, extra_size)
+    e.filename = header.byteslice(SIZE_OF_LOCAL_HEADER_FIXED_FIELDS, filename_size)
+    extra_fields_str = header.byteslice(SIZE_OF_LOCAL_HEADER_FIXED_FIELDS + filename_size, extra_size)
 
     # Parse out the extra fields
     extra_table = parse_out_extra_fields(extra_fields_str)
@@ -369,16 +365,14 @@ class ZipKit::FileReader
       e.compressed_size = read_8b(zip64_extra) if e.compressed_size == 0xFFFFFFFF
     end
 
-    offset = local_file_header_offset + io_starting_at_local_header.tell
-    e.compressed_data_offset = offset
+    e.compressed_data_offset = local_file_header_offset + size_of_header
 
     e
   end
 
   # Get the offset in the IO at which the actual compressed data of the file
-  # starts within the ZIP. The method will eager-read the entire local header
-  # for the file (the maximum size the local header may use), starting at the
-  # given offset, and will then compute its size. That size plus the local
+  # starts within the ZIP. The method will read the local header for the file,
+  # starting at the given offset, and will then compute its size. That size plus the local
   # header offset given will be the compressed data offset of the entry
   # (read starting at this offset to get the data).
   #
