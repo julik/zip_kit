@@ -43,33 +43,62 @@ class ZipKit::ZipWriter
     [VERSION_MADE_BY, os_type].pack("CC").freeze
   end
 
-  C_UINT4 = "V" # Encode a 4-byte unsigned little-endian uint
-  C_UINT2 = "v" # Encode a 2-byte unsigned little-endian uint
-  C_UINT8 = "Q<" # Encode an 8-byte unsigned little-endian uint
-  C_CHAR = "C" # For bit-encoded strings
-  C_INT4 = "l<" # Encode a 4-byte signed little-endian int
-  C_STR = "a*" # Append the bytes of a String, regardless of its encoding
-
-  # Collects values along with their packspecs, and packs them all with a single `Array#pack`.
+  # Collects the values of a ZIP record and packs them all with a single `Array#pack`.
   # Packing value-by-value allocates an Array and a String per value, and the ZIP headers have lots of values.
+  # All integers are little-endian, as the ZIP format wants them.
   class PackBuffer
     def initialize
       @values = []
       @packspec = +""
     end
 
-    # @param value[Integer, String] the value to pack
-    # @param packspec[String] the `Array#pack` directive for the value
+    # @param value[Integer] a 1-byte unsigned int
     # @return [self]
-    def append(value, packspec)
-      @values << value
-      @packspec << packspec
-      self
+    def uint1(value)
+      append(value, "C")
+    end
+
+    # @param value[Integer] a 2-byte unsigned int
+    # @return [self]
+    def uint2(value)
+      append(value, "v")
+    end
+
+    # @param value[Integer] a 4-byte unsigned int
+    # @return [self]
+    def uint4(value)
+      append(value, "V")
+    end
+
+    # @param value[Integer] an 8-byte unsigned int
+    # @return [self]
+    def uint8(value)
+      append(value, "Q<")
+    end
+
+    # @param value[Integer] a 4-byte signed int
+    # @return [self]
+    def int4(value)
+      append(value, "l<")
+    end
+
+    # @param value[String] a String whose bytes get appended as-is, regardless of its encoding
+    # @return [self]
+    def bytes(value)
+      append(value, "a*")
     end
 
     # @return [String] the packed values in binary encoding
     def b
       @values.pack(@packspec)
+    end
+
+    private
+
+    def append(value, packspec)
+      @values << value
+      @packspec << packspec
+      self
     end
   end
 
@@ -81,10 +110,6 @@ class ZipKit::ZipWriter
     :FILE_TYPE_FILE,
     :FILE_TYPE_DIRECTORY,
     :MADE_BY_SIGNATURE,
-    :C_UINT4,
-    :C_UINT2,
-    :C_UINT8,
-    :C_STR,
     :PackBuffer,
     :ZIP_KIT_COMMENT
 
@@ -111,39 +136,38 @@ class ZipKit::ZipWriter
     # https://social.technet.microsoft.com/Forums/windows/en-US/6a60399f-2879-4859-b7ab-6ddd08a70948
     # TL;DR of it is: Windows 7 Explorer _will_ open Zip64 entries. However, it desires to have the
     # Zip64 extra field as _the first_ extra field.
-    extra_fields = extended_timestamp ? timestamp_extra_for_local_file_header(mtime) : "".b
-    if requires_zip64
-      extra_fields = zip_64_extra_for_local_file_header(compressed_size: compressed_size, uncompressed_size: uncompressed_size) + extra_fields
-    end
+    extra_fields = "".b
+    extra_fields << zip_64_extra_for_local_file_header(compressed_size: compressed_size, uncompressed_size: uncompressed_size) if requires_zip64
+    extra_fields << timestamp_extra_for_local_file_header(mtime) if extended_timestamp
 
     buf = PackBuffer.new
     # local file header signature     4 bytes  (0x04034b50)
-    buf.append(0x04034b50, C_UINT4)
+    buf.uint4(0x04034b50)
     # version needed to extract       2 bytes
-    buf.append(requires_zip64 ? VERSION_NEEDED_TO_EXTRACT_ZIP64 : VERSION_NEEDED_TO_EXTRACT, C_UINT2)
+    buf.uint2(requires_zip64 ? VERSION_NEEDED_TO_EXTRACT_ZIP64 : VERSION_NEEDED_TO_EXTRACT)
     # general purpose bit flag        2 bytes
-    buf.append(gp_flags, C_UINT2)
+    buf.uint2(gp_flags)
     # compression method              2 bytes
-    buf.append(storage_mode, C_UINT2)
+    buf.uint2(storage_mode)
     # last mod file time              2 bytes
-    buf.append(to_binary_dos_time(mtime), C_UINT2)
+    buf.uint2(to_binary_dos_time(mtime))
     # last mod file date              2 bytes
-    buf.append(to_binary_dos_date(mtime), C_UINT2)
+    buf.uint2(to_binary_dos_date(mtime))
     # crc-32                          4 bytes
-    buf.append(crc32, C_UINT4)
+    buf.uint4(crc32)
     # compressed size                 4 bytes
-    buf.append(requires_zip64 ? FOUR_BYTE_MAX_UINT : compressed_size, C_UINT4)
+    buf.uint4(requires_zip64 ? FOUR_BYTE_MAX_UINT : compressed_size)
     # uncompressed size               4 bytes
-    buf.append(requires_zip64 ? FOUR_BYTE_MAX_UINT : uncompressed_size, C_UINT4)
+    buf.uint4(requires_zip64 ? FOUR_BYTE_MAX_UINT : uncompressed_size)
     # Filename should not be longer than 0xFFFF otherwise this wont fit here
     # file name length                2 bytes
-    buf.append(filename.bytesize, C_UINT2)
+    buf.uint2(filename.bytesize)
     # extra field length              2 bytes
-    buf.append(extra_fields.bytesize, C_UINT2)
+    buf.uint2(extra_fields.bytesize)
     # file name (variable size)
-    buf.append(filename, C_STR)
+    buf.bytes(filename)
     # Contents of the extra fields (variable size)
-    buf.append(extra_fields, C_STR)
+    buf.bytes(extra_fields)
     io << buf.b
   end
 
@@ -177,12 +201,13 @@ class ZipKit::ZipWriter
     add_zip64 = (local_file_header_location > FOUR_BYTE_MAX_UINT) ||
       (compressed_size > FOUR_BYTE_MAX_UINT) || (uncompressed_size > FOUR_BYTE_MAX_UINT)
 
-    extra_fields = extended_timestamp ? timestamp_extra_for_central_directory_entry(mtime) : "".b
+    extra_fields = "".b
     if add_zip64
-      extra_fields = zip_64_extra_for_central_directory_file_header(local_file_header_location: local_file_header_location,
+      extra_fields << zip_64_extra_for_central_directory_file_header(local_file_header_location: local_file_header_location,
         compressed_size: compressed_size,
-        uncompressed_size: uncompressed_size) + extra_fields
+        uncompressed_size: uncompressed_size)
     end
+    extra_fields << timestamp_extra_for_central_directory_entry(mtime) if extended_timestamp
 
     # Because the add_empty_directory method will create a directory with a trailing "/",
     # this check can be used to assign proper permissions to the created directory.
@@ -196,47 +221,47 @@ class ZipKit::ZipWriter
 
     buf = PackBuffer.new
     # central file header signature   4 bytes  (0x02014b50)
-    buf.append(0x02014b50, C_UINT4)
+    buf.uint4(0x02014b50)
     # version made by                 2 bytes
-    buf.append(MADE_BY_SIGNATURE, C_STR)
+    buf.bytes(MADE_BY_SIGNATURE)
     # version needed to extract       2 bytes
-    buf.append(add_zip64 ? VERSION_NEEDED_TO_EXTRACT_ZIP64 : VERSION_NEEDED_TO_EXTRACT, C_UINT2)
+    buf.uint2(add_zip64 ? VERSION_NEEDED_TO_EXTRACT_ZIP64 : VERSION_NEEDED_TO_EXTRACT)
     # general purpose bit flag        2 bytes
-    buf.append(gp_flags, C_UINT2)
+    buf.uint2(gp_flags)
     # compression method              2 bytes
-    buf.append(storage_mode, C_UINT2)
+    buf.uint2(storage_mode)
     # last mod file time              2 bytes
-    buf.append(to_binary_dos_time(mtime), C_UINT2)
+    buf.uint2(to_binary_dos_time(mtime))
     # last mod file date              2 bytes
-    buf.append(to_binary_dos_date(mtime), C_UINT2)
+    buf.uint2(to_binary_dos_date(mtime))
     # crc-32                          4 bytes
-    buf.append(crc32, C_UINT4)
+    buf.uint4(crc32)
     # compressed size                 4 bytes
-    buf.append(add_zip64 ? FOUR_BYTE_MAX_UINT : compressed_size, C_UINT4)
+    buf.uint4(add_zip64 ? FOUR_BYTE_MAX_UINT : compressed_size)
     # uncompressed size               4 bytes
-    buf.append(add_zip64 ? FOUR_BYTE_MAX_UINT : uncompressed_size, C_UINT4)
+    buf.uint4(add_zip64 ? FOUR_BYTE_MAX_UINT : uncompressed_size)
     # Filename should not be longer than 0xFFFF otherwise this wont fit here
     # file name length                2 bytes
-    buf.append(filename.bytesize, C_UINT2)
+    buf.uint2(filename.bytesize)
     # extra field length              2 bytes
-    buf.append(extra_fields.bytesize, C_UINT2)
+    buf.uint2(extra_fields.bytesize)
     # file comment length             2 bytes
-    buf.append(0, C_UINT2)
+    buf.uint2(0)
     # For The Unarchiver < 3.11.1 this field has to be set to the overflow value if zip64 is used
     # because otherwise it does not properly advance the pointer when reading the Zip64 extra field
     # https://bitbucket.org/WAHa_06x36/theunarchiver/pull-requests/2/bug-fix-for-zip64-extra-field-parser/diff
     # disk number start               2 bytes
-    buf.append(add_zip64 ? TWO_BYTE_MAX_UINT : 0, C_UINT2)
+    buf.uint2(add_zip64 ? TWO_BYTE_MAX_UINT : 0)
     # internal file attributes        2 bytes
-    buf.append(0, C_UINT2)
+    buf.uint2(0)
     # external file attributes        4 bytes
-    buf.append(external_attrs, C_UINT4)
+    buf.uint4(external_attrs)
     # relative offset of local header 4 bytes
-    buf.append(add_zip64 ? FOUR_BYTE_MAX_UINT : local_file_header_location, C_UINT4)
+    buf.uint4(add_zip64 ? FOUR_BYTE_MAX_UINT : local_file_header_location)
     # file name (variable size)
-    buf.append(filename, C_STR)
+    buf.bytes(filename)
     # extra field (variable size)
-    buf.append(extra_fields, C_STR)
+    buf.bytes(extra_fields)
     # file comment (variable size)
     # (empty)
     io << buf.b
@@ -257,19 +282,24 @@ class ZipKit::ZipWriter
     # So also use the opportune moment to switch the entry to Zip64 if needed.
     # We switch if either of the sizes requires ZIP64, so that both values are encoded similarly.
     requires_zip64 = compressed_size > FOUR_BYTE_MAX_UINT || uncompressed_size > FOUR_BYTE_MAX_UINT
-    size_packspec = requires_zip64 ? C_UINT8 : C_UINT4
-
     buf = PackBuffer.new
     # Although not originally assigned a signature, the value
     # 0x08074b50 has commonly been adopted as a signature value
     # for the data descriptor record.
-    buf.append(0x08074b50, C_UINT4)
+    buf.uint4(0x08074b50)
     # crc-32                          4 bytes
-    buf.append(crc32, C_UINT4)
-    # compressed size                 4 bytes, or 8 bytes for ZIP64
-    buf.append(compressed_size, size_packspec)
-    # uncompressed size               4 bytes, or 8 bytes for ZIP64
-    buf.append(uncompressed_size, size_packspec)
+    buf.uint4(crc32)
+    if requires_zip64
+      # compressed size                 8 bytes
+      buf.uint8(compressed_size)
+      # uncompressed size               8 bytes
+      buf.uint8(uncompressed_size)
+    else
+      # compressed size                 4 bytes
+      buf.uint4(compressed_size)
+      # uncompressed size               4 bytes
+      buf.uint4(uncompressed_size)
+    end
     io << buf.b
   end
 
@@ -295,74 +325,74 @@ class ZipKit::ZipWriter
     if zip64_required
       # [zip64 end of central directory record]
       # zip64 end of central dir signature                       4 bytes  (0x06064b50)
-      buf.append(0x06064b50, C_UINT4)
+      buf.uint4(0x06064b50)
       # size of zip64 end of central
       # directory record                8 bytes
       # (this is ex. the 12 bytes of the signature and the size value itself).
       # Without the extensible data sector (which we are not using)
       # it is always 44 bytes.
-      buf.append(44, C_UINT8)
+      buf.uint8(44)
       # version made by                 2 bytes
-      buf.append(MADE_BY_SIGNATURE, C_STR)
+      buf.bytes(MADE_BY_SIGNATURE)
       # version needed to extract       2 bytes
-      buf.append(VERSION_NEEDED_TO_EXTRACT_ZIP64, C_UINT2)
+      buf.uint2(VERSION_NEEDED_TO_EXTRACT_ZIP64)
       # number of this disk             4 bytes
-      buf.append(0, C_UINT4)
+      buf.uint4(0)
       # number of the disk with the start of the central directory  4 bytes
-      buf.append(0, C_UINT4)
+      buf.uint4(0)
       # total number of entries in the
       # central directory on this disk  8 bytes
-      buf.append(num_files_in_archive, C_UINT8)
+      buf.uint8(num_files_in_archive)
       # total number of entries in the
       # central directory               8 bytes
-      buf.append(num_files_in_archive, C_UINT8)
+      buf.uint8(num_files_in_archive)
       # size of the central directory   8 bytes
-      buf.append(central_directory_size, C_UINT8)
+      buf.uint8(central_directory_size)
       # offset of start of central directory with respect to
       # the starting disk number        8 bytes
-      buf.append(start_of_central_directory_location, C_UINT8)
+      buf.uint8(start_of_central_directory_location)
       # zip64 extensible data sector (variable size)
       # (blank for us)
 
       # zip64 end of central dir locator
       # signature                       4 bytes  (0x07064b50)
-      buf.append(0x07064b50, C_UINT4)
+      buf.uint4(0x07064b50)
       # number of the disk with the start of the zip64 end of
       # central directory               4 bytes
-      buf.append(0, C_UINT4)
+      buf.uint4(0)
       # relative offset of the zip64
       # end of central directory record 8 bytes
       # (note: "relative" is actually "from the start of the file")
-      buf.append(zip64_eocdr_offset, C_UINT8)
+      buf.uint8(zip64_eocdr_offset)
       # total number of disks           4 bytes
-      buf.append(1, C_UINT4)
+      buf.uint4(1)
     end
 
     # Then the end of central directory record:
     # end of central dir signature     4 bytes  (0x06054b50)
-    buf.append(0x06054b50, C_UINT4)
+    buf.uint4(0x06054b50)
     # number of this disk              2 bytes
-    buf.append(0, C_UINT2)
+    buf.uint2(0)
     # number of the disk with the
     # start of the central directory 2 bytes
-    buf.append(0, C_UINT2)
+    buf.uint2(0)
     # total number of entries in the
     # central directory on this disk   2 bytes
     # (the number of entries will be read from the zip64 part of the central directory if zip64 is used)
-    buf.append(zip64_required ? TWO_BYTE_MAX_UINT : num_files_in_archive, C_UINT2)
+    buf.uint2(zip64_required ? TWO_BYTE_MAX_UINT : num_files_in_archive)
     # total number of entries in
     # the central directory            2 bytes
-    buf.append(zip64_required ? TWO_BYTE_MAX_UINT : num_files_in_archive, C_UINT2)
+    buf.uint2(zip64_required ? TWO_BYTE_MAX_UINT : num_files_in_archive)
     # size of the central directory    4 bytes
-    buf.append(zip64_required ? FOUR_BYTE_MAX_UINT : central_directory_size, C_UINT4)
+    buf.uint4(zip64_required ? FOUR_BYTE_MAX_UINT : central_directory_size)
     # offset of start of central
     # directory with respect to
     # the starting disk number        4 bytes
-    buf.append(zip64_required ? FOUR_BYTE_MAX_UINT : start_of_central_directory_location, C_UINT4)
+    buf.uint4(zip64_required ? FOUR_BYTE_MAX_UINT : start_of_central_directory_location)
     # .ZIP file comment length        2 bytes
-    buf.append(comment.bytesize, C_UINT2)
+    buf.uint2(comment.bytesize)
     # .ZIP file comment       (variable size)
-    buf.append(comment, C_STR)
+    buf.bytes(comment)
     io << buf.b
   end
 
@@ -376,13 +406,13 @@ class ZipKit::ZipWriter
   def zip_64_extra_for_local_file_header(compressed_size:, uncompressed_size:)
     buf = PackBuffer.new
     # 2 bytes    Tag for this "extra" block type
-    buf.append(0x0001, C_UINT2)
+    buf.uint2(0x0001)
     # 2 bytes    Size of this "extra" block. For us it will always be 16 (2x8)
-    buf.append(16, C_UINT2)
+    buf.uint2(16)
     # 8 bytes    Original uncompressed file size
-    buf.append(uncompressed_size, C_UINT8)
+    buf.uint8(uncompressed_size)
     # 8 bytes    Size of compressed data
-    buf.append(compressed_size, C_UINT8)
+    buf.uint8(compressed_size)
     buf.b
   end
 
@@ -425,15 +455,15 @@ class ZipKit::ZipWriter
     # The atime and ctime can be omitted if not present
     buf = PackBuffer.new
     # tag for this extra block type ("UT")
-    buf.append(0x5455, C_UINT2)
+    buf.uint2(0x5455)
     # the size of this block (1 byte used for the Flag + 3 longs used for the timestamp)
-    buf.append((1 + 4), C_UINT2)
+    buf.uint2((1 + 4))
     # encode a single byte
-    buf.append(flags, C_CHAR)
+    buf.uint1(flags)
     # Use a signed int, not the unsigned one used by the rest of the ZIP spec.
     # Time#utc would convert the given Time to UTC in-place, and the DOS time fields
     # computed from it afterwards would then be in UTC instead of local time
-    buf.append(mtime.to_i, C_INT4)
+    buf.int4(mtime.to_i)
     buf.b
   end
 
@@ -451,17 +481,17 @@ class ZipKit::ZipWriter
   def zip_64_extra_for_central_directory_file_header(compressed_size:, uncompressed_size:, local_file_header_location:)
     buf = PackBuffer.new
     # 2 bytes    Tag for this "extra" block type
-    buf.append(0x0001, C_UINT2)
+    buf.uint2(0x0001)
     # 2 bytes    Size of this "extra" block. For us it will always be 28
-    buf.append(28, C_UINT2)
+    buf.uint2(28)
     # 8 bytes    Original uncompressed file size
-    buf.append(uncompressed_size, C_UINT8)
+    buf.uint8(uncompressed_size)
     # 8 bytes    Size of compressed data
-    buf.append(compressed_size, C_UINT8)
+    buf.uint8(compressed_size)
     # 8 bytes    Offset of local header record
-    buf.append(local_file_header_location, C_UINT8)
+    buf.uint8(local_file_header_location)
     # 4 bytes    Number of the disk on which this file starts
-    buf.append(0, C_UINT4)
+    buf.uint4(0)
     buf.b
   end
 

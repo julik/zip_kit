@@ -910,12 +910,6 @@ module ZipKit
     FILE_TYPE_FILE: untyped
     FILE_TYPE_DIRECTORY: untyped
     MADE_BY_SIGNATURE: untyped
-    C_UINT4: untyped
-    C_UINT2: untyped
-    C_UINT8: untyped
-    C_CHAR: untyped
-    C_INT4: untyped
-    C_STR: untyped
 
     # sord duck - #<< looks like a duck type, replacing with untyped
     # Writes the local file header, that precedes the actual file _data_.
@@ -1066,18 +1060,37 @@ module ZipKit
     # sord omit - no YARD return type given, using untyped
     def generate_external_attrs: (untyped unix_permissions_int, untyped file_type_int) -> untyped
 
-    # Collects values along with their packspecs, and packs them all with a single `Array#pack`.
+    # Collects the values of a ZIP record and packs them all with a single `Array#pack`.
     # Packing value-by-value allocates an Array and a String per value, and the ZIP headers have lots of values.
+    # All integers are little-endian, as the ZIP format wants them.
     class PackBuffer
       def initialize: () -> void
 
-      # _@param_ `value` — the value to pack
-      # 
-      # _@param_ `packspec` — the `Array#pack` directive for the value
-      def append: ((Integer | String) value, String packspec) -> self
+      # _@param_ `value` — a 1-byte unsigned int
+      def uint1: (Integer value) -> self
+
+      # _@param_ `value` — a 2-byte unsigned int
+      def uint2: (Integer value) -> self
+
+      # _@param_ `value` — a 4-byte unsigned int
+      def uint4: (Integer value) -> self
+
+      # _@param_ `value` — an 8-byte unsigned int
+      def uint8: (Integer value) -> self
+
+      # _@param_ `value` — a 4-byte signed int
+      def int4: (Integer value) -> self
+
+      # _@param_ `value` — a String whose bytes get appended as-is, regardless of its encoding
+      def bytes: (String value) -> self
 
       # _@return_ — the packed values in binary encoding
       def b: () -> String
+
+      # sord omit - no YARD type given for "value", using untyped
+      # sord omit - no YARD type given for "packspec", using untyped
+      # sord omit - no YARD return type given, using untyped
+      def append: (untyped value, untyped packspec) -> untyped
     end
   end
 
@@ -1243,9 +1256,8 @@ module ZipKit
     # sord duck - #read looks like a duck type with an equivalent RBS interface, replacing with _Reader
     # Parse the local header entry and get the offset in the IO at which the
     # actual compressed data of the file starts within the ZIP.
-    # The method will eager-read the entire local header for the file
-    # (the maximum size the local header may use), starting at the given offset,
-    # and will then compute its size. That size plus the local header offset
+    # The method will read the local header for the file, starting at the
+    # given offset, and will then compute its size. That size plus the local header offset
     # given will be the compressed data offset of the entry (read starting at
     # this offset to get the data).
     # 
@@ -1260,9 +1272,8 @@ module ZipKit
     # sord duck - #read looks like a duck type with an equivalent RBS interface, replacing with _Reader
     # sord omit - no YARD return type given, using untyped
     # Get the offset in the IO at which the actual compressed data of the file
-    # starts within the ZIP. The method will eager-read the entire local header
-    # for the file (the maximum size the local header may use), starting at the
-    # given offset, and will then compute its size. That size plus the local
+    # starts within the ZIP. The method will read the local header for the file,
+    # starting at the given offset, and will then compute its size. That size plus the local
     # header offset given will be the compressed data offset of the entry
     # (read starting at this offset to get the data).
     # 

@@ -1034,12 +1034,6 @@ end, T.untyped)
   os_type = 3 # UNIX
   [VERSION_MADE_BY, os_type].pack("CC").freeze
 end, T.untyped)
-    C_UINT4 = T.let("V", T.untyped)
-    C_UINT2 = T.let("v", T.untyped)
-    C_UINT8 = T.let("Q<", T.untyped)
-    C_CHAR = T.let("C", T.untyped)
-    C_INT4 = T.let("l<", T.untyped)
-    C_STR = T.let("a*", T.untyped)
 
     # sord duck - #<< looks like a duck type, replacing with untyped
     # Writes the local file header, that precedes the actual file _data_.
@@ -1208,21 +1202,46 @@ end, T.untyped)
     sig { params(unix_permissions_int: T.untyped, file_type_int: T.untyped).returns(T.untyped) }
     def generate_external_attrs(unix_permissions_int, file_type_int); end
 
-    # Collects values along with their packspecs, and packs them all with a single `Array#pack`.
+    # Collects the values of a ZIP record and packs them all with a single `Array#pack`.
     # Packing value-by-value allocates an Array and a String per value, and the ZIP headers have lots of values.
+    # All integers are little-endian, as the ZIP format wants them.
     class PackBuffer
       sig { void }
       def initialize; end
 
-      # _@param_ `value` — the value to pack
-      # 
-      # _@param_ `packspec` — the `Array#pack` directive for the value
-      sig { params(value: T.any(Integer, String), packspec: String).returns(T.self_type) }
-      def append(value, packspec); end
+      # _@param_ `value` — a 1-byte unsigned int
+      sig { params(value: Integer).returns(T.self_type) }
+      def uint1(value); end
+
+      # _@param_ `value` — a 2-byte unsigned int
+      sig { params(value: Integer).returns(T.self_type) }
+      def uint2(value); end
+
+      # _@param_ `value` — a 4-byte unsigned int
+      sig { params(value: Integer).returns(T.self_type) }
+      def uint4(value); end
+
+      # _@param_ `value` — an 8-byte unsigned int
+      sig { params(value: Integer).returns(T.self_type) }
+      def uint8(value); end
+
+      # _@param_ `value` — a 4-byte signed int
+      sig { params(value: Integer).returns(T.self_type) }
+      def int4(value); end
+
+      # _@param_ `value` — a String whose bytes get appended as-is, regardless of its encoding
+      sig { params(value: String).returns(T.self_type) }
+      def bytes(value); end
 
       # _@return_ — the packed values in binary encoding
       sig { returns(String) }
       def b; end
+
+      # sord omit - no YARD type given for "value", using untyped
+      # sord omit - no YARD type given for "packspec", using untyped
+      # sord omit - no YARD return type given, using untyped
+      sig { params(value: T.untyped, packspec: T.untyped).returns(T.untyped) }
+      def append(value, packspec); end
     end
   end
 
@@ -1418,9 +1437,8 @@ end, T.untyped)
     # sord duck - #read looks like a duck type, replacing with untyped
     # Parse the local header entry and get the offset in the IO at which the
     # actual compressed data of the file starts within the ZIP.
-    # The method will eager-read the entire local header for the file
-    # (the maximum size the local header may use), starting at the given offset,
-    # and will then compute its size. That size plus the local header offset
+    # The method will read the local header for the file, starting at the
+    # given offset, and will then compute its size. That size plus the local header offset
     # given will be the compressed data offset of the entry (read starting at
     # this offset to get the data).
     # 
@@ -1436,9 +1454,8 @@ end, T.untyped)
     # sord duck - #read looks like a duck type, replacing with untyped
     # sord omit - no YARD return type given, using untyped
     # Get the offset in the IO at which the actual compressed data of the file
-    # starts within the ZIP. The method will eager-read the entire local header
-    # for the file (the maximum size the local header may use), starting at the
-    # given offset, and will then compute its size. That size plus the local
+    # starts within the ZIP. The method will read the local header for the file,
+    # starting at the given offset, and will then compute its size. That size plus the local
     # header offset given will be the compressed data offset of the entry
     # (read starting at this offset to get the data).
     # 
