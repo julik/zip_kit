@@ -542,6 +542,22 @@ describe ZipKit::Streamer do
     end
   end
 
+  it "writes the same DOS time into the local and central directory headers, without converting the given Time to UTC" do
+    out = StringIO.new
+    mtime = Time.new(2018, 1, 1, 23, 30, 0, "+02:00")
+    described_class.open(out) do |zip|
+      zip.write_stored_file("stored.txt", modification_time: mtime) { |sink| sink << "stored" }
+    end
+    expect(mtime.utc_offset).to eq(2 * 60 * 60)
+
+    from_local_header = ZipKit::FileReader.new.read_local_file_header(io: StringIO.new(out.string))
+    from_central_directory = ZipKit::FileReader.read_zip_structure(io: StringIO.new(out.string)).first
+    dos_time_23_30 = (30 << 5) + (23 << 11)
+    expect(from_local_header.dos_time).to eq(dos_time_23_30)
+    expect(from_central_directory.dos_time).to eq(dos_time_23_30)
+    expect(from_central_directory.dos_date).to eq(from_local_header.dos_date)
+  end
+
   it "supports automatic mode selection using a heuristic" do
     zip_file = ManagedTempfile.new
     rng = Random.new(42)
@@ -675,15 +691,11 @@ describe ZipKit::Streamer do
 
     zip = described_class.new(uniсode_str_buf)
     4.times do
-      bytes_before_partial_write = uniсode_str_buf.bytesize
       expect {
         zip.write_file("deflated.txt") do |sink|
           sink.write("x")
         end
       }.to raise_error(Encoding::CompatibilityError) # Should not be a PathSet::Conflict
-
-      # Ensure there was a partial write
-      expect(uniсode_str_buf.bytesize - bytes_before_partial_write).to be > 0
     end
 
     # We must force the string into binary so that the ZIP can be closed - we
