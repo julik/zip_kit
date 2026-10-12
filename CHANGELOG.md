@@ -1,5 +1,10 @@
 ## Unreleased
 
+* Write every ZIP record with a single `Array#pack` and a single `<<` to the destination, instead of one per field. Archives with lots of entries get written about 1.5x faster.
+* Unpack the fixed fields of local and central directory headers in one go in `FileReader`, and read 4KB upfront for a local file header instead of the maximum possible 128KB. `FileReader.read_zip_structure` with local headers gets about 5x faster on archives with many entries, and parsing the central directory alone about 2x.
+* Fix `ZipWriter` converting the given `mtime` to UTC in place. The local file header got the DOS time in local time and the central directory header got it in UTC, and the caller was left with a Time object in UTC.
+* Remove the `C_CHAR` and `C_INT4` constants from `ZipWriter`, which were never meant to be public (the other packspec constants were private already).
+
 ## 6.4.1
 
 * Use lowercase names for the HTTP headers ZipKit produces, since Rack 3 requires them (`Rack::Lint` rejects uppercase header names). `OutputEnumerator.streaming_http_headers` now returns `"content-type"`, `"last-modified"`, `"content-encoding"` and `"x-accel-buffering"`. This is a breaking change if you look those headers up or override them in the returned Hash using the capitalised names: `headers["Content-Type"]` is now `nil`, and `headers["Content-Type"] = "application/epub+zip"` adds a second content type instead of replacing ours. Use the lowercase names instead. `zip_kit_stream` in Rails is not affected: it now merges our headers into the response regardless of case, so headers Rails sets itself (like the content type) still take precedence and do not get sent twice.
