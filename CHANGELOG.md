@@ -4,6 +4,7 @@
 * Unpack the fixed fields of local and central directory headers in one go in `FileReader`, and read 4KB upfront for a local file header instead of the maximum possible 128KB. `FileReader.read_zip_structure` with local headers gets about 5x faster on archives with many entries, and parsing the central directory alone about 2x.
 * Fix `ZipWriter` converting the given `mtime` to UTC in place. The local file header got the DOS time in local time and the central directory header got it in UTC, and the caller was left with a Time object in UTC.
 * Remove the `C_CHAR` and `C_INT4` constants from `ZipWriter`, which were never meant to be public (the other packspec constants were private already).
+* Add `"cache-control" => "no-transform"` to `OutputEnumerator.streaming_http_headers`, and add `no-transform` to the `Cache-Control` of the response in `zip_kit_stream` (keeping whatever the controller has set there). `Rack::Deflater` only leaves a response alone if it has `no-transform` or a content encoding other than `identity`, so the `content-encoding: identity` we were sending did not stop it - it gzipped the ZIP all the same, and with `sync: false` buffered all of it to do so. If you replace our `cache-control` with your own, keep `no-transform` in it.
 
 ## 6.4.1
 

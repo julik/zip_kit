@@ -45,9 +45,35 @@ describe ZipKit::OutputEnumerator do
     expect(headers["content-encoding"]).to eq("identity")
   end
 
+  it "gets through Rack::Deflater uncompressed, a chunk at a time" do
+    require "rack"
+    trail = []
+    body = described_class.new(write_buffer_size: 0) do |zip|
+      zip.write_stored_file("a.txt") { |f| f << "a" * 1024 }
+      zip.write_stored_file("b.txt") { |f| f << "b" * 1024 }
+      trail << :archive_done
+    end
+    app = ->(_env) { [200, body.streaming_http_headers, body] }
+    env = Rack::MockRequest.env_for("/download.zip", "HTTP_ACCEPT_ENCODING" => "gzip")
+    _status, headers, deflater_body = Rack::Deflater.new(app).call(env)
+
+    expect(headers["content-encoding"]).to eq("identity")
+    out = StringIO.new.binmode
+    deflater_body.each do |chunk|
+      trail << :chunk
+      out << chunk
+    end
+    expect(trail.first).to eq(:chunk) # bytes go out before the archive is finished, not all at once
+    expect(trail.count(:chunk)).to be > 1
+
+    entries = {}
+    Zip::File.open_buffer(out.string) { |zip_file| zip_file.each { |e| entries[e.name] = e.get_input_stream.read } }
+    expect(entries).to eq("a.txt" => "a" * 1024, "b.txt" => "b" * 1024)
+  end
+
   it "provides streaming headers with lowercase names, as Rack 3 requires" do
     headers = described_class.streaming_http_headers
-    expect(headers.keys).to contain_exactly("last-modified", "content-encoding", "x-accel-buffering", "content-type")
+    expect(headers.keys).to contain_exactly("last-modified", "cache-control", "content-encoding", "x-accel-buffering", "content-type")
   end
 
   it "returns parts of the ZIP file when called using an Enumerator" do
