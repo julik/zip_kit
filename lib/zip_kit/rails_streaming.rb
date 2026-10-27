@@ -45,8 +45,15 @@ module ZipKit::RailsStreaming
     # names would send some headers twice
     present_header_names = response.headers.keys.map(&:downcase)
     ZipKit::OutputEnumerator.streaming_http_headers.each_pair do |name, value|
+      next if name == "cache-control"
       response.headers[name] = value unless present_header_names.include?(name)
     end
+
+    # Rails rewrites Cache-Control when the response gets committed, and before 7.1 it only
+    # looks for it under that name - a lowercase one would go out next to its own. no-transform
+    # is what keeps Rack::Deflater away, so it goes on top of whatever the controller has set
+    cache_control = response.headers["Cache-Control"].to_s.split(/,\s*/)
+    response.headers["Cache-Control"] = (cache_control | ["no-transform"]).join(", ")
 
     # The output enumerator yields chunks of bytes generated from the Streamer,
     # with some buffering. See OutputEnumerator docs for more.

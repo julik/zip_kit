@@ -116,9 +116,12 @@ class ZipKit::OutputEnumerator
   #
   # * `last-modified` will be set to "now" so that the response is considered "fresh" by `Rack::ETag`. This is done so that `Rack::ETag` won't try to
   #      calculate a lax ETag value and thus won't start buffering your response out of nowhere
-  # * `content-encoding` will be set to `identity`. This is so that proxies or the Rack middleware that applies compression to the response (like gzip)
-  #      is not going to try to compress your response. It also tells the receiving browsers (or downstream proxies) that they should not attempt to
-  #      open or uncompress the response before saving it or passing it onwards.
+  # * `cache-control` will be set to `no-transform`. This is so that `Rack::Deflater` and proxies which compress responses (like gzip)
+  #      are not going to try to compress your response again (and, with `Rack::Deflater` set to `sync: false`, buffer all of it to do so).
+  #      It says nothing about caching, so add your own directives to it if you need them, and keep `no-transform` in there
+  # * `content-encoding` will be set to `identity`. This tells the receiving browsers (or downstream proxies) that they should not attempt to
+  #      open or uncompress the response before saving it or passing it onwards. Note that it does _not_ stop `Rack::Deflater`, which compresses
+  #      responses with `content-encoding: identity` just the same
   # * `x-accel-buffering` will be set to `no` - this tells both nginx and the Google Cloud load balancer that the response should not be buffered
   #
   # These header values are known to get as close as possible to guaranteeing streaming on most environments where Ruby web applications may be hosted.
@@ -134,8 +137,9 @@ class ZipKit::OutputEnumerator
       # Set this even when not streaming for consistency. The fact that there would be
       # a weak ETag generated would mean that the middleware buffers, so we have tests for that.
       "last-modified" => Time.now.httpdate,
-      # Make sure Rack::Deflater does not touch our response body either, see
-      # https://github.com/felixbuenemann/xlsxtream/issues/14#issuecomment-529569548
+      # Make sure Rack::Deflater does not touch our response body either. It only skips
+      # responses which have `no-transform` or a content-encoding other than `identity`
+      "cache-control" => "no-transform",
       "content-encoding" => "identity",
       # Disable buffering for both nginx and Google Load Balancer, see
       # https://cloud.google.com/appengine/docs/flexible/how-requests-are-handled?tab=python#x-accel-buffering
