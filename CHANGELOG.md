@@ -1,5 +1,7 @@
 ## Unreleased
 
+## 6.4.2
+
 * Write every ZIP record with a single `Array#pack` and a single `<<` to the destination, instead of one per field. Archives with lots of entries get written about 1.5x faster.
 * Unpack the fixed fields of local and central directory headers in one go in `FileReader`, and read 4KB upfront for a local file header instead of the maximum possible 128KB. `FileReader.read_zip_structure` with local headers gets about 5x faster on archives with many entries, and parsing the central directory alone about 2x.
 * Fix `ZipWriter` converting the given `mtime` to UTC in place. The local file header got the DOS time in local time and the central directory header got it in UTC, and the caller was left with a Time object in UTC.
