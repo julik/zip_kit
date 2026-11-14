@@ -1,4 +1,8 @@
-# Contributor Covenant Code of Conduct
+# Code of Conduct
+
+## Relationship to CONTRIBUTING
+
+This Code of Conduct works together with [CONTRIBUTING.md](CONTRIBUTING.md). Where the two differ, CONTRIBUTING.md takes precedence.
 
 ## Our Pledge
 
@@ -24,23 +28,23 @@ Examples of unacceptable behavior by participants include:
 
 ## Our Responsibilities
 
-Project maintainers are responsible for clarifying the standards of acceptable behavior and are expected to take appropriate and fair corrective action in response to any instances of unacceptable behavior.
+The maintainer is responsible for clarifying the standards of acceptable behavior and is expected to take appropriate and fair corrective action in response to any instances of unacceptable behavior.
 
-Project maintainers have the right and responsibility to remove, edit, or reject comments, commits, code, wiki edits, issues, and other contributions that are not aligned to this Code of Conduct, or to ban temporarily or permanently any contributor for other behaviours that they deem inappropriate, threatening, offensive, or harmful.
+The maintainer has the right and responsibility to remove, edit, or reject comments, commits, code, wiki edits, issues, and other contributions that are not aligned to this Code of Conduct, or to ban temporarily or permanently any contributor for other behaviours that the maintainer deems inappropriate, threatening, offensive, or harmful.
 
 ## Scope
 
-This Code of Conduct applies both within project spaces and in public spaces when an individual is representing the project or its community. Examples of representing a project or community include using an official project e-mail address, posting via an official social media account, or acting as an appointed representative at an online or offline event. Representation of a project may be further defined and clarified by project maintainers.
+This Code of Conduct applies within project spaces: the repository, its issues, pull requests and discussions, and any other channels the project runs.
+
+Conduct outside project spaces is not considered, either for or against anyone, as described in [What happens elsewhere stays elsewhere](CONTRIBUTING.md#what-happens-elsewhere-stays-elsewhere).
 
 ## Enforcement
 
-Instances of abusive, harassing, or otherwise unacceptable behavior may be reported by contacting the project team at me@julik.nl. The project team will review and investigate all complaints, and will respond in a way that it deems appropriate to the circumstances. The project team is obligated to maintain confidentiality with regard to the reporter of an incident. Further details of specific enforcement policies may be posted separately.
-
-Project maintainers who do not follow or enforce the Code of Conduct in good faith may face temporary or permanent repercussions as determined by other members of the project's leadership.
+Instances of abusive, harassing, or otherwise unacceptable behavior may be reported by contacting the maintainer at me@julik.nl. The maintainer will review and investigate all complaints, and will respond in a way the maintainer deems appropriate to the circumstances. The maintainer is obligated to maintain confidentiality with regard to the reporter of an incident. Enforcement decisions are final.
 
 ## Attribution
 
-This Code of Conduct is adapted from the [Contributor Covenant][homepage], version 1.4, available at [http://contributor-covenant.org/version/1/4][version]
+This Code of Conduct is adapted from the [Contributor Covenant][homepage], version 1.4, with modifications, available at [http://contributor-covenant.org/version/1/4][version]
 
 [homepage]: http://contributor-covenant.org
 [version]: http://contributor-covenant.org/version/1/4/

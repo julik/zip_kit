@@ -1,153 +1,89 @@
 # Contributing to zip_kit
 
-Please take a moment to review this document in order to make the contribution
-process easy and effective for everyone involved.
+Contributions are welcome! Please take a moment to review this document so that
+contributing stays easy and effective for everyone involved.
 
-Following these guidelines helps to communicate that you respect the time of
-the developers managing and developing this open source project. In return,
-they should reciprocate that respect in addressing your issue or assessing
-patches and features.
+I'd especially love to get:
+
+* Reports of archives that a specific unarchiver refuses to open or extracts incorrectly
+* Performance work
+* Documentation fixes
 
 ## What do I need to know to help?
 
-If you are already familiar with the [Ruby Programming Language](https://www.ruby-lang.org/) you can start contributing code right away, otherwise look for issues labeled with *documentation* or *good first issue* to get started.
-
-If you are interested in contributing code and would like to learn more about the technologies that we use, check out the (non-exhaustive) list below. You can also get in touch with us via an issue or email to get additional information.
+If you would like to learn more about the technologies zip_kit builds on, check out the (non-exhaustive) list below. You can also get in touch with me via an issue or email.
 
  - [ruby](https://ruby-doc.org)
- - [rubyzip](https://github.com/rubyzip/rubyzip) as we like to test "our implementation against theirs"
- - [rspec](http://rspec.info/) for testing
- - [zip files](https://en.wikipedia.org/wiki/Zip_(file_format))
+ - [ZIP files](https://en.wikipedia.org/wiki/Zip_(file_format)) and the [APPNOTE.TXT](https://pkware.cachefly.net/webdocs/casestudies/APPNOTE.TXT) specification
+ - [rubyzip](https://github.com/rubyzip/rubyzip), as we like to test "our implementation against theirs"
+ - [rspec](https://rspec.info/) for testing
 
-# How do I make a contribution?
+## Issues and pull requests
 
-## Using the issue tracker
+* Opening an issue first is often the fastest way to get something in. I can shape it into something that fits the library. Please do this before any significant PR (new features, refactoring), so you don't spend time on something that won't be merged.
+* Search the issues first, and check whether the problem still happens on the latest `main`.
+* The most useful bug report is a small script that produces the broken archive (or the archive itself), plus the name, version and OS of the tool that fails to open it.
+* I may close a PR and implement the idea differently. That's not a rejection of the idea, and you'll be credited (`Co-authored-by`).
+* Feel free to propose opinionated changes, but be prepared that your opinion won't be shared. It is a give-and-take.
+* Keep PRs focused, without unrelated commits.
 
-The issue tracker is the preferred channel for [bug reports](#bug-reports),
-[feature requests](#feature-requests) and [submitting pull
-requests](#pull-requests), but please respect the following restrictions:
-
-* Please **do not** derail or troll issues. Keep the discussion on topic and respect the opinions of others. Adhere to the principles set out in the [Code of Conduct](https://github.com/WeTransfer/zip_kit/blob/main/CODE_OF_CONDUCT.md).
-
-## Bug reports
-
-A bug is a _demonstrable problem_ that is caused by code in the repository.
-
-Good bug reports are extremely helpful-thank you!
-
-Guidelines for bug reports:
-
-1. **Use the GitHub issue search** &mdash; check if the issue has already been
-   reported.
-
-2. **Check if the issue has been fixed** &mdash; try to reproduce it using the
-   latest `main` branch in the repository.
-
-3. **Isolate the problem** &mdash; create a [reduced test
-   case](http://css-tricks.com/reduced-test-cases/) and a live example.
-
-A good bug report shouldn't leave others needing to chase you up for more
-information. Please try to be as detailed as possible in your report. What is
-your environment? What steps will reproduce the issue? What tool(s) or OS will
-experience the problem? What would you expect to be the outcome? All these
-details will help people to fix any potential bugs.
-
-Example:
-
-> Short and descriptive example bug report title
->
-> A summary of the issue and the OS environment in which it occurs. If
-> suitable, include the steps required to reproduce the bug.
->
-> 1. This is the first step
-> 2. This is the second step
-> 3. Further steps, etc.
->
-> `<url>` - a link to the reduced test case, if possible. Feel free to use a [Gist](https://gist.github.com).
->
-> Any other information you want to share that is relevant to the issue being
-> reported. This might include the lines of code that you have identified as
-> causing the bug, and potential solutions (and your opinions on their
-> merits).
-
-
-## Feature requests
-
-Feature requests are welcome. But take a moment to find out whether your idea
-fits with the scope and aims of the project. It's up to *you* to make a strong
-case to convince the project's developers of the merits of this feature. Please
-provide as much detail and context as possible.
-
-
-## Pull requests
-
-Good pull requests-patches, improvements, new features-are a fantastic
-help. They should remain focused in scope and avoid containing unrelated
-commits.
-
-**Please ask first** before embarking on any significant pull request (e.g.
-implementing features, refactoring code, porting to a different language),
-otherwise you risk spending a lot of time working on something that the
-project's developers might not want to merge into the project.
+## Code changes
 
 Please adhere to the coding conventions used throughout the project (indentation,
-accurate comments, etc.) and any other requirements (such as test coverage).
+accurate and terse comments, etc.) and any other requirements (such as test coverage).
 
-The project uses Rubocop which can be run using `bundle exec rubocop`. The test
-suite can be run with `bundle exec rspec`. You are also encouraged to use the
-script in the `testing` directory to create test files that you can then verify
-with various zip/unzip utilities. Further instructions are [here](https://github.com/WeTransfer/zip_kit/blob/main/testing/README_TESTING.md).  
+Run the `rake` default task before submitting. It runs the test suite (`bundle exec rspec`),
+checks formatting with [standard](https://github.com/standardrb/standard) (`bundle exec rake format`
+fixes most of it), and regenerates the type signatures in `rbi/`. Commit the regenerated signatures.
 
-Follow this process if you'd like your work considered for inclusion in the
-project:
+zip_kit supports Ruby 2.6 and up, and CI runs the tests and the linter on 2.6. Don't use syntax or
+stdlib features newer than that. CI also runs the suite with frozen string literals enforced, so don't
+mutate string literals.
 
-1. [Fork](http://help.github.com/fork-a-repo/) the project, clone your fork,
-   and configure the remotes:
+## Basic expectations
 
-   ```bash
-   # Clone your fork of the repo into the current directory
-   git clone git@github.com:julik/zip_kit.git
-   # Navigate to the newly cloned directory
-   cd zip_kit
-   # Assign the original repo to a remote called "upstream"
-   git remote add upstream git@github.com:julik/zip_kit.git
-   ```
+This project is something created with love, and I - as an author - expect you, as a contributor, to return the favor. The ground rules:
 
-2. If you cloned a while ago, get the latest changes from upstream:
+* Do your best to be kind.
+* Be polite and direct. No abrasiveness, no passive-aggression.
+* [Low-context](https://www.ebsco.com/research-starters/communication-and-mass-media/high-context-and-low-context-cultures) communication is preferred and permitted
+* No ad-hominems, also in code comments
+* No sexualized or aggressive language
 
-   ```bash
-   git checkout <dev-branch>
-   git pull upstream <dev-branch>
-   ```
+These rules sit alongside the [Code of Conduct](CODE_OF_CONDUCT.md), which applies to everyone taking part in the project.
 
-3. Create a new topic branch (off the main project development branch) to
-   contain your feature, change, or fix:
+As a maintainer, I reserve the right to deny any contribution, discussion post, comment or pull request I find inappropriate or that is not aligned with the Code of Conduct.
 
-   ```bash
-   git checkout -b <topic-branch-name>
-   ```
+Similarly, I reserve the right to not accept any contribution that doesn't fit the goals or spirit of the project (or my own), without explaining why it has been refused.
 
-4. Commit your changes in logical chunks and/or squash them for readability and
-   conciseness. Check out [this post](https://chris.beams.io/posts/git-commit/) or
-   [this other post](http://tbaggery.com/2008/04/19/a-note-about-git-commit-messages.html) for some tips re: writing good commit messages.
+## Decisions are final
 
-5. Locally merge (or rebase) the upstream development branch into your topic branch:
+You're welcome to make your case once, clearly. After that, please don't reopen closed issues, start meta-threads about the decision, or argue about the wording of this document. This is a list of expectations, not a contract to be lawyered. If something isn't covered, the maintainer's judgment applies.
 
-   ```bash
-   git pull [--rebase] upstream <dev-branch>
-   ```
+This applies to Code of Conduct enforcement too. Reporting a violation is always welcome, privately, at the address given in the [Code of Conduct](CODE_OF_CONDUCT.md#enforcement), but the outcome is final.
 
-6. Push your topic branch up to your fork:
+## What happens elsewhere stays elsewhere
 
-   ```bash
-   git push origin <topic-branch-name>
-   ```
+Contributions are judged on what they are, not on who sent them. What anyone says or does outside this project (on social media, at their job, in other repos, in politics) is not a topic here and will not be considered, either for or against them. Please don't bring it in: no call-outs, no "are you aware this person…" threads, no requests to ban someone over things that didn't happen here.
 
-   Make sure to run `bundle exec appraisal rspec` to make sure your changes are compatible with all the Rails versions we support.
+The [Code of Conduct](CODE_OF_CONDUCT.md#scope) applies within project spaces only, and defers to this document where the two differ.
 
-7. [Open a Pull Request](https://help.github.com/articles/using-pull-requests/)
-    with a clear title and description.
+## AI-generated issues and code
 
-**IMPORTANT**: By submitting a patch, you agree to allow the project owner to
-license your work under the same license as that used by the project, which you
-can see by clicking [here](LICENSE.txt). 
+This project uses LLMs to produce code and artifacts, and it's fine if you do the same when contributing. LLM use in this project is settled: threads about whether it should be used (utility, harm, societal implications etc.) will be closed.
+
+If you require LLM-untainted code for your needs, feel free to use zip_kit prior to and including commit 2f123ae41cffe7255f1ff0824af44420d5dbfaa7 - but I am not going to maintain an "LLM-free" branch of zip_kit just for your needs.
+ 
+Please disclose LLM use in every issue and PR: say which model or tool you used and what for (e.g. "Claude wrote the fix, I wrote the test"). This is for transparency, not for judgment. Disclosed LLM use is treated the same as no LLM use.
+
+However, the following is on you:
+
+* Make your LLM output _terse._ Nobody likes reading slop, even my agents. Make it get to the point.
+* Make sure what you submit actually ran. Don't file issues about behavior or APIs your LLM imagined.
+* zip_kit has no runtime dependencies. Do not add any (or have your LLM do it) unless absolutely necessary
+* If you file a PR, make at least one pass with "Make this at least 50% less code"
+* Code generated by your LLM will be considered as written by you, with the same requirements
+
+## License
+
+By submitting a patch, you agree to allow the project owner to license your work under the same license as that used by the project, which you can see [here](LICENSE.txt).
