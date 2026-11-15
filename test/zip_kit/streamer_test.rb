@@ -50,20 +50,6 @@ class StreamerTest < TestCase
     end
   end
 
-  module FilecountComplexity
-    def self.generate_args(size)
-      [size]
-    end
-
-    def self.run(n_files)
-      ZipKit::Streamer.open(ZipKit::NullWriter, writer: FakeZipWriter.new) do |w|
-        n_files.times do |i|
-          w.write_stored_file(format("file_%d", i)) { |body| body << "w" }
-        end
-      end
-    end
-  end
-
   # Run each test in a temporady directory, and nuke it afterwards
   def setup
     super
@@ -85,7 +71,13 @@ class StreamerTest < TestCase
 
   # Measures timings, which other test workers hammering the CPU would skew
   test "has linear performance depending on the file count", parallel: false do
-    assert_linear_complexity(FilecountComplexity)
+    assert_linear_complexity do |n_files|
+      ZipKit::Streamer.open(ZipKit::NullWriter, writer: FakeZipWriter.new) do |w|
+        n_files.times do |i|
+          w.write_stored_file(format("file_%d", i)) { |body| body << "w" }
+        end
+      end
+    end
   end
 
   test "raises an InvalidOutput if the given object does not support the methods" do
