@@ -15,10 +15,6 @@ class DescriptiveTestsTest < TestCase
     end
   end
 
-  def contexts_of(test_case)
-    ObjectSpace.each_object(Class).select { |k| k.superclass == test_case }
-  end
-
   test "uses the description verbatim as the test method name" do
     test_case = build_test_case do
       test "writes a file, then (optionally) rolls back: 100% of the time!" do
@@ -73,23 +69,22 @@ class DescriptiveTestsTest < TestCase
   end
 
   test "a context names itself after the enclosing test case and does not re-run its tests" do
+    close_context = nil
+    twice_context = nil
     test_case = build_test_case do
       test "outer" do
       end
 
-      context "#close" do
+      close_context = context "#close" do
         test "inner" do
         end
 
-        context "when called twice" do
+        twice_context = context "when called twice" do
           test "innermost" do
           end
         end
       end
     end
-
-    close_context = contexts_of(test_case).first
-    twice_context = contexts_of(close_context).first
 
     assert_equal ["outer"], test_case.runnable_methods
     assert_equal "SampleTest #close", close_context.name
@@ -99,7 +94,8 @@ class DescriptiveTestsTest < TestCase
   end
 
   test "a context inherits setup and helper methods and may reuse a description of the enclosing test case" do
-    test_case = build_test_case do
+    nested = nil
+    build_test_case do
       def setup
         @trail = [:outer_setup]
       end
@@ -112,7 +108,7 @@ class DescriptiveTestsTest < TestCase
         flunk "must not run in the context"
       end
 
-      context "nested" do
+      nested = context "nested" do
         def setup
           super
           @trail << :inner_setup
@@ -125,7 +121,6 @@ class DescriptiveTestsTest < TestCase
       end
     end
 
-    nested = contexts_of(test_case).first
     result = nested.new("does the thing").run
     assert_predicate result, :passed?, result.failures.map(&:message).join
     assert_equal 2, result.assertions
@@ -159,5 +154,27 @@ class DescriptiveTestsTest < TestCase
     names = ("a".."p").map { |letter| "case #{letter}" }
     assert_equal names.shuffle(random: Random.new(Minitest.seed)), test_case.runnable_methods
     assert_equal test_case.runnable_methods, test_case.runnable_methods
+  end
+  test "remembers the tests which must not run in parallel with others" do
+    nested = nil
+    test_case = build_test_case do
+      test "measures timings", parallel: false do
+      end
+
+      test "does not care" do
+      end
+
+      nested = context "nested" do
+        test "measures timings" do
+        end
+      end
+    end
+    subclass = Class.new(test_case)
+
+    assert test_case.serial_test?("measures timings")
+    refute test_case.serial_test?("does not care")
+    assert subclass.serial_test?("measures timings")
+    refute nested.serial_test?("measures timings")
+    assert_includes test_case.runnable_methods, "measures timings"
   end
 end

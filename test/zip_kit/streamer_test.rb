@@ -83,7 +83,8 @@ class StreamerTest < TestCase
     yield.tap { ios.map(&:rewind) }
   end
 
-  test "has linear performance depending on the file count" do
+  # Measures timings, which other test workers hammering the CPU would skew
+  test "has linear performance depending on the file count", parallel: false do
     assert_linear_complexity(FilecountComplexity)
   end
 

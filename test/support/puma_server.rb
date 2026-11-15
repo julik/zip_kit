@@ -5,8 +5,8 @@ require "timeout"
 module PumaServer
   @addrs = {}
 
-  # Returns the "host:port" the app is served at
-  def self.boot(rack_app_path)
+  # Returns the "host:port" the app is served at. Puma gets started in the `chdir` directory.
+  def self.boot(rack_app_path, chdir: Dir.pwd)
     @addrs[rack_app_path] ||= begin
       # find a free tcp port
       tcpserver = TCPServer.new("127.0.0.1", 0)
@@ -14,7 +14,7 @@ module PumaServer
       addr = tcpserver.addr[3]
       tcpserver.close
       server_addr = "#{addr}:#{port}"
-      server = IO.popen(%W[bundle exec puma --bind tcp://#{server_addr} #{rack_app_path}], "r")
+      server = IO.popen(%W[bundle exec puma --bind tcp://#{server_addr} #{rack_app_path}], "r", chdir: chdir)
       server_pid = server.pid
       raise "puma did not start for #{rack_app_path}" if server_pid.nil?
       Minitest.after_run do

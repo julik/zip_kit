@@ -16,7 +16,11 @@ class StreamCRC32Test < TestCase
     # of 512KB so if we allocate a String for each read() - which is
     # what this spec tries to prevent - we would certainly go over
     # 90 allocations.
-    assert_allocates_under(10) { ZipKit::StreamCRC32.from_io(raw) }
+    #
+    # StreamCRC32 gets autoloaded, and if this test is the first one to touch it the
+    # allocations of the autoload would get counted too.
+    crc_class = ZipKit::StreamCRC32
+    assert_allocates_under(10) { crc_class.from_io(raw) }
   end
 
   test "allows in-place updates" do

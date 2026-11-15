@@ -24,7 +24,18 @@ module DescriptiveTests
     @declared_tests ||= []
   end
 
-  def test(description, &blk)
+  def serial_tests
+    @serial_tests ||= []
+  end
+
+  def serial_test?(name)
+    return serial_tests.include?(name) if declared_tests.include?(name)
+    superclass.respond_to?(:serial_test?) && superclass.serial_test?(name)
+  end
+
+  # Pass `parallel: false` for a test which measures timings: it then runs after the
+  # parallel workers are done, with the machine to itself (see ParallelRun).
+  def test(description, parallel: true, &blk)
     name = description.to_s
     raise ArgumentError, "test #{name.inspect} needs a block" unless blk
     raise ArgumentError, "test #{name.inspect} is already defined in #{self.name}" if declared_tests.include?(name)
@@ -35,6 +46,7 @@ module DescriptiveTests
     end
 
     declared_tests << name
+    serial_tests << name unless parallel
     define_method(name, &blk)
   end
 

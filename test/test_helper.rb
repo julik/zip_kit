@@ -10,6 +10,7 @@ require "shellwords"
 require "zip"
 
 require_relative "support/descriptive_tests"
+require_relative "support/parallel_run"
 require_relative "support/read_monitor"
 require_relative "support/managed_tempfile"
 require_relative "support/chunked_encoding"

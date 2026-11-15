@@ -36,6 +36,10 @@ Run the `rake` default task before submitting. It runs the test suite (`bundle e
 checks formatting with [standard](https://github.com/standardrb/standard) (`bundle exec rake format`
 fixes most of it), and regenerates the type signatures in `rbi/`. Commit the regenerated signatures.
 
+The tests run in parallel, in one forked process per CPU core. Set `TEST_WORKERS=1` to run them in a single
+process, and `SEED=1234` to repeat the order of a particular run. A test which measures timings should be
+declared with `parallel: false`, so that it runs after the others are done.
+
 zip_kit supports Ruby 2.6 and up, and CI runs the tests and the linter on 2.6. Don't use syntax or
 stdlib features newer than that. CI also runs the suite with frozen string literals enforced, so don't
 mutate string literals.
