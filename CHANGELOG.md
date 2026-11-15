@@ -1,5 +1,7 @@
 ## Unreleased
 
+* Move the test suite from RSpec to minitest and run it in parallel, in one forked process per CPU core. Run it with `bundle exec rake test` (it was `rake spec`), and see CONTRIBUTING.md for `TEST_WORKERS` and `SEED`. The `rspec`, `rspec-mocks` and `complexity_assert` development dependencies are gone. Nothing changes for users of the library.
+
 ## 6.4.2
 
 * Write every ZIP record with a single `Array#pack` and a single `<<` to the destination, instead of one per field. Archives with lots of entries get written about 1.5x faster.
