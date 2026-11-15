@@ -19,7 +19,7 @@ jobs:
           ruby-version: '2.6'
           bundler-cache: true
       - name: "Tests"
-        run: bundle exec rspec --backtrace --fail-fast
+        run: bundle exec rake test
 
   test_newest_ruby:
     name: "Tests (Ruby 3.4 with frozen string literals)"
@@ -35,7 +35,7 @@ jobs:
       - name: "Tests" # Make the test suite hard-crash on frozen string literal violations
         env:
           RUBYOPT: "--enable=frozen-string-literal --debug=frozen-string-literal"
-        run: "bundle exec rspec --backtrace --fail-fast"
+        run: "bundle exec rake test"
 
   test_ractors:
     name: "Ractor tests (Ruby 4.0)"
@@ -49,7 +49,7 @@ jobs:
           ruby-version: '4.0'
           bundler-cache: true
       - name: "Tests"
-        run: "bundle exec rspec --backtrace --fail-fast spec/zip_kit/ractor_spec.rb"
+        run: "bundle exec ruby -Itest test/zip_kit/ractor_test.rb"
 
   lint_baseline_ruby: # We need to use syntax appropriate for the minimum supported Ruby version
     name: Lint (Ruby 2.6 syntax)

@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 require "bundler/gem_tasks"
-require "rspec/core/rake_task"
+require "rake/testtask"
 require "yard"
 require "standard/rake"
 
@@ -11,7 +11,11 @@ task :format do
 end
 
 YARD::Rake::YardocTask.new(:doc)
-RSpec::Core::RakeTask.new(:spec)
+Rake::TestTask.new(:test) do |t|
+  t.libs << "test"
+  t.pattern = "test/**/*_test.rb"
+  t.warning = false
+end
 
 task :generate_typedefs do
   `bundle exec sord rbi/zip_kit.rbi`
@@ -26,7 +30,7 @@ task :generate_typedefs do
   File.write(rbs_path, rbs)
 end
 
-task default: [:spec, :standard, :generate_typedefs]
+task default: [:test, :standard, :generate_typedefs]
 
 # When building the gem, generate typedefs beforehand,
 # so that they get included

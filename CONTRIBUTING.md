@@ -16,7 +16,7 @@ If you would like to learn more about the technologies zip_kit builds on, check 
  - [ruby](https://ruby-doc.org)
  - [ZIP files](https://en.wikipedia.org/wiki/Zip_(file_format)) and the [APPNOTE.TXT](https://pkware.cachefly.net/webdocs/casestudies/APPNOTE.TXT) specification
  - [rubyzip](https://github.com/rubyzip/rubyzip), as we like to test "our implementation against theirs"
- - [rspec](https://rspec.info/) for testing
+ - [minitest](https://github.com/minitest/minitest) for testing
 
 ## Issues and pull requests
 
@@ -32,9 +32,13 @@ If you would like to learn more about the technologies zip_kit builds on, check 
 Please adhere to the coding conventions used throughout the project (indentation,
 accurate and terse comments, etc.) and any other requirements (such as test coverage).
 
-Run the `rake` default task before submitting. It runs the test suite (`bundle exec rspec`),
+Run the `rake` default task before submitting. It runs the test suite (`bundle exec rake test`),
 checks formatting with [standard](https://github.com/standardrb/standard) (`bundle exec rake format`
 fixes most of it), and regenerates the type signatures in `rbi/`. Commit the regenerated signatures.
+
+The tests run in parallel, in one forked process per CPU core. Set `TEST_WORKERS=1` to run them in a single
+process, and `SEED=1234` to repeat the order of a particular run. A test which measures timings should be
+declared with `parallel: false`, so that it runs after the others are done.
 
 zip_kit supports Ruby 2.6 and up, and CI runs the tests and the linter on 2.6. Don't use syntax or
 stdlib features newer than that. CI also runs the suite with frozen string literals enforced, so don't

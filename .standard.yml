@@ -1,6 +1,6 @@
 ruby_version: 2.7
 ignore:
-  - 'spec/**/*':
+  - 'test/**/*':
     - Lint/ConstantDefinitionInBlock
     - Style/GlobalVars
   - 'lib/zip_kit/rack_body.rb': # Erroneous detection
