@@ -36,8 +36,7 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency "rubyzip", "~> 2" # We test our output with _another_ ZIP library, which is the way to go here
   spec.add_development_dependency "rack" # For tests where we spin up a server. Both for streaming out and for testing reads over HTTP
   spec.add_development_dependency "rake", "~> 12.2"
-  spec.add_development_dependency "rspec", "~> 3"
-  spec.add_development_dependency "rspec-mocks", "~> 3.10", ">= 3.10.2" # ruby 3 compatibility
+  spec.add_development_dependency "minitest", "~> 5" # 5.x still bundles minitest/mock and runs on Ruby 2.6
   spec.add_development_dependency "complexity_assert"
   spec.add_development_dependency "benchmark-ips"
   spec.add_development_dependency "allocation_stats", "~> 0.1.5"
