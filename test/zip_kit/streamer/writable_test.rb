@@ -56,7 +56,7 @@ class StreamerWritableTest < TestCase
       end
 
       writable = ZipKit::Streamer::Writable.new(fake_streamer, fake_deflater)
-      writable << "é"
+      assert_nothing_raised { writable << "é" }
     end
   end
 

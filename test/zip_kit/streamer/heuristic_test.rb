@@ -6,7 +6,9 @@ class StreamerHeuristicTest < TestCase
     streamer = ZipKit::Streamer.new(output)
 
     heuristic = ZipKit::Streamer::Heuristic.new(streamer, "somefile.bin")
-    ((64 * 1024) + 2).times { heuristic << "é" }
-    heuristic.close
+    assert_nothing_raised do
+      ((64 * 1024) + 2).times { heuristic << "é" }
+      heuristic.close
+    end
   end
 end

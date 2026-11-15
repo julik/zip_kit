@@ -16,12 +16,14 @@ require_relative "support/managed_tempfile"
 require_relative "support/chunked_encoding"
 require_relative "support/puma_server"
 require_relative "support/allocation_assertions"
+require_relative "support/raise_assertions"
 require_relative "support/complexity_assertions"
 
 class TestCase < Minitest::Test
   extend DescriptiveTests
   include ChunkedEncoding
   include AllocationAssertions
+  include RaiseAssertions
   include ComplexityAssertions
 
   def teardown

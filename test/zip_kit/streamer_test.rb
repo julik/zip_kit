@@ -90,7 +90,8 @@ class StreamerTest < TestCase
       # noop
     end
 
-    assert_kind_of ZipKit::Streamer, ZipKit::Streamer.new(stream_with_just_write)
+    streamer = assert_nothing_raised { ZipKit::Streamer.new(stream_with_just_write) }
+    assert_kind_of ZipKit::Streamer, streamer
   end
 
   test "allows the writer to be injectable" do
@@ -543,11 +544,12 @@ class StreamerTest < TestCase
     # changed to "baz (1)" to avoid conflict). This is certainly usable, but is _magic_ behavior -
     # which is one of the reasons why automatically fixing non-unique filenames is a bad idea,
     # and we are going to make it optional - it can lead to very non-intuitive behavior
-    zip_streamer = ZipKit::Streamer.new(StringIO.new, writer: fake_writer, auto_rename_duplicate_filenames: true)
-    zip_streamer.add_stored_entry(filename: "foo/bar/baz/bad", size: 1_024, crc32: 0xCC)
-    # The error raised here would be ZipKit::PathSet::Conflict - there is no assertion for "does not raise",
-    # an exception escaping the test fails it
-    zip_streamer.add_stored_entry(filename: "foo/bar/baz", size: 1_024, crc32: 0xCC)
+    assert_nothing_raised {
+      zip_streamer = ZipKit::Streamer.new(StringIO.new, writer: fake_writer, auto_rename_duplicate_filenames: true)
+      zip_streamer.add_stored_entry(filename: "foo/bar/baz/bad", size: 1_024, crc32: 0xCC)
+      # The error raised would be ZipKit::PathSet::Conflict
+      zip_streamer.add_stored_entry(filename: "foo/bar/baz", size: 1_024, crc32: 0xCC)
+    }
   end
 
   test "raises when the IO offset is out of sync with the sizes of the entries known to the Streamer" do
@@ -739,7 +741,7 @@ class StreamerTest < TestCase
     # want to write out the EOCD since we want to make sure there is no byte offset
     # mismatch (fillers have been correctly produced)
     uniсode_str_buf.force_encoding(Encoding::BINARY)
-    zip.close # Offset validation should pass
+    assert_nothing_raised { zip.close } # Offset validation should pass
   end
 
   test "handles rollback when first entry fails before header is written" do
@@ -764,9 +766,9 @@ class StreamerTest < TestCase
     }
     assert_equal "Invalid URL or other error", error.message
 
-    zip.rollback!
+    assert_nothing_raised { zip.rollback! }
 
-    zip.close
+    assert_nothing_raised { zip.close }
   end
 
   test "handles rollback when second entry fails before header is written, preserving first entry" do
@@ -793,10 +795,10 @@ class StreamerTest < TestCase
     assert_equal "Invalid URL or other error", error.message
 
     # rollback! should not affect the first entry
-    zip.rollback!
+    assert_nothing_raised { zip.rollback! }
 
     # Should be able to close successfully
-    zip.close
+    assert_nothing_raised { zip.close }
 
     zip_file.flush
 

@@ -164,7 +164,7 @@ class OcfTest < TestCase
     test "accepts the names a typical book has, including non-ASCII ones" do
       ["META-INF/container.xml", "OEBPS/content.opf", "OEBPS/Text/chapter-01.xhtml", "OEBPS/Images/",
         "OEBPS/Text/第一章.xhtml", "OEBPS/Text/café.xhtml", "OEBPS/.hidden", "OEBPS/Text/with space.xhtml"].each do |name|
-        add(name)
+        assert_nothing_raised { add(name) }
       end
     end
 
@@ -196,8 +196,8 @@ class OcfTest < TestCase
       assert_match(/255 bytes/, error.message)
       error = assert_raises(ZipKit::Streamer::OCFViolation) { add("OEBPS/" + "é" * 128) } # 256 bytes
       assert_match(/255 bytes/, error.message)
-      add("OEBPS/" + "a" * 255)
-      add((["b" * 200] * 4).join("/"))
+      assert_nothing_raised { add("OEBPS/" + "a" * 255) }
+      assert_nothing_raised { add((["b" * 200] * 4).join("/")) }
     end
 
     test "refuses names which are not valid UTF-8" do
@@ -211,7 +211,7 @@ class OcfTest < TestCase
       assert_match(/by case/, error.message)
       error = assert_raises(ZipKit::Streamer::OCFViolation) { add("OEBPS/CHAPTER.XHTML") }
       assert_match(/by case/, error.message)
-      add("Other/chapter.xhtml") # same name, different directory
+      assert_nothing_raised { add("Other/chapter.xhtml") } # same name, different directory
     end
 
     test "applies full case folding" do
@@ -230,19 +230,21 @@ class OcfTest < TestCase
       error = assert_raises(ZipKit::Streamer::OCFViolation) { add("oebps/b.xhtml") }
       assert_match(/"oebps" only differs from "OEBPS"/, error.message)
       assert_raises(ZipKit::Streamer::OCFViolation) { add("oebps/") }
-      add("OEBPS/b.xhtml")
+      assert_nothing_raised { add("OEBPS/b.xhtml") }
     end
 
     test "forgets the names of rolled back entries" do
       add("OEBPS/Chapter.xhtml")
       zip.rollback!
-      add("OEBPS/chapter.xhtml")
+      assert_nothing_raised { add("OEBPS/chapter.xhtml") }
     end
 
     test "does not check file names without ocf: true" do
-      ZipKit::Streamer.open(StringIO.new(+"")) do |plain|
-        plain.add_stored_entry(filename: "a:b?", size: 0)
-        plain.add_stored_entry(filename: "A:B?", size: 0)
+      assert_nothing_raised do
+        ZipKit::Streamer.open(StringIO.new(+"")) do |plain|
+          plain.add_stored_entry(filename: "a:b?", size: 0)
+          plain.add_stored_entry(filename: "A:B?", size: 0)
+        end
       end
     end
   end

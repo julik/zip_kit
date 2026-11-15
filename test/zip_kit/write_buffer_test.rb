@@ -23,7 +23,9 @@ class WriteBufferTest < TestCase
       sink = "å".b
       buffer = ZipKit::WriteBuffer.new(sink, 1)
 
-      2.times { buffer << "é".encode(Encoding::UTF_8) }
+      assert_nothing_raised do
+        2.times { buffer << "é".encode(Encoding::UTF_8) }
+      end
       assert_equal "åéé".b, sink
     end
 
@@ -148,8 +150,10 @@ class WriteBufferTest < TestCase
         [1, 3, 1024].each do |buffer_size|
           accumulator = []
           buffer = ZipKit::WriteBuffer.new(Duplicator.new(accumulator), buffer_size)
-          strings.each { |s| buffer << s }
-          buffer.flush
+          assert_nothing_raised do
+            strings.each { |s| buffer << s }
+            buffer.flush
+          end
 
           assert_equal strings.map(&:b).join, accumulator.join
           assert_equal [Encoding::BINARY], accumulator.map(&:encoding).uniq

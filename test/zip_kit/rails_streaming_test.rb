@@ -106,7 +106,7 @@ class RailsStreamingTest < TestCase
     ref_output_io = FakeZipGenerator.generate_reference
     out = readback_iterable(body)
     assert_equal ref_output_io.string, out.string
-    body.close
+    assert_nothing_raised { body.close }
     assert_equal 200, status
     assert_correct_headers(headers)
 

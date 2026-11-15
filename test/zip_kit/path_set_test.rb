@@ -6,17 +6,21 @@ class PathSetTest < TestCase
   end
 
   test "allows adding multiple files" do
-    path_set.add_file_path("foo.txt")
-    path_set.add_file_path("bar.txt")
-    path_set.add_file_path("baz.txt")
-    path_set.add_directory_path("subdir")
+    assert_nothing_raised do
+      path_set.add_file_path("foo.txt")
+      path_set.add_file_path("bar.txt")
+      path_set.add_file_path("baz.txt")
+      path_set.add_directory_path("subdir")
+    end
 
     ["foo.txt", "bar.txt", "baz.txt", "subdir"].each { |path| assert_includes path_set, path }
   end
 
   test "does not raise when a directory gets added twice" do
-    path_set.add_directory_path("subdir")
-    path_set.add_directory_path("subdir")
+    assert_nothing_raised do
+      path_set.add_directory_path("subdir")
+      path_set.add_directory_path("subdir")
+    end
 
     assert_includes path_set, "subdir"
   end
