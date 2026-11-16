@@ -201,12 +201,18 @@ class ZipKit::FileReader
     eocd_offset = get_eocd_offset(io, zip_file_size)
 
     zip64_end_of_cdir_location = get_zip64_eocd_location(io, eocd_offset)
-    num_files, cdir_location, _cdir_size =
+    num_files, cdir_location, cdir_size =
       if zip64_end_of_cdir_location
         num_files_and_central_directory_offset_zip64(io, zip64_end_of_cdir_location)
       else
         num_files_and_central_directory_offset(io, eocd_offset)
       end
+
+    # The central directory has to end before the Zip64 EOCD record, or before the EOCD if there is none
+    cdir_end = zip64_end_of_cdir_location || eocd_offset
+    if cdir_location > cdir_end
+      raise InvalidStructure, "The central directory offset #{cdir_location} is past the end of the central directory at #{cdir_end}"
+    end
 
     log do
       "Located the central directory start at %<location>d" %
@@ -214,23 +220,14 @@ class ZipKit::FileReader
     end
     seek(io, cdir_location)
 
-    # Read the entire central directory AND anything behind it, in one fell swoop.
-    # Strictly speaking, we should be able to read `cdir_size` bytes and not a byte more.
-    # However, we know for a fact that in some of our files the central directory size
-    # is in fact misreported. `zipinfo` then says:
-    #
-    #    warning [ktsglobal-2b03bc.zip]:  1 extra byte at beginning or within zipfile
-    #      (attempting to process anyway)
-    #    error [ktsglobal-2b03bc.zip]:  reported length of central directory is
-    #      -1 bytes too long (Atari STZip zipfile?  J.H.Holm ZIPSPLIT 1.1
-    #      zipfile?).  Compensating...
-    #
-    # Since the EOCD is not that big anyway, we just read the entire "tail" of the ZIP ignoring
-    # the central directory size alltogether.
-    central_directory_str = io.read # and not read_n(io, cdir_size), see above
+    # Some archives misreport the central directory size (`zipinfo` says "reported length of central
+    # directory is -1 bytes too long"), so allow for an error. But do not read all the way up to the
+    # EOCD: an archive can have any amount of data stuffed between the central directory and the EOCD.
+    read_size = [cdir_size + MAX_CENTRAL_DIRECTORY_SIZE_ERROR, cdir_end - cdir_location].min
+    central_directory_str = read_n(io, read_size)
     central_directory_io = StringIO.new(central_directory_str)
     log do
-      "Read %<byte_size>d bytes with central directory + EOCD record and locator" %
+      "Read %<byte_size>d bytes with the central directory" %
         {byte_size: central_directory_str.bytesize}
     end
 
@@ -716,6 +713,9 @@ class ZipKit::FileReader
     2 + # The comment size
     0xFFFF # Maximum comment size
 
+  # How many bytes more than the declared central directory size we are willing to read
+  MAX_CENTRAL_DIRECTORY_SIZE_ERROR = 0xFFFF
+
   # How much to read upfront for a local file header. Filenames and extra fields rarely
   # take more than a few hundred bytes, the rest gets read separately if needed
   LOCAL_HEADER_READ_SIZE = 4 * 1024
@@ -748,7 +748,7 @@ class ZipKit::FileReader
   private_constant :C_UINT4, :C_UINT2, :C_UINT8, :MAX_END_OF_CENTRAL_DIRECTORY_RECORD_SIZE,
     :LOCAL_HEADER_FIXED_FIELDS_UNPACKSPEC, :SIZE_OF_LOCAL_HEADER_FIXED_FIELDS,
     :CDIR_ENTRY_FIXED_FIELDS_UNPACKSPEC, :SIZE_OF_CDIR_ENTRY_FIXED_FIELDS,
-    :LOCAL_HEADER_READ_SIZE, :SIZE_OF_USABLE_EOCD_RECORD
+    :LOCAL_HEADER_READ_SIZE, :SIZE_OF_USABLE_EOCD_RECORD, :MAX_CENTRAL_DIRECTORY_SIZE_ERROR
 
   # Is provided as a stub to be overridden in a subclass if you need it. Will report
   # during various stages of reading. The log message is contained in the return value
