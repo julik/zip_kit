@@ -2,10 +2,12 @@
 
 # Rubocop: convention: Missing top-level class documentation comment.
 class ZipKit::FileReader::InflatingReader
-  def initialize(from_io, compressed_data_size)
+  def initialize(from_io, compressed_data_size, uncompressed_data_size)
     @io = from_io
     @compressed_data_size = compressed_data_size
+    @uncompressed_data_size = uncompressed_data_size
     @already_read = 0
+    @already_inflated = 0
     @zlib_inflater = ::Zlib::Inflate.new(-Zlib::MAX_WBITS)
   end
 
@@ -27,7 +29,17 @@ class ZipKit::FileReader::InflatingReader
     return if compressed_chunk.nil?
 
     @already_read += compressed_chunk.bytesize
-    @zlib_inflater.inflate(compressed_chunk)
+
+    # Inflate in chunks, so that we can stop before inflating much past the declared size
+    inflated = "".b
+    @zlib_inflater.inflate(compressed_chunk) do |chunk|
+      @already_inflated += chunk.bytesize
+      if @already_inflated > @uncompressed_data_size
+        raise ZipKit::FileReader::InvalidStructure, "The entry inflates to more than its declared uncompressed size of #{@uncompressed_data_size} bytes"
+      end
+      inflated << chunk
+    end
+    inflated
   end
 
   def eof?

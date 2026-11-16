@@ -142,7 +142,7 @@ class ZipKit::FileReader
       from_io.seek(compressed_data_offset, IO::SEEK_SET)
       case storage_mode
       when 8
-        InflatingReader.new(from_io, compressed_size)
+        InflatingReader.new(from_io, compressed_size, uncompressed_size)
       when 0
         StoredReader.new(from_io, compressed_size)
       else

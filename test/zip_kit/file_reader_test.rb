@@ -191,6 +191,34 @@ class FileReaderTest < TestCase
     end
   end
 
+  context "with a deflated entry which inflates to more than its declared size" do
+    test "raises instead of returning more than the declared uncompressed size" do
+      bomb = "\0" * (10 * 1024 * 1024)
+      compressed = Zlib::Deflate.new(Zlib::DEFAULT_COMPRESSION, -Zlib::MAX_WBITS).deflate(bomb, Zlib::FINISH)
+
+      zipfile = StringIO.new
+      ZipKit::Streamer.open(zipfile) do |zip|
+        zip.add_deflated_entry(filename: "small.txt",
+          compressed_size: compressed.bytesize,
+          uncompressed_size: 1024,
+          crc32: Zlib.crc32(bomb))
+        zip << compressed
+      end
+
+      entry = ZipKit::FileReader.read_zip_structure(io: zipfile).first
+      reader = entry.extractor_from(zipfile)
+      extracted_bytes = 0
+      error = begin
+        extracted_bytes += reader.extract(16 * 1024).bytesize until reader.eof?
+        nil
+      rescue ZipKit::FileReader::InvalidStructure => e
+        e
+      end
+      assert_operator extracted_bytes, :<=, 1024
+      assert_kind_of ZipKit::FileReader::InvalidStructure, error
+    end
+  end
+
   context "with an end-to-end ZIP file to read" do
     test "reads and uncompresses the file written deflated with data descriptors" do
       zipfile = StringIO.new
