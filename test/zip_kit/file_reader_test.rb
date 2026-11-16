@@ -159,7 +159,7 @@ class FileReaderTest < TestCase
       assert_kind_of ZipKit::FileReader::InvalidStructure, error
     end
   end
-  
+
   context "with a local header offset too large to seek to" do
     def zip_with_local_header_offset(offset)
       zip = StringIO.new
