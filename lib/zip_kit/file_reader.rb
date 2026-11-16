@@ -440,6 +440,8 @@ class ZipKit::FileReader
              got to #{io.tell}"
     end
     nil
+  rescue RangeError # The offset does not fit into an int64
+    raise ReadError, "Cannot seek to #{absolute_pos}"
   end
 
   def assert_signature(io, signature_magic_number)
