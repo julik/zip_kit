@@ -572,6 +572,7 @@ class ZipKit::FileReader
     # and a soft read (we might not be able to read as many bytes as we want)
     file_io.seek(implied_position_of_eocd_record, IO::SEEK_SET)
     str_containing_eocd_record = file_io.read(MAX_END_OF_CENTRAL_DIRECTORY_RECORD_SIZE)
+    raise MissingEOCD if str_containing_eocd_record.nil? # Empty IO
     eocd_idx_in_buf = locate_eocd_signature(str_containing_eocd_record)
 
     raise MissingEOCD unless eocd_idx_in_buf
