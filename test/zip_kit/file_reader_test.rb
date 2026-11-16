@@ -122,6 +122,35 @@ class FileReaderTest < TestCase
     end
   end
 
+  context "with a Zip64 EOCD record that declares a huge size" do
+    class ReadRequestMonitor < SimpleDelegator
+      attr_reader :largest_read_request
+
+      def read(n_bytes = nil, *)
+        @largest_read_request = [@largest_read_request.to_i, n_bytes.to_i].max
+        super
+      end
+    end
+
+    def zip_with_zip64_eocd_record(record_size:)
+      buf = StringIO.new
+      ZipKit::Streamer.open(buf) { |zip| zip.write_stored_file("a.txt") { |sink| sink << "hi" } }
+      zip = buf.string.b
+      eocd_at = zip.rindex([0x06054b50].pack("V"))
+      zip64_eocd_record = [0x06064b50, record_size].pack("VQ<")
+      zip64_eocd_locator = [0x07064b50, 0, eocd_at, 1].pack("VVQ<V")
+      zip.byteslice(0, eocd_at) + zip64_eocd_record + zip64_eocd_locator + zip.byteslice(eocd_at..)
+    end
+
+    test "raises InvalidStructure without asking the IO for that many bytes" do
+      io = ReadRequestMonitor.new(StringIO.new(zip_with_zip64_eocd_record(record_size: 2**60)))
+
+      error = assert_raises(ZipKit::FileReader::ReadError) { ZipKit::FileReader.read_zip_structure(io: io) }
+      assert_operator io.largest_read_request, :<, 70_000
+      assert_kind_of ZipKit::FileReader::InvalidStructure, error
+    end
+  end
+
   context "with an end-to-end ZIP file to read" do
     test "reads and uncompresses the file written deflated with data descriptors" do
       zipfile = StringIO.new

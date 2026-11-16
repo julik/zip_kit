@@ -203,7 +203,7 @@ class ZipKit::FileReader
     zip64_end_of_cdir_location = get_zip64_eocd_location(io, eocd_offset)
     num_files, cdir_location, _cdir_size =
       if zip64_end_of_cdir_location
-        num_files_and_central_directory_offset_zip64(io, zip64_end_of_cdir_location)
+        num_files_and_central_directory_offset_zip64(io, zip64_end_of_cdir_location, eocd_offset)
       else
         num_files_and_central_directory_offset(io, eocd_offset)
       end
@@ -655,12 +655,20 @@ class ZipKit::FileReader
   end
 
   #          num_files_and_central_directory_offset_zip64 is too high. [21.12/15]
-  def num_files_and_central_directory_offset_zip64(io, zip64_end_of_cdir_location)
+  def num_files_and_central_directory_offset_zip64(io, zip64_end_of_cdir_location, eocd_offset)
+    # The record has to end before the Zip64 EOCD locator, which is 20 bytes long and sits right before the EOCD
+    zip64_eocd_locator_offset = eocd_offset - 20
+    if zip64_end_of_cdir_location > zip64_eocd_locator_offset
+      raise InvalidStructure, "The Zip64 EOCD record offset #{zip64_end_of_cdir_location} is past the Zip64 EOCD locator"
+    end
     seek(io, zip64_end_of_cdir_location)
 
     assert_signature(io, 0x06064b50)
 
     zip64_eocdr_size = read_8b(io)
+    if zip64_eocdr_size > zip64_eocd_locator_offset - io.tell
+      raise InvalidStructure, "The Zip64 EOCD record size #{zip64_eocdr_size} does not fit in front of the Zip64 EOCD locator"
+    end
     zip64_eocdr = read_n(io, zip64_eocdr_size) # Reading in bulk is cheaper
     zip64_eocdr = StringIO.new(zip64_eocdr)
     skip_ahead_2(zip64_eocdr) # version made by
