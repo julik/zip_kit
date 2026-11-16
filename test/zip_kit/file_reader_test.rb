@@ -122,6 +122,29 @@ class FileReaderTest < TestCase
     end
   end
 
+  context "with a local header offset too large to seek to" do
+    def zip_with_local_header_offset(offset)
+      zip = StringIO.new
+      w = ZipKit::ZipWriter.new
+      w.write_local_file_header(io: zip, filename: "a.txt", compressed_size: 2, uncompressed_size: 2,
+        crc32: 0, gp_flags: 0, mtime: Time.now, storage_mode: 0)
+      zip << "hi"
+      cdir_at = zip.tell
+      w.write_central_directory_file_header(io: zip, local_file_header_location: offset, gp_flags: 0,
+        storage_mode: 0, filename: "a.txt", compressed_size: 2, uncompressed_size: 2, mtime: Time.now, crc32: 0)
+      w.write_end_of_central_directory(io: zip, start_of_central_directory_location: cdir_at,
+        central_directory_size: zip.tell - cdir_at, num_files_in_archive: 1)
+      zip.rewind
+      zip
+    end
+
+    test "raises a ReadError" do
+      assert_raises(ZipKit::FileReader::ReadError) do
+        ZipKit::FileReader.read_zip_structure(io: zip_with_local_header_offset(2**64 - 1))
+      end
+    end
+  end
+
   context "with an end-to-end ZIP file to read" do
     test "reads and uncompresses the file written deflated with data descriptors" do
       zipfile = StringIO.new
