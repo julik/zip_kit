@@ -1,5 +1,7 @@
 ## Unreleased
 
+## 6.4.3
+
 * Move the test suite from RSpec to minitest and run it in parallel, in one forked process per CPU core. Run it with `bundle exec rake test` (it was `rake spec`), and see CONTRIBUTING.md for `TEST_WORKERS` and `SEED`. The `rspec`, `rspec-mocks` and `complexity_assert` development dependencies are gone. Nothing changes for users of the library.
 * Make `FileReader.read_zip_structure` check the offset and size of the Zip64 end of central directory record against the position of the Zip64 EOCD locator, and raise `FileReader::InvalidStructure` if the record does not fit in front of it. The 8-byte record size went straight into `IO#read`, and `File#read` allocates the requested length upfront - so a crafted archive made reading it raise `NoMemoryError`, which `rescue => e` does not catch. Over `RemoteIO` it fetched the rest of the object instead. (#41)
 * Raise `FileReader::ReadError` instead of `RangeError` when an offset in the archive is too large to seek to, like a Zip64 local header offset of `2**64 - 1`. (#42)

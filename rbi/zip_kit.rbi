@@ -1389,6 +1389,7 @@ end, T.untyped)
 2 + # Number of files in the cdir of this disk
 2 + # The comment size
 0xFFFF, T.untyped)
+    MAX_CENTRAL_DIRECTORY_SIZE_ERROR = T.let(0xFFFF, T.untyped)
     LOCAL_HEADER_READ_SIZE = T.let(4 * 1024, T.untyped)
     SIZE_OF_USABLE_EOCD_RECORD = T.let(4 + # Signature
 2 + # Number of this disk
@@ -1596,10 +1597,11 @@ end, T.untyped)
 
     # sord omit - no YARD type given for "io", using untyped
     # sord omit - no YARD type given for "zip64_end_of_cdir_location", using untyped
+    # sord omit - no YARD type given for "eocd_offset", using untyped
     # sord omit - no YARD return type given, using untyped
     # num_files_and_central_directory_offset_zip64 is too high. [21.12/15]
-    sig { params(io: T.untyped, zip64_end_of_cdir_location: T.untyped).returns(T.untyped) }
-    def num_files_and_central_directory_offset_zip64(io, zip64_end_of_cdir_location); end
+    sig { params(io: T.untyped, zip64_end_of_cdir_location: T.untyped, eocd_offset: T.untyped).returns(T.untyped) }
+    def num_files_and_central_directory_offset_zip64(io, zip64_end_of_cdir_location, eocd_offset); end
 
     # sord omit - no YARD type given for "file_io", using untyped
     # sord omit - no YARD type given for "eocd_offset", using untyped
