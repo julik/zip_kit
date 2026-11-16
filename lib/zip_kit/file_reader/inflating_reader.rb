@@ -31,7 +31,7 @@ class ZipKit::FileReader::InflatingReader
     @already_read += compressed_chunk.bytesize
 
     # Inflate in chunks, so that we can stop before inflating much past the declared size
-    inflated = String.new
+    inflated = "".b
     @zlib_inflater.inflate(compressed_chunk) do |chunk|
       @already_inflated += chunk.bytesize
       if @already_inflated > @uncompressed_data_size
