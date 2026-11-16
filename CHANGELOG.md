@@ -2,6 +2,7 @@
 
 * Move the test suite from RSpec to minitest and run it in parallel, in one forked process per CPU core. Run it with `bundle exec rake test` (it was `rake spec`), and see CONTRIBUTING.md for `TEST_WORKERS` and `SEED`. The `rspec`, `rspec-mocks` and `complexity_assert` development dependencies are gone. Nothing changes for users of the library.
 * Raise `FileReader::ReadError` instead of `RangeError` when an offset in the archive is too large to seek to, like a Zip64 local header offset of `2**64 - 1`.
+* Raise `FileReader::MissingEOCD` when `FileReader.read_zip_structure` is given an empty IO. It raised a `NoMethodError` (`undefined method 'bytesize' for nil`) before, which callers could not rescue as a ZIP error.
 
 ## 6.4.2
 

@@ -9,6 +9,15 @@ class FileReaderTest < TestCase
 
       assert_raises(ZipKit::FileReader::MissingEOCD) { ZipKit::FileReader.read_zip_structure(io: f) }
     end
+
+    test "raises MissingEOCD for an empty StringIO" do
+      assert_raises(ZipKit::FileReader::MissingEOCD) { ZipKit::FileReader.read_zip_structure(io: StringIO.new) }
+    end
+
+    test "raises MissingEOCD for an empty File" do
+      f = ManagedTempfile.new("empty")
+      assert_raises(ZipKit::FileReader::MissingEOCD) { ZipKit::FileReader.read_zip_structure(io: f) }
+    end
   end
 
   describe "read_zip_straight_ahead" do
