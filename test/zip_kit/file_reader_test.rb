@@ -9,6 +9,15 @@ class FileReaderTest < TestCase
 
       assert_raises(ZipKit::FileReader::MissingEOCD) { ZipKit::FileReader.read_zip_structure(io: f) }
     end
+
+    test "raises MissingEOCD for an empty StringIO" do
+      assert_raises(ZipKit::FileReader::MissingEOCD) { ZipKit::FileReader.read_zip_structure(io: StringIO.new) }
+    end
+
+    test "raises MissingEOCD for an empty File" do
+      f = ManagedTempfile.new("empty")
+      assert_raises(ZipKit::FileReader::MissingEOCD) { ZipKit::FileReader.read_zip_structure(io: f) }
+    end
   end
 
   describe "read_zip_straight_ahead" do
@@ -171,6 +180,71 @@ class FileReaderTest < TestCase
       assert_raises(ZipKit::FileReader::ReadError) do
         ZipKit::FileReader.read_zip_structure(io: zip_with_local_header_offset(2**64 - 1))
       end
+    end
+  end
+
+  context "with data stuffed between the central directory and the EOCD" do
+    class LargestReadMonitor < SimpleDelegator
+      attr_reader :largest_read
+
+      def read(*)
+        super.tap { |d| @largest_read = [@largest_read.to_i, d.to_s.bytesize].max }
+      end
+    end
+
+    def zip_with_padding_before_eocd(padding_size)
+      buf = StringIO.new
+      ZipKit::Streamer.open(buf) { |zip| zip.write_stored_file("a.txt") { |sink| sink << "hi" } }
+      zip = buf.string.b
+      eocd_at = zip.rindex([0x06054b50].pack("V"))
+      zip.byteslice(0, eocd_at) + ("x" * padding_size) + zip.byteslice(eocd_at..)
+    end
+
+    test "only reads the declared central directory size, with some allowance for errors" do
+      io = LargestReadMonitor.new(StringIO.new(zip_with_padding_before_eocd(5 * 1024 * 1024)))
+
+      entries = ZipKit::FileReader.read_zip_structure(io: io, read_local_headers: false)
+
+      assert_equal ["a.txt"], entries.map(&:filename)
+      assert_operator io.largest_read, :<, 70_000
+    end
+
+    test "raises InvalidStructure if the central directory offset is past the end of the file" do
+      zip = zip_with_padding_before_eocd(0)
+      eocd_at = zip.rindex([0x06054b50].pack("V"))
+      zip[eocd_at + 16, 4] = [0xFFFFFFF0].pack("V")
+
+      assert_raises(ZipKit::FileReader::InvalidStructure) do
+        ZipKit::FileReader.read_zip_structure(io: StringIO.new(zip))
+      end
+    end
+  end
+
+  context "with a deflated entry which inflates to more than its declared size" do
+    test "raises instead of returning more than the declared uncompressed size" do
+      bomb = "\0" * (10 * 1024 * 1024)
+      compressed = Zlib::Deflate.new(Zlib::DEFAULT_COMPRESSION, -Zlib::MAX_WBITS).deflate(bomb, Zlib::FINISH)
+
+      zipfile = StringIO.new
+      ZipKit::Streamer.open(zipfile) do |zip|
+        zip.add_deflated_entry(filename: "small.txt",
+          compressed_size: compressed.bytesize,
+          uncompressed_size: 1024,
+          crc32: Zlib.crc32(bomb))
+        zip << compressed
+      end
+
+      entry = ZipKit::FileReader.read_zip_structure(io: zipfile).first
+      reader = entry.extractor_from(zipfile)
+      extracted_bytes = 0
+      error = begin
+        extracted_bytes += reader.extract(16 * 1024).bytesize until reader.eof?
+        nil
+      rescue ZipKit::FileReader::InvalidStructure => e
+        e
+      end
+      assert_operator extracted_bytes, :<=, 1024
+      assert_kind_of ZipKit::FileReader::InvalidStructure, error
     end
   end
 

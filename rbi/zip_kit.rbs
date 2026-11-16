@@ -1431,7 +1431,8 @@ module ZipKit
     class InflatingReader
       # sord omit - no YARD type given for "from_io", using untyped
       # sord omit - no YARD type given for "compressed_data_size", using untyped
-      def initialize: (untyped from_io, untyped compressed_data_size) -> void
+      # sord omit - no YARD type given for "uncompressed_data_size", using untyped
+      def initialize: (untyped from_io, untyped compressed_data_size, untyped uncompressed_data_size) -> void
 
       # sord omit - no YARD type given for "n_bytes", using untyped
       # sord omit - no YARD return type given, using untyped
