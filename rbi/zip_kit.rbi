@@ -1640,8 +1640,9 @@ end, T.untyped)
     class InflatingReader
       # sord omit - no YARD type given for "from_io", using untyped
       # sord omit - no YARD type given for "compressed_data_size", using untyped
-      sig { params(from_io: T.untyped, compressed_data_size: T.untyped).void }
-      def initialize(from_io, compressed_data_size); end
+      # sord omit - no YARD type given for "uncompressed_data_size", using untyped
+      sig { params(from_io: T.untyped, compressed_data_size: T.untyped, uncompressed_data_size: T.untyped).void }
+      def initialize(from_io, compressed_data_size, uncompressed_data_size); end
 
       # sord omit - no YARD type given for "n_bytes", using untyped
       # sord omit - no YARD return type given, using untyped

@@ -4,6 +4,7 @@
 * Raise `FileReader::ReadError` instead of `RangeError` when an offset in the archive is too large to seek to, like a Zip64 local header offset of `2**64 - 1`.
 * Raise `FileReader::MissingEOCD` when `FileReader.read_zip_structure` is given an empty IO. It raised a `NoMethodError` (`undefined method 'bytesize' for nil`) before, which callers could not rescue as a ZIP error.
 * Make `FileReader.read_zip_structure` read at most the declared central directory size (plus 64KB of allowance for archives which misreport it), instead of everything from the start of the central directory to the end of the IO. An archive with data stuffed in front of the EOCD made the reader load all of it into one String - over `RemoteIO`, download all of it. A central directory offset past the EOCD now raises `FileReader::InvalidStructure`.
+* Make the reader returned by `ZipEntry#extractor_from` raise `FileReader::InvalidStructure` once a deflated entry inflates to more than its declared uncompressed size, instead of returning whatever the deflate stream produces. Inflation now happens in 16KB pieces, so a single `extract` call no longer inflates a small chunk of input into many megabytes before returning.
 
 ## 6.4.2
 
