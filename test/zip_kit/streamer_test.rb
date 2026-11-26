@@ -515,6 +515,44 @@ class StreamerTest < TestCase
     }
   end
 
+  def read_entries_with_rubyzip(zip_path)
+    per_filename = {}
+    Zip::File.open(zip_path) do |zipfile|
+      zipfile.each { |entry| per_filename[entry.name] = entry.directory? ? :directory : entry.get_input_stream.read }
+    end
+    per_filename
+  end
+
+  test "allows adding an empty directory and then a file inside it" do
+    zip_file = ManagedTempfile.new("z")
+    zip_file.binmode
+
+    assert_nothing_raised do
+      ZipKit::Streamer.open(zip_file) do |zip|
+        zip.add_empty_directory(dirname: "foo")
+        zip.write_deflated_file("foo/index.html") { |sink| sink << "Hello" }
+      end
+    end
+    zip_file.flush
+
+    assert_equal({"foo/" => :directory, "foo/index.html" => "Hello"}, read_entries_with_rubyzip(zip_file.path))
+  end
+
+  test "allows adding a file and then the empty directory it is in" do
+    zip_file = ManagedTempfile.new("z")
+    zip_file.binmode
+
+    assert_nothing_raised do
+      ZipKit::Streamer.open(zip_file) do |zip|
+        zip.write_deflated_file("foo/index.html") { |sink| sink << "Hello" }
+        zip.add_empty_directory(dirname: "foo")
+      end
+    end
+    zip_file.flush
+
+    assert_equal({"foo/index.html" => "Hello", "foo/" => :directory}, read_entries_with_rubyzip(zip_file.path))
+  end
+
   test "raises when a file would clobber another file (without automatic deduping)" do
     fake_writer = RecordingWriter.new
     assert_raises(ZipKit::PathSet::Conflict) {
